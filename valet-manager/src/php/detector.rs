@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct PhpVersion {
     pub version: String,
     pub full_version: String,
@@ -91,7 +92,7 @@ pub fn parse_php_binary_name(name: &str) -> Option<String> {
     re.captures(name).map(|c| c[1].to_string())
 }
 
-fn extract_version_from_path(path: &PathBuf) -> Option<String> {
+fn extract_version_from_path(path: &Path) -> Option<String> {
     parse_php_binary_name(&path.file_name()?.to_string_lossy())
 }
 
@@ -111,7 +112,7 @@ pub fn parse_php_version_output(output: &str) -> String {
         .unwrap_or_else(|| "unknown".to_string())
 }
 
-async fn query_full_version(binary: &PathBuf) -> Option<String> {
+async fn query_full_version(binary: &Path) -> Option<String> {
     let output = tokio::process::Command::new(binary)
         .arg("--version")
         .output()

@@ -134,7 +134,7 @@ fn alert_banner(
     _cmd_tx: &Sender<AppCommand>,
 ) {
     let bg = Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 18);
-    Frame::none()
+    Frame::NONE
         .fill(bg)
         .inner_margin(Margin { left: 12, right: 8, top: 8, bottom: 8 })
         .show(ui, |ui| {

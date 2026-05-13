@@ -5,7 +5,6 @@ use tokio::sync::{mpsc, RwLock};
 use crate::commands::AppCommand;
 use crate::events::AppEvent;
 use crate::php::detector;
-use crate::services::monitor;
 use crate::state::app_state::{AppState, Panel};
 use crate::ui::{panels::dashboard, sidebar, theme};
 use crate::valet::variant;
@@ -72,7 +71,7 @@ impl eframe::App for ValetManagerApp {
         // ── Titlebar ─────────────────────────────────────────────────────
         egui::TopBottomPanel::top("titlebar")
             .exact_height(36.0)
-            .frame(egui::Frame::none().fill(theme::Colors::DEEP_BG))
+            .frame(egui::Frame::NONE.fill(theme::Colors::DEEP_BG))
             .show(ctx, |ui| {
                 // Enable window drag from titlebar
                 let drag_resp = ui.interact(
@@ -134,14 +133,14 @@ impl eframe::App for ValetManagerApp {
         egui::SidePanel::left("sidebar")
             .exact_width(196.0)
             .resizable(false)
-            .frame(egui::Frame::none().fill(theme::Colors::DEEP_BG))
+            .frame(egui::Frame::NONE.fill(theme::Colors::DEEP_BG))
             .show(ctx, |ui| {
                 sidebar::render(ui, &self.state, &self.cmd_tx);
             });
 
         // ── Content panel ─────────────────────────────────────────────────
         egui::CentralPanel::default()
-            .frame(egui::Frame::none().fill(theme::Colors::SURFACE))
+            .frame(egui::Frame::NONE.fill(theme::Colors::SURFACE))
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     ui.add_space(4.0);

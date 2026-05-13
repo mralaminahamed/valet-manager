@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct AppConfig {
     pub editor_command: String,
     pub terminal: String,
@@ -30,6 +31,7 @@ impl Default for AppConfig {
     }
 }
 
+#[allow(dead_code)]
 pub fn config_path() -> PathBuf {
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("/root"))
@@ -38,6 +40,7 @@ pub fn config_path() -> PathBuf {
         .join("config.toml")
 }
 
+#[allow(dead_code)]
 pub fn load() -> AppConfig {
     let path = config_path();
     let Ok(content) = std::fs::read_to_string(&path) else {
@@ -46,6 +49,7 @@ pub fn load() -> AppConfig {
     toml::from_str(&content).unwrap_or_default()
 }
 
+#[allow(dead_code)]
 pub fn save(cfg: &AppConfig) -> anyhow::Result<()> {
     let path = config_path();
     if let Some(parent) = path.parent() {

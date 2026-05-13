@@ -2,8 +2,9 @@ use crate::php::detector::PhpVersion;
 use crate::services::monitor::ManagedService;
 use crate::valet::variant::{ValetPaths, ValetVariant};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Panel {
+    #[default]
     Dashboard,
     PhpVersions,
     PhpExtensions,
@@ -30,13 +31,8 @@ pub enum Panel {
     Settings,
 }
 
-impl Default for Panel {
-    fn default() -> Self {
-        Panel::Dashboard
-    }
-}
-
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct AppState {
     pub valet_variant: Option<ValetVariant>,
     pub valet_paths: Option<ValetPaths>,
@@ -66,6 +62,7 @@ impl Default for AppState {
 }
 
 #[derive(Debug, Default)]
+#[allow(dead_code)]
 pub struct UiState {
     pub active_panel: Panel,
     pub loading: bool,

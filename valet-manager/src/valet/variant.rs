@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use dirs::home_dir;
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ValetVariant {
     ValetLinux,
@@ -19,6 +20,7 @@ impl ValetVariant {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ValetPaths {
     pub config_root: PathBuf,
     pub nginx_dir: PathBuf,

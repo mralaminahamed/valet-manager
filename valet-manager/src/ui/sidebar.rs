@@ -16,7 +16,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
             ui.allocate_exact_size(egui::vec2(28.0, 28.0), egui::Sense::hover());
         if ui.is_rect_visible(icon_rect) {
             let painter = ui.painter();
-            painter.rect_filled(icon_rect, egui::Rounding::same(7), Colors::ACCENT_DEEP);
+            painter.rect_filled(icon_rect, egui::CornerRadius::same(7), Colors::ACCENT_DEEP);
             paint_v_mark(painter, icon_rect);
         }
         ui.add_space(8.0);
@@ -112,7 +112,7 @@ fn nav_item(
     )
     .fill(bg)
     .stroke(Stroke::NONE)
-    .rounding(4.0)
+    .corner_radius(4.0)
     .min_size(egui::vec2(188.0, 28.0));
 
     if ui.add(btn).clicked() {
@@ -160,7 +160,7 @@ fn paint_v_mark(painter: &egui::Painter, rect: egui::Rect) {
         );
         painter.rect_filled(
             egui::Rect::from_center_size(egui::pos2(cx, y), egui::vec2(*width, 0.64)),
-            egui::Rounding::ZERO,
+            egui::CornerRadius::ZERO,
             color,
         );
     }

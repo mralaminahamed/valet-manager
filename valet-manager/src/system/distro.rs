@@ -1,5 +1,6 @@
 use std::fs;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum DistroKind {
     Ubuntu,
@@ -9,6 +10,7 @@ pub enum DistroKind {
     Unknown,
 }
 
+#[allow(dead_code)]
 pub fn parse_os_release() -> DistroKind {
     let content = fs::read_to_string("/etc/os-release").unwrap_or_default();
     parse_id_from_content(&content)

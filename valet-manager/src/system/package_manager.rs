@@ -1,5 +1,6 @@
 use crate::system::distro::{parse_os_release, DistroKind};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum PackageManager {
     Apt,
@@ -7,10 +8,12 @@ pub enum PackageManager {
     Pacman,
 }
 
+#[allow(dead_code)]
 pub fn detect_package_manager() -> PackageManager {
     pm_for_distro(&parse_os_release())
 }
 
+#[allow(dead_code)]
 pub fn pm_for_distro(kind: &DistroKind) -> PackageManager {
     match kind {
         DistroKind::Ubuntu | DistroKind::Debian => PackageManager::Apt,
@@ -20,6 +23,7 @@ pub fn pm_for_distro(kind: &DistroKind) -> PackageManager {
     }
 }
 
+#[allow(dead_code)]
 pub async fn list_installed_php_packages(pm: &PackageManager) -> Vec<String> {
     let (cmd, arg): (&str, &str) = match pm {
         PackageManager::Apt    => ("bash", "apt list --installed 2>/dev/null | grep php"),

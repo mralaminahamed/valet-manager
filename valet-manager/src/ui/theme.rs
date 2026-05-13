@@ -1,4 +1,4 @@
-use egui::{Color32, Frame, Margin, Response, RichText, Rounding, Stroke, Visuals};
+use egui::{Color32, CornerRadius, Frame, Margin, Response, RichText, Stroke, Visuals};
 use crate::services::monitor::ServiceStatus;
 use crate::ui::DetectedFramework;
 
@@ -20,6 +20,7 @@ impl Colors {
     pub const ACCENT_DEEP:    Color32 = Color32::from_rgb(0x04, 0x34, 0x2C);
     pub const DANGER:         Color32 = Color32::from_rgb(0xE2, 0x4B, 0x4A);
     pub const WARNING:        Color32 = Color32::from_rgb(0xEF, 0x9F, 0x27);
+    #[allow(dead_code)]
     pub const INFO:           Color32 = Color32::from_rgb(0x37, 0x8A, 0xDD);
 }
 
@@ -66,6 +67,7 @@ pub fn status_color(status: &ServiceStatus) -> Color32 {
     }
 }
 
+#[allow(dead_code)]
 pub fn framework_badge_colors(fw: &DetectedFramework) -> (Color32, Color32) {
     match fw {
         DetectedFramework::Laravel => (
@@ -94,7 +96,7 @@ pub fn accent_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
         )
         .fill(Colors::ACCENT_DARK)
         .stroke(Stroke::NONE)
-        .rounding(4.0),
+        .corner_radius(4.0),
     )
 }
 
@@ -105,10 +107,11 @@ pub fn ghost_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
         )
         .fill(Colors::CARD)
         .stroke(Stroke::new(0.5, Colors::BORDER_MED))
-        .rounding(4.0),
+        .corner_radius(4.0),
     )
 }
 
+#[allow(dead_code)]
 pub fn danger_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
     ui.add(
         egui::Button::new(
@@ -116,7 +119,7 @@ pub fn danger_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
         )
         .fill(Color32::TRANSPARENT)
         .stroke(Stroke::new(0.5, Colors::DANGER))
-        .rounding(4.0),
+        .corner_radius(4.0),
     )
 }
 
@@ -127,12 +130,13 @@ pub fn status_dot(ui: &mut egui::Ui, status: &ServiceStatus) {
     }
 }
 
+#[allow(dead_code)]
 pub fn framework_badge(ui: &mut egui::Ui, fw: &DetectedFramework) {
     let (bg, fg) = framework_badge_colors(fw);
     let text = framework_name(fw);
-    Frame::none()
+    Frame::NONE
         .fill(bg)
-        .rounding(Rounding::same(20))
+        .corner_radius(CornerRadius::same(20))
         .inner_margin(Margin { left: 7, right: 7, top: 2, bottom: 2 })
         .show(ui, |ui| {
             ui.label(RichText::new(text).color(fg).size(10.0));
@@ -161,12 +165,13 @@ pub fn divider(ui: &mut egui::Ui) {
 }
 
 pub fn card_frame() -> Frame {
-    Frame::none()
+    Frame::NONE
         .fill(Colors::CARD)
-        .rounding(Rounding::same(8))
+        .corner_radius(CornerRadius::same(8))
         .inner_margin(Margin { left: 14, right: 14, top: 12, bottom: 12 })
 }
 
+#[allow(dead_code)]
 fn framework_name(fw: &DetectedFramework) -> &'static str {
     match fw {
         DetectedFramework::Laravel   => "Laravel",

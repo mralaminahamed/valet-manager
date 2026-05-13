@@ -20,6 +20,7 @@ impl ServiceStatus {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ManagedService {
     pub name: String,
     pub display_name: String,
