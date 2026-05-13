@@ -3,7 +3,7 @@ use crate::php::types::{IniSection, IniType, PhpExtension};
 use crate::services::monitor::{ManagedService, ServiceStatus};
 use crate::valet::variant::{ValetPaths, ValetVariant};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AppEvent {
     // Phase 1
     ServiceStatusUpdated(Vec<ManagedService>),
@@ -21,7 +21,6 @@ pub enum AppEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::php::types::IniType;
 
     #[test]
     fn events_are_debug() {
