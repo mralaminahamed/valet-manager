@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use crate::services::monitor::ServiceStatus;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -13,6 +14,7 @@ pub struct PhpVersion {
     pub conf_d_path: PathBuf,
     pub is_active: bool,
     pub fpm_running: bool,
+    pub fpm_status: ServiceStatus,
 }
 
 impl PhpVersion {
@@ -27,6 +29,7 @@ impl PhpVersion {
             full_version: String::new(),
             is_active:    false,
             fpm_running:  false,
+            fpm_status:   ServiceStatus::Unknown,
         }
     }
 }
@@ -166,5 +169,6 @@ mod tests {
         assert_eq!(php.cli_ini_path, PathBuf::from("/etc/php/8.2/cli/php.ini"));
         assert_eq!(php.fpm_ini_path, PathBuf::from("/etc/php/8.2/fpm/php.ini"));
         assert_eq!(php.fpm_service, "php8.2-fpm");
+        assert_eq!(php.fpm_status, ServiceStatus::Unknown);
     }
 }
