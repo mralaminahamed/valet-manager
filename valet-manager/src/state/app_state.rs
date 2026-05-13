@@ -72,3 +72,39 @@ pub struct UiState {
     pub toast_queue: Vec<String>,
     pub last_error: Option<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_active_panel_is_dashboard() {
+        let state = AppState::default();
+        assert_eq!(state.ui.active_panel, Panel::Dashboard);
+    }
+
+    #[test]
+    fn default_active_php_is_unknown() {
+        assert_eq!(AppState::default().active_php, "unknown");
+    }
+
+    #[test]
+    fn default_tld_is_test() {
+        assert_eq!(AppState::default().tld, "test");
+    }
+
+    #[test]
+    fn default_site_count_is_zero() {
+        assert_eq!(AppState::default().site_count, 0);
+    }
+
+    #[test]
+    fn panel_default_is_dashboard() {
+        assert_eq!(Panel::default(), Panel::Dashboard);
+    }
+
+    #[test]
+    fn ui_state_loading_defaults_false() {
+        assert!(!UiState::default().loading);
+    }
+}
