@@ -1,0 +1,3 @@
+[workspace]
+members = ["valet-manager", "valet-manager-helper"]
+resolver = "2"
