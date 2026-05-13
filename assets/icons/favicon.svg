@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>Valet Manager</title>
+  <rect width="32" height="32" rx="7" fill="#04342C"/>
+  <path
+    fill-rule="evenodd"
+    fill="#FFFFFF"
+    d="M8.3,8 L23.7,8 L16,21.4 Z
+       M11.8,8 L16,19.5 L20.2,8 Z"
+  />
+  <rect x="13" y="22.8" width="6" height="1.8" rx="0.9" fill="#5DCAA5"/>
+</svg>

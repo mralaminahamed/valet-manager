@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Valet Manager</title>
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#04342C"/>
+  <!-- V letterform: outer triangle + inner cutout (evenodd fill rule) -->
+  <path
+    fill-rule="evenodd"
+    fill="#FFFFFF"
+    d="M133,128 L379,128 L256,342.4 Z
+       M189,128 L256,312.8 L323,128 Z"
+  />
+  <!-- Stack accent lines — layered service metaphor -->
+  <rect x="210" y="363" width="92" height="12.8" rx="6.4" fill="#5DCAA5"/>
+  <rect x="220" y="386" width="72" height="12.8" rx="6.4" fill="#5DCAA5" opacity="0.75"/>
+  <rect x="230" y="409" width="52" height="12.8" rx="6.4" fill="#5DCAA5" opacity="0.5"/>
+</svg>
