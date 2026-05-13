@@ -44,6 +44,11 @@ impl ValetManagerApp {
                 AppEvent::Error(msg) => {
                     self.state.ui.last_error = Some(msg);
                 }
+                AppEvent::PhpSwitched(_) |
+                AppEvent::PhpFpmStatusChanged { .. } |
+                AppEvent::ExtensionsLoaded { .. } |
+                AppEvent::IniLoaded { .. } |
+                AppEvent::IniSaved => {}
             }
         }
     }
@@ -207,6 +212,16 @@ pub async fn run_dispatcher(
             }
             AppCommand::OpenCommandPalette => {
                 // Phase 3+
+            }
+            AppCommand::StartPhpFpm(_) |
+            AppCommand::StopPhpFpm(_) |
+            AppCommand::RestartPhpFpm(_) |
+            AppCommand::EnableExtension { .. } |
+            AppCommand::DisableExtension { .. } |
+            AppCommand::LoadExtensions(_) |
+            AppCommand::LoadIni { .. } |
+            AppCommand::SaveIni { .. } => {
+                // implemented in Task 9
             }
         }
     }
