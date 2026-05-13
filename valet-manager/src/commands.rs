@@ -41,6 +41,23 @@ pub enum AppCommand {
     // Phase 3 — Nginx
     SaveNginxConfig { site: String, content: String },
     ReloadNginx,
+    // Phase 4 — App Creator
+    CreateApp(AppCreationRequest),
+    CancelCreation,
+    CreatorStepBack,
+    CreatorSelectType { type_id: String },
+    CreatorUpdateField { key: String, value: String },
+    CreatorNextStep,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct AppCreationRequest {
+    pub type_id: String,
+    pub form_values: std::collections::HashMap<String, String>,
+    pub post_install_secure: bool,
+    pub post_install_php_version: Option<String>,
+    pub post_install_open_browser: bool,
 }
 
 #[cfg(test)]

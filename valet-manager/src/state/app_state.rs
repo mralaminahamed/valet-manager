@@ -3,6 +3,7 @@ use crate::php::detector::PhpVersion;
 use crate::php::types::{IniSection, IniType, PhpExtension};
 use crate::services::monitor::ManagedService;
 use crate::valet::variant::{ValetPaths, ValetVariant};
+use crate::state::creator_state::CreatorState;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum Panel {
@@ -30,6 +31,7 @@ pub enum Panel {
     Logs,
     History,
     Diagnostics,
+    AppCreator,
     Settings,
 }
 
@@ -58,6 +60,8 @@ pub struct AppState {
     pub site_search: String,
     pub site_filter_favorites: bool,
     pub site_sort_favorites_top: bool,
+    // Phase 4
+    pub creator: CreatorState,
 }
 
 impl Default for AppState {
@@ -83,6 +87,7 @@ impl Default for AppState {
             site_search: String::new(),
             site_filter_favorites: false,
             site_sort_favorites_top: true,
+            creator: CreatorState::default(),
         }
     }
 }

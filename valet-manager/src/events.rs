@@ -26,6 +26,10 @@ pub enum AppEvent {
     NginxConfigLoaded { site: String, content: String },
     NginxReloaded,
     ParksUpdated(Vec<std::path::PathBuf>),
+    // Phase 4 — App Creator
+    CreatorOutputLine(crate::creator::output_streamer::OutputLine),
+    CreatorComplete { site_name: String, domain: String },
+    CreatorFailed(String),
 }
 
 #[cfg(test)]

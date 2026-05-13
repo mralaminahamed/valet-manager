@@ -9,6 +9,8 @@ mod services;
 mod state;
 mod ui;
 mod nginx;
+mod cli_tools;
+mod creator;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};

@@ -65,6 +65,17 @@ impl ValetManagerApp {
                 | AppEvent::SiteUnisolated(_)
                 | AppEvent::PhpVersionInstalled(_)
                 | AppEvent::PhpVersionRemoved(_) => {}
+                // Phase 4
+                AppEvent::CreatorOutputLine(line) => {
+                    self.state.creator.add_output_line(line);
+                }
+                AppEvent::CreatorComplete { .. } => {
+                    self.state.creator.is_running = false;
+                }
+                AppEvent::CreatorFailed(msg) => {
+                    self.state.creator.is_running = false;
+                    self.state.creator.error = Some(msg);
+                }
                 // Phase 3
                 AppEvent::SitesRefreshed(sites) => {
                     self.state.site_count = sites.len();
@@ -105,8 +116,12 @@ impl eframe::App for ValetManagerApp {
 
         // ── Titlebar ─────────────────────────────────────────────────────
         egui::Panel::top("titlebar")
-            .exact_size(36.0)
-            .frame(egui::Frame::NONE.fill(theme::Colors::DEEP_BG))
+            .exact_size(38.0)
+            .frame(
+                egui::Frame::NONE
+                    .fill(theme::Colors::DEEP_BG)
+                    .stroke(egui::Stroke::new(0.5, theme::Colors::BORDER)),
+            )
             .show_inside(ui, |ui| {
                 // Enable window drag from titlebar
                 let drag_resp = ui.interact(
@@ -119,31 +134,92 @@ impl eframe::App for ValetManagerApp {
                 }
 
                 ui.horizontal_centered(|ui| {
-                    // Three traffic-light dots
-                    for (i, color) in [
-                        theme::Colors::DANGER,
-                        theme::Colors::WARNING,
-                        theme::Colors::ACCENT,
-                    ]
-                    .iter()
-                    .enumerate()
-                    {
-                        let pos = ui.min_rect().left_center()
-                            + egui::vec2(16.0 + i as f32 * 12.0, 0.0);
-                        ui.painter().circle_filled(pos, 5.0, *color);
+                    // ── LEFT: GNOME-style window control buttons ──────────
+                    ui.add_space(10.0);
+
+                    let btn_size = egui::vec2(22.0, 22.0);
+                    let btn_defs: &[(egui::Color32, egui::Color32, &str)] = &[
+                        (theme::Colors::CARD, theme::Colors::TEXT_SECONDARY, "—"),
+                        (theme::Colors::CARD, theme::Colors::TEXT_SECONDARY, "⬜"),
+                        (theme::Colors::CLOSE_BTN_BG, theme::Colors::DANGER, "✕"),
+                    ];
+
+                    let mut close_clicked = false;
+                    for (idx, (bg, icon_color, icon)) in btn_defs.iter().enumerate() {
+                        let (rect, resp) = ui.allocate_exact_size(btn_size, egui::Sense::click());
+                        if ui.is_rect_visible(rect) {
+                            let painter = ui.painter();
+                            let center = rect.center();
+                            let radius = 11.0_f32;
+                            painter.circle(
+                                center,
+                                radius,
+                                *bg,
+                                egui::Stroke::new(0.5, theme::Colors::BORDER_MED),
+                            );
+                            painter.text(
+                                center,
+                                egui::Align2::CENTER_CENTER,
+                                *icon,
+                                egui::FontId::proportional(10.0),
+                                *icon_color,
+                            );
+                        }
+                        if idx == 2 && resp.clicked() {
+                            close_clicked = true;
+                        }
+                        if idx < btn_defs.len() - 1 {
+                            ui.add_space(8.0);
+                        }
                     }
 
-                    // Center title
+                    if close_clicked {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+
+                    // ── CENTER: title painted via LayoutJob for multi-color ──
                     let title_rect = ui.max_rect();
-                    ui.painter().text(
-                        title_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        "Valet Manager",
-                        egui::FontId::proportional(12.0),
-                        theme::Colors::TEXT_TERTIARY,
+                    let panel_name = panel_display_name(&self.state.ui.active_panel);
+                    let font_id = egui::FontId::proportional(13.0);
+
+                    let mut job = egui::text::LayoutJob::default();
+                    job.append(
+                        "Valet Manager ",
+                        0.0,
+                        egui::text::TextFormat {
+                            font_id: font_id.clone(),
+                            color: theme::Colors::TEXT_PRIMARY,
+                            ..Default::default()
+                        },
+                    );
+                    job.append(
+                        "· ",
+                        0.0,
+                        egui::text::TextFormat {
+                            font_id: font_id.clone(),
+                            color: theme::Colors::TEXT_TERTIARY,
+                            ..Default::default()
+                        },
+                    );
+                    job.append(
+                        panel_name,
+                        0.0,
+                        egui::text::TextFormat {
+                            font_id: font_id.clone(),
+                            color: theme::Colors::TEXT_PRIMARY,
+                            ..Default::default()
+                        },
                     );
 
-                    // Right info
+                    let galley = ui.ctx().fonts_mut(|f| f.layout_job(job));
+                    let galley_size = galley.rect.size();
+                    let title_pos = egui::pos2(
+                        title_rect.center().x - galley_size.x / 2.0,
+                        title_rect.center().y - galley_size.y / 2.0,
+                    );
+                    ui.painter().galley(title_pos, galley, egui::Color32::WHITE);
+
+                    // ── RIGHT: PHP version & valet variant ───────────────
                     let right_text = format!(
                         "PHP {} · {}",
                         self.state.active_php,
@@ -166,7 +242,7 @@ impl eframe::App for ValetManagerApp {
 
         // ── Sidebar ───────────────────────────────────────────────────────
         egui::Panel::left("sidebar")
-            .exact_size(196.0)
+            .exact_size(220.0)
             .resizable(false)
             .frame(egui::Frame::NONE.fill(theme::Colors::DEEP_BG))
             .show_inside(ui, |ui| {
@@ -223,6 +299,36 @@ fn stub_panel(ui: &mut egui::Ui, panel: &Panel) {
                 .color(theme::Colors::TEXT_TERTIARY),
         );
     });
+}
+
+fn panel_display_name(panel: &Panel) -> &'static str {
+    match panel {
+        Panel::Dashboard     => "Dashboard",
+        Panel::PhpVersions   => "PHP Versions",
+        Panel::PhpExtensions => "PHP Extensions",
+        Panel::PhpIni        => "PHP INI",
+        Panel::Sites         => "Sites",
+        Panel::Parks         => "Parks",
+        Panel::Nginx         => "Nginx",
+        Panel::Settings      => "Settings",
+        Panel::PhpInfo       => "phpinfo()",
+        Panel::PhpCompat     => "PHP Compat",
+        Panel::Proxies       => "Proxies",
+        Panel::Dnsmasq       => "DNS",
+        Panel::SslCerts      => "SSL Certs",
+        Panel::Database      => "Database",
+        Panel::EnvEditor     => ".env Editor",
+        Panel::Artisan       => "Artisan",
+        Panel::QueueWorkers  => "Queue Workers",
+        Panel::Xdebug        => "Xdebug",
+        Panel::MailCatcher   => "Mailpit",
+        Panel::Sharing       => "Sharing",
+        Panel::Drivers       => "Drivers",
+        Panel::Logs          => "Logs",
+        Panel::History       => "History",
+        Panel::Diagnostics   => "Diagnostics",
+        Panel::AppCreator    => "App Creator",
+    }
 }
 
 pub async fn run_dispatcher(
@@ -530,6 +636,18 @@ pub async fn run_dispatcher(
                     }
                 });
             }
+            // Phase 4 — App Creator
+            AppCommand::CreateApp(req) => {
+                let _ = tx.send(AppEvent::Error(format!(
+                    "CreateApp({}) not yet implemented",
+                    req.type_id
+                ))).await;
+            }
+            AppCommand::CancelCreation => {}
+            AppCommand::CreatorStepBack => {}
+            AppCommand::CreatorSelectType { type_id: _ } => {}
+            AppCommand::CreatorUpdateField { key: _, value: _ } => {}
+            AppCommand::CreatorNextStep => {}
         }
     }
 }
