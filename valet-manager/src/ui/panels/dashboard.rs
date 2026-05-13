@@ -6,7 +6,7 @@ use crate::services::monitor::ServiceStatus;
 use crate::state::app_state::AppState;
 use crate::ui::theme::{
     Colors, accent_button, card_frame, divider, ghost_button, section_label,
-    status_color, status_dot,
+    status_color, status_dot, with_alpha,
 };
 
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
@@ -133,7 +133,7 @@ fn alert_banner(
     _btn: Option<(&str, AppCommand)>,
     _cmd_tx: &Sender<AppCommand>,
 ) {
-    let bg = Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 18);
+    let bg = with_alpha(color, 18);
     Frame::NONE
         .fill(bg)
         .inner_margin(Margin { left: 12, right: 8, top: 8, bottom: 8 })

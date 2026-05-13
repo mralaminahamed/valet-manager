@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe          = { version = "0.31", features = ["default_fonts", "wgpu"] }
-egui            = "0.31"
-egui_extras     = { version = "0.31", features = ["all_loaders"] }
-tokio           = { version = "1", features = ["full"] }
+eframe          = { version = "0.34.2", features = ["default_fonts", "wgpu"] }
+egui            = "0.34.2"
+egui_extras     = { version = "0.34.2", features = ["all_loaders"] }
+tokio           = { version = "1.44", features = ["full"] }
 serde           = { version = "1", features = ["derive"] }
 serde_json      = "1"
 toml            = "0.8"
@@ -16,14 +16,23 @@ anyhow          = "1"
 thiserror       = "2"
 tracing         = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-dirs            = "5"
+dirs            = "6"
 which           = "7"
-chrono          = { version = "0.4", features = ["serde"] }
-notify          = "6"
-tray-icon       = "0.19"
+chrono          = { version = "0.4.41", features = ["serde"] }
+notify          = "8"
+tray-icon       = "0.21.1"
 notify-rust     = "4"
 nix             = { version = "0.29", features = ["process", "signal", "fs"] }
 sysinfo         = "0.33"
 regex           = "1"
 futures         = "0.3"
-fuzzy-matcher   = "0.3"
+fuzzy-matcher   = "0.3.7"
+reqwest         = { version = "0.12.15", features = ["json", "rustls-tls"], default-features = false }
+rusqlite        = { version = "0.34", features = ["bundled"] }
+handlebars      = "6.3"
+rand            = { version = "0.9", features = ["std"] }
+bcrypt          = "0.15.1"
+rfd             = "0.15"
+semver          = "1.0.25"
+flate2          = "1.1"
+tar             = "0.4.44"
