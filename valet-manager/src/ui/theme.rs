@@ -24,6 +24,8 @@ impl Colors {
     pub const INFO:           Color32 = Color32::from_rgb(0x37, 0x8A, 0xDD);
     #[allow(dead_code)]
     pub const SUCCESS:        Color32 = Color32::from_rgb(0x5D, 0xCA, 0xA5); // same as ACCENT
+    // Close button danger tint: rgba(226,75,74,0.18) = premultiplied ~(41,14,13,46)
+    pub const CLOSE_BTN_BG:   Color32 = Color32::from_rgba_premultiplied(41, 14, 13, 46);
 }
 
 pub fn apply_dark(ctx: &egui::Context) {
@@ -88,12 +90,12 @@ pub fn framework_badge_colors(fw: &DetectedFramework) -> (Color32, Color32) {
         DetectedFramework::Symfony    => (Color32::from_rgba_unmultiplied(0x37,0x8A,0xDD,20), Color32::from_rgb(0x0C,0x44,0x7C)),
         DetectedFramework::Contao     => (Color32::from_rgba_unmultiplied(0x37,0x8A,0xDD,18), Color32::from_rgb(0x0C,0x44,0x7C)),
         DetectedFramework::Craft      => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,25), Color32::from_rgb(0x08,0x50,0x41)),
-        DetectedFramework::Statamic   => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,30), Color32::from_rgb(0x0F,0x6E,0x56)),
+        DetectedFramework::Statamic   => (Color32::from_rgba_unmultiplied(0x9B,0x5F,0xF5,33), Color32::from_rgb(0xB5,0x94,0xF5)),
         DetectedFramework::Slim       => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,20), Color32::from_rgb(0x08,0x50,0x41)),
         DetectedFramework::Jigsaw     => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,22), Color32::from_rgb(0x0F,0x6E,0x56)),
         DetectedFramework::Sculpin    => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,18), Color32::from_rgb(0x08,0x50,0x41)),
         DetectedFramework::CakePHP    => (Color32::from_rgba_unmultiplied(0xE2,0x4B,0x4A,25), Color32::from_rgb(0xA3,0x2D,0x2D)),
-        DetectedFramework::Kirby      => (Color32::from_rgba_unmultiplied(0xE2,0x4B,0x4A,22), Color32::from_rgb(0xA3,0x2D,0x2D)),
+        DetectedFramework::Kirby      => (Color32::from_rgba_unmultiplied(0xEF,0x9F,0x27,33), Color32::from_rgb(0xCB,0x7F,0x10)),
         DetectedFramework::OctoberCms => (Color32::from_rgba_unmultiplied(0x7F,0x77,0xDD,25), Color32::from_rgb(0x53,0x4A,0xB7)),
         DetectedFramework::Katana     => (Color32::from_rgba_unmultiplied(0x7F,0x77,0xDD,20), Color32::from_rgb(0x3C,0x34,0x89)),
         DetectedFramework::ConcreteCms=> (Color32::from_rgba_unmultiplied(0xD4,0x53,0x7E,22), Color32::from_rgb(0x99,0x35,0x56)),
@@ -106,11 +108,12 @@ pub fn framework_badge_colors(fw: &DetectedFramework) -> (Color32, Color32) {
 pub fn accent_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
     ui.add(
         egui::Button::new(
-            RichText::new(label.into()).color(Colors::TEXT_PRIMARY).size(12.0),
+            RichText::new(label.into()).color(Color32::WHITE).size(12.0),
         )
         .fill(Colors::ACCENT_DARK)
-        .stroke(Stroke::NONE)
-        .corner_radius(4.0),
+        .stroke(Stroke::new(0.5, with_alpha(Colors::ACCENT, 77)))
+        .corner_radius(4.0)
+        .min_size(egui::vec2(0.0, 28.0)),
     )
 }
 
@@ -121,7 +124,8 @@ pub fn ghost_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
         )
         .fill(Colors::CARD)
         .stroke(Stroke::new(0.5, Colors::BORDER_MED))
-        .corner_radius(4.0),
+        .corner_radius(4.0)
+        .min_size(egui::vec2(0.0, 28.0)),
     )
 }
 
@@ -133,7 +137,8 @@ pub fn danger_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
         )
         .fill(Color32::TRANSPARENT)
         .stroke(Stroke::new(0.5, Colors::DANGER))
-        .corner_radius(4.0),
+        .corner_radius(4.0)
+        .min_size(egui::vec2(0.0, 28.0)),
     )
 }
 
@@ -153,17 +158,21 @@ pub fn framework_badge(ui: &mut egui::Ui, fw: &DetectedFramework) {
         .corner_radius(CornerRadius::same(20))
         .inner_margin(Margin { left: 7, right: 7, top: 2, bottom: 2 })
         .show(ui, |ui| {
-            ui.label(RichText::new(text).color(fg).size(10.0));
+            ui.label(RichText::new(text).color(fg).size(10.5));
         });
 }
 
 pub fn section_label(ui: &mut egui::Ui, text: &str) {
-    ui.add_space(10.0);
-    ui.label(
-        RichText::new(text.to_uppercase())
-            .size(10.0)
-            .color(Colors::TEXT_TERTIARY),
-    );
+    ui.add_space(8.0);
+    ui.horizontal(|ui| {
+        ui.add_space(18.0);
+        ui.label(
+            RichText::new(text.to_uppercase())
+                .size(10.0)
+                .color(Colors::TEXT_TERTIARY),
+        );
+    });
+    ui.add_space(2.0);
 }
 
 pub fn divider(ui: &mut egui::Ui) {

@@ -8,15 +8,21 @@ use crate::ui::theme::{Colors, divider, section_label, status_dot, with_alpha};
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
     ui.spacing_mut().item_spacing.y = 2.0;
 
-    // ── Logo area ──────────────────────────────────────────────────────
-    ui.add_space(8.0);
+    // ── Brand area ────────────────────────────────────────────────────
+    ui.add_space(14.0);
     ui.horizontal(|ui| {
-        ui.add_space(10.0);
+        ui.add_space(14.0);
         let (icon_rect, _) =
             ui.allocate_exact_size(egui::vec2(28.0, 28.0), egui::Sense::hover());
         if ui.is_rect_visible(icon_rect) {
             let painter = ui.painter();
             painter.rect_filled(icon_rect, egui::CornerRadius::same(7), Colors::ACCENT_DEEP);
+            painter.rect_stroke(
+                icon_rect,
+                egui::CornerRadius::same(7),
+                egui::Stroke::new(0.5, with_alpha(Colors::ACCENT, 38)),
+                egui::StrokeKind::Inside,
+            );
             paint_v_mark(painter, icon_rect);
         }
         ui.add_space(8.0);
@@ -27,14 +33,15 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                     .color(Colors::TEXT_PRIMARY)
                     .strong(),
             );
-            let sub = match &state.valet_variant {
-                Some(v) => format!("{} · .{}", v.display_name(), state.tld),
-                None    => format!("Not detected · .{}", state.tld),
-            };
-            ui.label(RichText::new(sub).size(10.0).color(Colors::TEXT_TERTIARY));
+            ui.label(
+                RichText::new("v0.1 · dev")
+                    .size(10.5)
+                    .color(Colors::TEXT_TERTIARY)
+                    .text_style(egui::TextStyle::Monospace),
+            );
         });
     });
-    ui.add_space(8.0);
+    ui.add_space(12.0);
     divider(ui);
     ui.add_space(4.0);
 
@@ -49,6 +56,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
     nav_item(ui, "◈", "Sites",          Panel::Sites,         &state.ui.active_panel, cmd_tx);
     nav_item(ui, "⌂", "Parks",          Panel::Parks,         &state.ui.active_panel, cmd_tx);
     nav_item(ui, "⚙", "Nginx",          Panel::Nginx,         &state.ui.active_panel, cmd_tx);
+    nav_item(ui, "✚", "App Creator",   Panel::AppCreator,    &state.ui.active_panel, cmd_tx);
     nav_item(ui, "⇆", "Proxies",        Panel::Proxies,       &state.ui.active_panel, cmd_tx);
     nav_item(ui, "⬡", "dnsmasq",        Panel::Dnsmasq,       &state.ui.active_panel, cmd_tx);
     nav_item(ui, "🔒", "SSL Certs",     Panel::SslCerts,      &state.ui.active_panel, cmd_tx);
@@ -104,16 +112,21 @@ fn nav_item(
     let is_active = active == &panel;
     let bg = if is_active { Colors::ACCENT_DARK } else { Color32::TRANSPARENT };
     let fg = if is_active { Color32::WHITE } else { Colors::TEXT_SECONDARY };
+    let border = if is_active {
+        Stroke::new(0.5, with_alpha(Colors::ACCENT, 51))
+    } else {
+        Stroke::NONE
+    };
 
     let btn = egui::Button::new(
         RichText::new(format!("{} {}", icon, label))
-            .size(12.0)
+            .size(12.5)
             .color(fg),
     )
     .fill(bg)
-    .stroke(Stroke::NONE)
+    .stroke(border)
     .corner_radius(4.0)
-    .min_size(egui::vec2(188.0, 28.0));
+    .min_size(egui::vec2(204.0, 28.0));
 
     if ui.add(btn).clicked() {
         let _ = cmd_tx.try_send(AppCommand::OpenPanel(panel));

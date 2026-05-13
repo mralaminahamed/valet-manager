@@ -1,11 +1,341 @@
-use egui::RichText;
+use egui::{Color32, CornerRadius, Frame, Margin, RichText, Stroke};
 use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
 use crate::state::app_state::AppState;
-use crate::ui::theme::{Colors, accent_button, divider, framework_badge, ghost_button};
-use crate::valet::site_scanner::ValetSite;
+use crate::ui::theme::{
+    Colors, accent_button, divider, framework_badge, ghost_button, with_alpha,
+};
+use crate::valet::site_scanner::{SiteType, ValetSite};
 
+// ── Column widths ────────────────────────────────────────────────────────────
+const COL_DOT:       f32 = 28.0;
+const COL_FRAMEWORK: f32 = 110.0;
+const COL_PHP:       f32 = 70.0;
+const COL_TLS:       f32 = 60.0;
+const COL_LASTHIT:   f32 = 130.0;
+const COL_ACTION:    f32 = 28.0;
+const ROW_HEIGHT:    f32 = 40.0;
+const HEADER_HEIGHT: f32 = 32.0;
+
+/// Fixed-width cell helper — allocates a region and centres content vertically.
+fn row_cell(ui: &mut egui::Ui, width: f32, height: f32, content: impl FnOnce(&mut egui::Ui)) {
+    ui.allocate_ui(egui::vec2(width, height), |ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), content);
+    });
+}
+
+// ── Stat card ────────────────────────────────────────────────────────────────
+fn stat_card(ui: &mut egui::Ui, icon: &str, value: &str, label: &str) {
+    Frame::NONE
+        .fill(Colors::CARD)
+        .corner_radius(CornerRadius::same(6))
+        .inner_margin(Margin { left: 12, right: 12, top: 10, bottom: 10 })
+        .stroke(Stroke::new(0.5, Colors::BORDER))
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                // Icon box
+                let (icon_rect, _) = ui.allocate_exact_size(
+                    egui::vec2(28.0, 28.0),
+                    egui::Sense::hover(),
+                );
+                ui.painter().rect_filled(
+                    icon_rect,
+                    CornerRadius::same(6),
+                    Colors::ACCENT_DEEP,
+                );
+                ui.painter().text(
+                    icon_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    icon,
+                    egui::FontId::proportional(14.0),
+                    Colors::ACCENT,
+                );
+
+                ui.add_space(8.0);
+
+                ui.vertical(|ui| {
+                    ui.label(
+                        RichText::new(value)
+                            .size(17.0)
+                            .strong()
+                            .color(Colors::TEXT_PRIMARY),
+                    );
+                    ui.label(
+                        RichText::new(label)
+                            .size(11.0)
+                            .color(Colors::TEXT_SECONDARY),
+                    );
+                });
+            });
+        });
+}
+
+// ── Stat strip ───────────────────────────────────────────────────────────────
+fn stat_strip(ui: &mut egui::Ui, sites: &[&ValetSite]) {
+    let total    = sites.len();
+    let secured  = sites.iter().filter(|s| s.is_secured).count();
+    let parked   = sites.iter().filter(|s| matches!(s.site_type, SiteType::Parked)).count();
+    let linked   = sites.iter().filter(|s| matches!(s.site_type, SiteType::Linked)).count();
+
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 10.0;
+        stat_card(ui, "S", &total.to_string(),   "Total Sites");
+        stat_card(ui, "T", &secured.to_string(),  "Secured (TLS)");
+        stat_card(ui, "P", &parked.to_string(),   "Parked");
+        stat_card(ui, "L", &linked.to_string(),   "Linked");
+    });
+}
+
+// ── Table header ─────────────────────────────────────────────────────────────
+fn table_header(ui: &mut egui::Ui, flex_width: f32) {
+    let header_bg = with_alpha(Color32::BLACK, 38);
+    let border    = Stroke::new(0.5, Colors::BORDER);
+
+    let avail_w = ui.available_width();
+    let (header_rect, _) = ui.allocate_exact_size(
+        egui::vec2(avail_w, HEADER_HEIGHT),
+        egui::Sense::hover(),
+    );
+    ui.painter().rect_filled(header_rect, CornerRadius::ZERO, header_bg);
+    // Border-bottom
+    ui.painter().hline(
+        header_rect.x_range(),
+        header_rect.bottom(),
+        border,
+    );
+
+    let mut child = ui.new_child(
+        egui::UiBuilder::new()
+            .max_rect(header_rect)
+            .layout(egui::Layout::left_to_right(egui::Align::Center)),
+    );
+
+    let hdr_label = |text: &str| {
+        RichText::new(text)
+            .size(10.5)
+            .strong()
+            .color(Colors::TEXT_TERTIARY)
+    };
+
+    // dot column — empty
+    child.allocate_ui(egui::vec2(COL_DOT, HEADER_HEIGHT), |_| {});
+
+    // SITE column
+    child.allocate_ui(egui::vec2(flex_width, HEADER_HEIGHT), |ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            ui.label(hdr_label("SITE"));
+        });
+    });
+
+    // FRAMEWORK
+    child.allocate_ui(egui::vec2(COL_FRAMEWORK, HEADER_HEIGHT), |ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            ui.label(hdr_label("FRAMEWORK"));
+        });
+    });
+
+    // PHP
+    child.allocate_ui(egui::vec2(COL_PHP, HEADER_HEIGHT), |ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            ui.label(hdr_label("PHP"));
+        });
+    });
+
+    // TLS
+    child.allocate_ui(egui::vec2(COL_TLS, HEADER_HEIGHT), |ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            ui.label(hdr_label("TLS"));
+        });
+    });
+
+    // LAST HIT
+    child.allocate_ui(egui::vec2(COL_LASTHIT, HEADER_HEIGHT), |ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            ui.label(hdr_label("LAST HIT"));
+        });
+    });
+
+    // action — empty
+    child.allocate_ui(egui::vec2(COL_ACTION, HEADER_HEIGHT), |_| {});
+}
+
+// ── Site row ─────────────────────────────────────────────────────────────────
+fn render_site_row(
+    ui: &mut egui::Ui,
+    site: &ValetSite,
+    flex_width: f32,
+    cmd_tx: &Sender<AppCommand>,
+) {
+    let avail_w = ui.available_width();
+
+    let (row_rect, row_resp) = ui.allocate_exact_size(
+        egui::vec2(avail_w, ROW_HEIGHT),
+        egui::Sense::hover(),
+    );
+
+    // Hover highlight
+    if row_resp.hovered() {
+        ui.painter().rect_filled(row_rect, CornerRadius::ZERO, Colors::CARD_HOVER);
+    }
+
+    // Border-bottom
+    ui.painter().hline(
+        row_rect.x_range(),
+        row_rect.bottom(),
+        Stroke::new(0.5, Colors::BORDER),
+    );
+
+    let mut child = ui.new_child(
+        egui::UiBuilder::new()
+            .max_rect(row_rect)
+            .layout(egui::Layout::left_to_right(egui::Align::Center)),
+    );
+
+    // ── Col 1: Status dot (28px) ─────────────────────────────────────────
+    row_cell(&mut child, COL_DOT, ROW_HEIGHT, |ui| {
+        ui.add_space(10.0);
+        let dot_color = Colors::ACCENT; // all valet sites are "running"
+        let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
+        ui.painter().circle_filled(dot_rect.center(), 4.0, dot_color);
+    });
+
+    // ── Col 2: Site + Path (flex) ────────────────────────────────────────
+    child.allocate_ui(egui::vec2(flex_width, ROW_HEIGHT), |ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            ui.vertical(|ui| {
+                // Domain line
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 4.0;
+                    ui.label(
+                        RichText::new(&site.domain)
+                            .size(12.5)
+                            .strong()
+                            .color(Colors::TEXT_PRIMARY),
+                    );
+                    if site.is_secured {
+                        ui.label(
+                            RichText::new("🔒")
+                                .size(11.0)
+                                .color(Colors::ACCENT),
+                        );
+                    }
+                });
+                // Path line
+                let path_str = site.path.to_string_lossy();
+                let truncated = if path_str.len() > 40 {
+                    format!("{}…", &path_str[..40])
+                } else {
+                    path_str.to_string()
+                };
+                ui.label(
+                    RichText::new(truncated)
+                        .size(10.5)
+                        .color(Colors::TEXT_TERTIARY)
+                        .monospace(),
+                );
+            });
+        });
+    });
+
+    // ── Col 3: Framework badge (110px) ───────────────────────────────────
+    row_cell(&mut child, COL_FRAMEWORK, ROW_HEIGHT, |ui| {
+        framework_badge(ui, &site.framework);
+    });
+
+    // ── Col 4: PHP version (70px) ────────────────────────────────────────
+    row_cell(&mut child, COL_PHP, ROW_HEIGHT, |ui| {
+        let php_text = site.php_version.as_deref().unwrap_or("Global");
+        ui.label(
+            RichText::new(php_text)
+                .size(11.0)
+                .monospace()
+                .color(Colors::TEXT_SECONDARY),
+        );
+    });
+
+    // ── Col 5: TLS (60px) ────────────────────────────────────────────────
+    row_cell(&mut child, COL_TLS, ROW_HEIGHT, |ui| {
+        if site.is_secured {
+            ui.label(
+                RichText::new("TLS")
+                    .size(11.0)
+                    .strong()
+                    .color(Colors::ACCENT),
+            );
+        } else {
+            ui.label(
+                RichText::new("—")
+                    .size(11.0)
+                    .color(Colors::TEXT_TERTIARY),
+            );
+        }
+    });
+
+    // ── Col 6: Last hit (130px) ──────────────────────────────────────────
+    row_cell(&mut child, COL_LASTHIT, ROW_HEIGHT, |ui| {
+        ui.label(
+            RichText::new("—")
+                .size(11.5)
+                .color(Colors::TEXT_TERTIARY),
+        );
+    });
+
+    // ── Col 7: Action menu (28px) ────────────────────────────────────────
+    row_cell(&mut child, COL_ACTION, ROW_HEIGHT, |ui| {
+        let btn_resp = ui.add(
+            egui::Button::new(
+                RichText::new("⋮")
+                    .size(16.0)
+                    .color(Colors::TEXT_SECONDARY),
+            )
+            .min_size(egui::vec2(24.0, 24.0))
+            .fill(Color32::TRANSPARENT)
+            .stroke(Stroke::NONE),
+        );
+
+        let site_name   = site.name.clone();
+        let site_domain = site.domain.clone();
+        let is_secured  = site.is_secured;
+
+        egui::Popup::menu(&btn_resp).show(|ui| {
+            ui.set_min_width(160.0);
+
+            if ui.button("Open in browser").clicked() {
+                let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(site_domain.clone()));
+            }
+            if ui.button("Open in editor").clicked() {
+                let _ = cmd_tx.try_send(AppCommand::OpenSiteInEditor(site_name.clone()));
+            }
+
+            ui.separator();
+
+            if is_secured {
+                if ui.button("Unsecure").clicked() {
+                    let _ = cmd_tx.try_send(AppCommand::UnsecureSite(site_name.clone()));
+                }
+            } else if ui.button("Secure").clicked() {
+                let _ = cmd_tx.try_send(AppCommand::SecureSite(site_name.clone()));
+            }
+
+            ui.separator();
+
+            if ui
+                .add(
+                    egui::Button::new(
+                        RichText::new("Unlink").color(Colors::DANGER),
+                    )
+                    .fill(Color32::TRANSPARENT),
+                )
+                .clicked()
+            {
+                let _ = cmd_tx.try_send(AppCommand::UnlinkSite(site_name.clone()));
+            }
+        });
+    });
+}
+
+// ── Public entry point ───────────────────────────────────────────────────────
 #[allow(dead_code)]
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
     // ── Panel header ─────────────────────────────────────────────────────
@@ -15,7 +345,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
             ui.add_space(8.0);
             ui.label(
                 RichText::new("Sites")
-                    .size(16.0)
+                    .size(15.0)
                     .color(Colors::TEXT_PRIMARY)
                     .strong(),
             );
@@ -28,21 +358,13 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         });
     });
     divider(ui);
-    ui.add_space(4.0);
 
-    // ── Search bar ───────────────────────────────────────────────────────
-    let search_query = state.site_search.clone();
-    let available_width = ui.available_width();
-    ui.add_sized(
-        egui::vec2(available_width, 24.0),
-        egui::TextEdit::singleline(&mut search_query.clone())
-            .hint_text("Search sites...")
-            .text_color(Colors::TEXT_PRIMARY),
-    );
-    ui.add_space(8.0);
+    // ── Body padding ─────────────────────────────────────────────────────
+    ui.add_space(16.0);
 
-    // ── Filter and sort sites ────────────────────────────────────────────
-    let search_lower = search_query.to_lowercase();
+    // ── Filter sites ─────────────────────────────────────────────────────
+    let search_query  = state.site_search.clone();
+    let search_lower  = search_query.to_lowercase();
     let mut filtered: Vec<&ValetSite> = state
         .sites
         .iter()
@@ -52,264 +374,72 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                 || s.domain.to_lowercase().contains(&search_lower)
         })
         .collect();
+    filtered.sort_by(|a, b| a.name.cmp(&b.name));
 
-    if state.site_sort_favorites_top {
-        filtered.sort_by(|a, b| {
-            b.is_favorite
-                .cmp(&a.is_favorite)
-                .then(a.name.cmp(&b.name))
-        });
-    } else {
-        filtered.sort_by(|a, b| a.name.cmp(&b.name));
-    }
+    // ── Stat strip ───────────────────────────────────────────────────────
+    ui.horizontal(|ui| {
+        ui.add_space(22.0);
+        stat_strip(ui, &filtered);
+    });
+    ui.add_space(12.0);
+
+    // ── Search bar ───────────────────────────────────────────────────────
+    ui.horizontal(|ui| {
+        ui.add_space(22.0);
+        let avail = ui.available_width() - 22.0;
+        ui.add_sized(
+            egui::vec2(avail, 28.0),
+            egui::TextEdit::singleline(&mut search_query.clone())
+                .hint_text("Search sites…")
+                .text_color(Colors::TEXT_PRIMARY),
+        );
+    });
+    ui.add_space(12.0);
 
     // ── Empty state ──────────────────────────────────────────────────────
     if filtered.is_empty() {
         ui.add_space(40.0);
         ui.vertical_centered(|ui| {
             ui.label(
-                RichText::new("📁")
-                    .size(32.0)
-                    .color(Colors::TEXT_TERTIARY),
-            );
-            ui.add_space(8.0);
-            ui.label(
                 RichText::new("No sites found")
                     .size(13.0)
                     .color(Colors::TEXT_SECONDARY),
             );
             ui.add_space(12.0);
-            if accent_button(ui, "Link a site").clicked() {
+            if accent_button(ui, "Refresh").clicked() {
                 let _ = cmd_tx.try_send(AppCommand::RefreshSites);
             }
         });
         return;
     }
 
-    // ── Column header row ────────────────────────────────────────────────
+    // ── Table wrapper ────────────────────────────────────────────────────
     ui.horizontal(|ui| {
-        ui.allocate_ui(egui::vec2(26.0, 16.0), |ui| {
-            ui.label(RichText::new("★").size(11.0).color(Colors::TEXT_TERTIARY));
-        });
-        ui.allocate_ui(egui::vec2(170.0, 16.0), |ui| {
-            ui.label(RichText::new("Domain").size(11.0).color(Colors::TEXT_TERTIARY));
-        });
-        ui.allocate_ui(egui::vec2(180.0, 16.0), |ui| {
-            ui.label(RichText::new("Path").size(11.0).color(Colors::TEXT_TERTIARY));
-        });
-        ui.allocate_ui(egui::vec2(80.0, 16.0), |ui| {
-            ui.label(RichText::new("PHP").size(11.0).color(Colors::TEXT_TERTIARY));
-        });
-        ui.allocate_ui(egui::vec2(96.0, 16.0), |ui| {
-            ui.label(
-                RichText::new("Framework")
-                    .size(11.0)
-                    .color(Colors::TEXT_TERTIARY),
-            );
-        });
-        ui.allocate_ui(egui::vec2(36.0, 16.0), |ui| {
-            ui.label(RichText::new("TLS").size(11.0).color(Colors::TEXT_TERTIARY));
-        });
-        ui.allocate_ui(egui::vec2(36.0, 16.0), |ui| {
-            ui.label(RichText::new("⋮").size(11.0).color(Colors::TEXT_TERTIARY));
-        });
-    });
-    divider(ui);
+        ui.add_space(22.0);
 
-    // ── Site rows ────────────────────────────────────────────────────────
-    egui::ScrollArea::vertical().show(ui, |ui| {
-        for site in &filtered {
-            render_site_row(ui, site, state, cmd_tx);
-        }
-    });
-}
+        let table_width = ui.available_width() - 22.0;
 
-fn render_site_row(
-    ui: &mut egui::Ui,
-    site: &ValetSite,
-    state: &AppState,
-    cmd_tx: &Sender<AppCommand>,
-) {
-    let row_height = 32.0;
+        // flex_width = total - fixed columns
+        let fixed = COL_DOT + COL_FRAMEWORK + COL_PHP + COL_TLS + COL_LASTHIT + COL_ACTION;
+        let flex_width = (table_width - fixed).max(120.0);
 
-    let (row_rect, row_response) = ui.allocate_exact_size(
-        egui::vec2(ui.available_width(), row_height),
-        egui::Sense::hover(),
-    );
+        Frame::NONE
+            .fill(Colors::CARD)
+            .corner_radius(CornerRadius::same(6))
+            .stroke(Stroke::new(0.5, Colors::BORDER))
+            .show(ui, |ui| {
+                ui.set_clip_rect(ui.max_rect());
+                ui.set_width(table_width);
 
-    // Hover background
-    if row_response.hovered() {
-        ui.painter().rect_filled(row_rect, egui::CornerRadius::ZERO, Colors::CARD_HOVER);
-    }
+                // Header
+                table_header(ui, flex_width);
 
-    // Render row contents inside the allocated rect
-    let mut child_ui = ui.new_child(
-        egui::UiBuilder::new()
-            .max_rect(row_rect)
-            .layout(egui::Layout::left_to_right(egui::Align::Center)),
-    );
-
-    // ★ Favorite column (26px)
-    child_ui.allocate_ui(egui::vec2(26.0, row_height), |ui| {
-        ui.centered_and_justified(|ui| {
-            let (star_char, star_color) = if site.is_favorite {
-                ("★", Colors::WARNING)
-            } else {
-                ("☆", Colors::TEXT_TERTIARY)
-            };
-            if ui
-                .add(
-                    egui::Button::new(RichText::new(star_char).color(star_color).size(13.0))
-                        .fill(egui::Color32::TRANSPARENT)
-                        .stroke(egui::Stroke::NONE),
-                )
-                .clicked()
-            {
-                let _ = cmd_tx.try_send(AppCommand::ToggleFavoriteSite(site.name.clone()));
-            }
-        });
-    });
-
-    // Domain column (170px)
-    child_ui.allocate_ui(egui::vec2(170.0, row_height), |ui| {
-        ui.centered_and_justified(|ui| {
-            if ui
-                .add(
-                    egui::Button::new(
-                        RichText::new(&site.domain)
-                            .size(13.0)
-                            .color(Colors::ACCENT),
-                    )
-                    .fill(egui::Color32::TRANSPARENT)
-                    .stroke(egui::Stroke::NONE),
-                )
-                .clicked()
-            {
-                let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(site.domain.clone()));
-            }
-        });
-    });
-
-    // Path column (~180px)
-    child_ui.allocate_ui(egui::vec2(180.0, row_height), |ui| {
-        ui.centered_and_justified(|ui| {
-            let path_str = site.path.to_string_lossy();
-            let truncated = if path_str.len() > 28 {
-                format!("{}…", &path_str[..28])
-            } else {
-                path_str.to_string()
-            };
-            ui.label(
-                RichText::new(truncated)
-                    .size(11.0)
-                    .color(Colors::TEXT_TERTIARY),
-            );
-        });
-    });
-
-    // PHP column (80px) — ComboBox
-    child_ui.allocate_ui(egui::vec2(80.0, row_height), |ui| {
-        ui.centered_and_justified(|ui| {
-            let mut selected = site
-                .php_version
-                .clone()
-                .unwrap_or_else(|| "Global".to_string());
-            egui::ComboBox::from_id_salt(format!("php_{}", site.name))
-                .selected_text(&selected)
-                .width(72.0)
-                .show_ui(ui, |ui| {
-                    if ui
-                        .selectable_value(&mut selected, "Global".to_string(), "Global")
-                        .clicked()
-                    {
-                        let _ = cmd_tx.try_send(AppCommand::UnisolateSite(site.name.clone()));
-                    }
-                    for ver in &state.php_versions {
-                        if ui
-                            .selectable_value(
-                                &mut selected,
-                                ver.version.clone(),
-                                &ver.version,
-                            )
-                            .clicked()
-                        {
-                            let _ = cmd_tx.try_send(AppCommand::IsolateSite {
-                                site: site.name.clone(),
-                                version: ver.version.clone(),
-                            });
-                        }
+                // Rows (scrollable)
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    for site in &filtered {
+                        render_site_row(ui, site, flex_width, cmd_tx);
                     }
                 });
-        });
-    });
-
-    // Framework column (96px)
-    child_ui.allocate_ui(egui::vec2(96.0, row_height), |ui| {
-        ui.centered_and_justified(|ui| {
-            framework_badge(ui, &site.framework);
-        });
-    });
-
-    // TLS column (36px)
-    child_ui.allocate_ui(egui::vec2(36.0, row_height), |ui| {
-        ui.centered_and_justified(|ui| {
-            let (lock_char, lock_color) = if site.is_secured {
-                ("🔒", Colors::ACCENT)
-            } else {
-                ("🔓", Colors::TEXT_TERTIARY)
-            };
-            ui.label(RichText::new(lock_char).size(13.0).color(lock_color));
-        });
-    });
-
-    // ⋮ Actions column (36px) — popup menu via egui::Popup::menu
-    child_ui.allocate_ui(egui::vec2(36.0, row_height), |ui| {
-        ui.centered_and_justified(|ui| {
-            let menu_resp = ui.add(
-                egui::Button::new(RichText::new("⋮").size(14.0).color(Colors::TEXT_SECONDARY))
-                    .fill(egui::Color32::TRANSPARENT)
-                    .stroke(egui::Stroke::NONE),
-            );
-
-            let site_name = site.name.clone();
-            let site_domain = site.domain.clone();
-            let is_secured = site.is_secured;
-
-            egui::Popup::menu(&menu_resp).show(|ui| {
-                ui.set_min_width(160.0);
-
-                if ui.button("Open in browser").clicked() {
-                    let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(site_domain.clone()));
-                }
-
-                if ui.button("Open in editor").clicked() {
-                    let _ = cmd_tx.try_send(AppCommand::OpenSiteInEditor(site_name.clone()));
-                }
-
-                ui.separator();
-
-                if is_secured {
-                    if ui.button("Unsecure").clicked() {
-                        let _ = cmd_tx.try_send(AppCommand::UnsecureSite(site_name.clone()));
-                    }
-                } else if ui.button("Secure").clicked() {
-                    let _ = cmd_tx.try_send(AppCommand::SecureSite(site_name.clone()));
-                }
-
-                ui.separator();
-
-                if ui
-                    .add(
-                        egui::Button::new(
-                            RichText::new("Unlink site").color(Colors::DANGER),
-                        )
-                        .fill(egui::Color32::TRANSPARENT),
-                    )
-                    .clicked()
-                {
-                    let _ = cmd_tx.try_send(AppCommand::UnlinkSite(site_name.clone()));
-                }
             });
-        });
     });
 }

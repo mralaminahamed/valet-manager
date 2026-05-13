@@ -14,7 +14,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
             ui.add_space(8.0);
             ui.label(
                 RichText::new("Parks")
-                    .size(16.0)
+                    .size(15.0)
                     .color(Colors::TEXT_PRIMARY)
                     .strong(),
             );
