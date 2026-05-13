@@ -50,6 +50,14 @@ pub struct AppState {
     pub ini_raw: String,
     pub ini_last_saved: Option<String>,
     pub ui: UiState,
+    // Phase 3
+    pub sites: Vec<crate::valet::site_scanner::ValetSite>,
+    pub parks: Vec<std::path::PathBuf>,
+    pub nginx_configs: std::collections::HashMap<String, String>,
+    pub nginx_selected: Option<String>,
+    pub site_search: String,
+    pub site_filter_favorites: bool,
+    pub site_sort_favorites_top: bool,
 }
 
 impl Default for AppState {
@@ -68,6 +76,13 @@ impl Default for AppState {
             ini_raw: String::new(),
             ini_last_saved: None,
             ui: UiState::default(),
+            sites: Vec::new(),
+            parks: Vec::new(),
+            nginx_configs: std::collections::HashMap::new(),
+            nginx_selected: None,
+            site_search: String::new(),
+            site_filter_favorites: false,
+            site_sort_favorites_top: true,
         }
     }
 }

@@ -3,13 +3,28 @@ pub mod sidebar;
 pub mod panels;
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DetectedFramework {
     Laravel,
     WordPress,
-    Symfony,
     Bedrock,
-    Proxy,
-    None,
-    Other(String),
+    CakePHP,
+    ConcreteCms,
+    Contao,
+    Craft,
+    Drupal,
+    ExpressionEngine,
+    Jigsaw,
+    Joomla,
+    Katana,
+    Kirby,
+    Magento,
+    OctoberCms,
+    Sculpin,
+    Slim,
+    Statamic,
+    StaticHtml,
+    Symfony,
+    Zend,
+    Unknown,
 }

@@ -21,6 +21,26 @@ pub enum AppCommand {
     // Phase 2 — INI
     LoadIni { version: String, ini_type: IniType },
     SaveIni { version: String, ini_type: IniType, content: String },
+    // Phase 2 — Site isolation
+    IsolateSite { site: String, version: String },
+    UnisolateSite(String),
+    // Phase 2 — PHP version management
+    InstallPhpVersion(String),
+    RemovePhpVersion(String),
+    // Phase 3 — Sites
+    RefreshSites,
+    ParkDirectory(std::path::PathBuf),
+    ForgetDirectory(std::path::PathBuf),
+    LinkSite { name: String, path: std::path::PathBuf },
+    UnlinkSite(String),
+    SecureSite(String),
+    UnsecureSite(String),
+    ToggleFavoriteSite(String),
+    OpenSiteInBrowser(String),
+    OpenSiteInEditor(String),
+    // Phase 3 — Nginx
+    SaveNginxConfig { site: String, content: String },
+    ReloadNginx,
 }
 
 #[cfg(test)]
@@ -42,6 +62,50 @@ mod tests {
         if let AppCommand::EnableExtension { version, extension } = cmd {
             assert_eq!(version, "8.3");
             assert_eq!(extension, "xdebug");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn isolate_site_has_fields() {
+        let cmd = AppCommand::IsolateSite {
+            site: "myapp".to_string(),
+            version: "8.3".to_string(),
+        };
+        if let AppCommand::IsolateSite { site, version } = cmd {
+            assert_eq!(site, "myapp");
+            assert_eq!(version, "8.3");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn unisolate_site_has_fields() {
+        let cmd = AppCommand::UnisolateSite("myapp".to_string());
+        if let AppCommand::UnisolateSite(site) = cmd {
+            assert_eq!(site, "myapp");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn install_php_version_has_fields() {
+        let cmd = AppCommand::InstallPhpVersion("8.3".to_string());
+        if let AppCommand::InstallPhpVersion(version) = cmd {
+            assert_eq!(version, "8.3");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn remove_php_version_has_fields() {
+        let cmd = AppCommand::RemovePhpVersion("8.1".to_string());
+        if let AppCommand::RemovePhpVersion(version) = cmd {
+            assert_eq!(version, "8.1");
         } else {
             panic!("wrong variant");
         }

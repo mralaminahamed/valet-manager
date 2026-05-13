@@ -22,38 +22,46 @@ impl Colors {
     pub const WARNING:        Color32 = Color32::from_rgb(0xEF, 0x9F, 0x27);
     #[allow(dead_code)]
     pub const INFO:           Color32 = Color32::from_rgb(0x37, 0x8A, 0xDD);
+    #[allow(dead_code)]
+    pub const SUCCESS:        Color32 = Color32::from_rgb(0x5D, 0xCA, 0xA5); // same as ACCENT
 }
 
 pub fn apply_dark(ctx: &egui::Context) {
     let mut v = Visuals::dark();
 
-    v.panel_fill        = Colors::SURFACE;
-    v.window_fill       = Colors::SURFACE;
-    v.extreme_bg_color  = Colors::DEEP_BG;
-    v.faint_bg_color    = Colors::CARD;
-    v.hyperlink_color   = Colors::ACCENT;
-    v.warn_fg_color     = Colors::WARNING;
-    v.error_fg_color    = Colors::DANGER;
+    v.panel_fill           = Colors::SURFACE;
+    v.window_fill          = Colors::SURFACE;
+    v.extreme_bg_color     = Colors::DEEP_BG;
+    v.faint_bg_color       = Colors::CARD;
+    v.code_bg_color        = Colors::CARD;
+    v.override_text_color  = Some(Colors::TEXT_PRIMARY);
+    v.window_stroke        = Stroke::new(0.5, Colors::BORDER);
+    v.hyperlink_color      = Colors::ACCENT;
+    v.warn_fg_color        = Colors::WARNING;
+    v.error_fg_color       = Colors::DANGER;
 
     v.widgets.noninteractive.bg_fill   = Colors::CARD;
     v.widgets.noninteractive.fg_stroke = Stroke::new(0.5, Colors::TEXT_TERTIARY);
     v.widgets.noninteractive.bg_stroke = Stroke::new(0.5, Colors::BORDER);
 
     v.widgets.inactive.bg_fill   = Colors::CARD;
-    v.widgets.inactive.fg_stroke = Stroke::new(0.5, Colors::TEXT_SECONDARY);
+    v.widgets.inactive.fg_stroke = Stroke::new(1.0, Colors::TEXT_SECONDARY);
     v.widgets.inactive.bg_stroke = Stroke::new(0.5, Colors::BORDER_MED);
 
     v.widgets.hovered.bg_fill   = Colors::CARD_HOVER;
-    v.widgets.hovered.fg_stroke = Stroke::new(0.5, Colors::TEXT_PRIMARY);
+    v.widgets.hovered.fg_stroke = Stroke::new(1.0, Colors::TEXT_PRIMARY);
     v.widgets.hovered.bg_stroke = Stroke::new(0.5, Colors::BORDER_MED);
 
     v.widgets.active.bg_fill   = Colors::ACCENT_DARK;
-    v.widgets.active.fg_stroke = Stroke::new(0.5, Color32::WHITE);
+    v.widgets.active.fg_stroke = Stroke::new(1.5, Color32::WHITE);
     v.widgets.active.bg_stroke = Stroke::new(0.5, Color32::WHITE);
+
+    v.widgets.open.bg_fill = Colors::CARD_HOVER;
 
     v.selection.bg_fill = Color32::from_rgba_unmultiplied(
         Colors::ACCENT.r(), Colors::ACCENT.g(), Colors::ACCENT.b(), 40,
     );
+    v.selection.stroke = Stroke::new(1.0, Colors::ACCENT);
 
     ctx.set_visuals(v);
 }
@@ -70,22 +78,28 @@ pub fn status_color(status: &ServiceStatus) -> Color32 {
 #[allow(dead_code)]
 pub fn framework_badge_colors(fw: &DetectedFramework) -> (Color32, Color32) {
     match fw {
-        DetectedFramework::Laravel => (
-            Color32::from_rgba_unmultiplied(0xEF, 0x9F, 0x27, 28),
-            Color32::from_rgb(0xBA, 0x75, 0x17),
-        ),
-        DetectedFramework::WordPress | DetectedFramework::Bedrock => (
-            Color32::from_rgba_unmultiplied(0x37, 0x8A, 0xDD, 30),
-            Color32::from_rgb(0x18, 0x5F, 0xA5),
-        ),
-        DetectedFramework::Symfony => (
-            Color32::from_rgba_unmultiplied(0x5D, 0xCA, 0xA5, 25),
-            Color32::from_rgb(0x08, 0x50, 0x41),
-        ),
-        DetectedFramework::Proxy | DetectedFramework::None => {
-            (Colors::CARD, Colors::TEXT_TERTIARY)
-        }
-        _ => (Colors::CARD, Colors::TEXT_SECONDARY),
+        DetectedFramework::Laravel    => (Color32::from_rgba_unmultiplied(0xEF,0x9F,0x27,30), Color32::from_rgb(0xBA,0x75,0x17)),
+        DetectedFramework::Magento    => (Color32::from_rgba_unmultiplied(0xEF,0x9F,0x27,25), Color32::from_rgb(0x85,0x4F,0x0B)),
+        DetectedFramework::Joomla     => (Color32::from_rgba_unmultiplied(0xEF,0x9F,0x27,22), Color32::from_rgb(0x85,0x4F,0x0B)),
+        DetectedFramework::ExpressionEngine => (Color32::from_rgba_unmultiplied(0xEF,0x9F,0x27,20), Color32::from_rgb(0x63,0x38,0x06)),
+        DetectedFramework::WordPress  => (Color32::from_rgba_unmultiplied(0x37,0x8A,0xDD,30), Color32::from_rgb(0x18,0x5F,0xA5)),
+        DetectedFramework::Bedrock    => (Color32::from_rgba_unmultiplied(0x37,0x8A,0xDD,22), Color32::from_rgb(0x0C,0x44,0x7C)),
+        DetectedFramework::Drupal     => (Color32::from_rgba_unmultiplied(0x37,0x8A,0xDD,35), Color32::from_rgb(0x18,0x5F,0xA5)),
+        DetectedFramework::Symfony    => (Color32::from_rgba_unmultiplied(0x37,0x8A,0xDD,20), Color32::from_rgb(0x0C,0x44,0x7C)),
+        DetectedFramework::Contao     => (Color32::from_rgba_unmultiplied(0x37,0x8A,0xDD,18), Color32::from_rgb(0x0C,0x44,0x7C)),
+        DetectedFramework::Craft      => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,25), Color32::from_rgb(0x08,0x50,0x41)),
+        DetectedFramework::Statamic   => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,30), Color32::from_rgb(0x0F,0x6E,0x56)),
+        DetectedFramework::Slim       => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,20), Color32::from_rgb(0x08,0x50,0x41)),
+        DetectedFramework::Jigsaw     => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,22), Color32::from_rgb(0x0F,0x6E,0x56)),
+        DetectedFramework::Sculpin    => (Color32::from_rgba_unmultiplied(0x5D,0xCA,0xA5,18), Color32::from_rgb(0x08,0x50,0x41)),
+        DetectedFramework::CakePHP    => (Color32::from_rgba_unmultiplied(0xE2,0x4B,0x4A,25), Color32::from_rgb(0xA3,0x2D,0x2D)),
+        DetectedFramework::Kirby      => (Color32::from_rgba_unmultiplied(0xE2,0x4B,0x4A,22), Color32::from_rgb(0xA3,0x2D,0x2D)),
+        DetectedFramework::OctoberCms => (Color32::from_rgba_unmultiplied(0x7F,0x77,0xDD,25), Color32::from_rgb(0x53,0x4A,0xB7)),
+        DetectedFramework::Katana     => (Color32::from_rgba_unmultiplied(0x7F,0x77,0xDD,20), Color32::from_rgb(0x3C,0x34,0x89)),
+        DetectedFramework::ConcreteCms=> (Color32::from_rgba_unmultiplied(0xD4,0x53,0x7E,22), Color32::from_rgb(0x99,0x35,0x56)),
+        DetectedFramework::Zend       => (Color32::from_rgba_unmultiplied(0x88,0x87,0x80,25), Color32::from_rgb(0x5F,0x5E,0x5A)),
+        DetectedFramework::StaticHtml => (Color32::from_rgba_unmultiplied(0x88,0x87,0x80,15), Color32::from_rgb(0x5F,0x5E,0x5A)),
+        DetectedFramework::Unknown    => (Color32::from_rgba_unmultiplied(0x88,0x87,0x80,10), Color32::from_rgb(0x44,0x44,0x41)),
     }
 }
 
@@ -133,7 +147,7 @@ pub fn status_dot(ui: &mut egui::Ui, status: &ServiceStatus) {
 #[allow(dead_code)]
 pub fn framework_badge(ui: &mut egui::Ui, fw: &DetectedFramework) {
     let (bg, fg) = framework_badge_colors(fw);
-    let text = framework_name(fw);
+    let text = framework_display_name(fw);
     Frame::NONE
         .fill(bg)
         .corner_radius(CornerRadius::same(20))
@@ -164,6 +178,10 @@ pub fn divider(ui: &mut egui::Ui) {
     }
 }
 
+pub fn with_alpha(color: Color32, alpha: u8) -> Color32 {
+    Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), alpha)
+}
+
 pub fn card_frame() -> Frame {
     Frame::NONE
         .fill(Colors::CARD)
@@ -172,14 +190,29 @@ pub fn card_frame() -> Frame {
 }
 
 #[allow(dead_code)]
-fn framework_name(fw: &DetectedFramework) -> &'static str {
+pub fn framework_display_name(fw: &DetectedFramework) -> &'static str {
     match fw {
-        DetectedFramework::Laravel   => "Laravel",
-        DetectedFramework::WordPress => "WordPress",
-        DetectedFramework::Symfony   => "Symfony",
-        DetectedFramework::Bedrock   => "Bedrock",
-        DetectedFramework::Proxy     => "Proxy",
-        DetectedFramework::None      => "—",
-        DetectedFramework::Other(_)  => "Other",
+        DetectedFramework::Laravel       => "Laravel",
+        DetectedFramework::WordPress     => "WordPress",
+        DetectedFramework::Bedrock       => "Bedrock",
+        DetectedFramework::CakePHP       => "CakePHP",
+        DetectedFramework::ConcreteCms   => "Concrete5",
+        DetectedFramework::Contao        => "Contao",
+        DetectedFramework::Craft         => "Craft CMS",
+        DetectedFramework::Drupal        => "Drupal",
+        DetectedFramework::ExpressionEngine => "ExpressionEngine",
+        DetectedFramework::Jigsaw        => "Jigsaw",
+        DetectedFramework::Joomla        => "Joomla",
+        DetectedFramework::Katana        => "Katana",
+        DetectedFramework::Kirby         => "Kirby",
+        DetectedFramework::Magento       => "Magento",
+        DetectedFramework::OctoberCms    => "OctoberCMS",
+        DetectedFramework::Sculpin       => "Sculpin",
+        DetectedFramework::Slim          => "Slim",
+        DetectedFramework::Statamic      => "Statamic",
+        DetectedFramework::StaticHtml    => "Static HTML",
+        DetectedFramework::Symfony       => "Symfony",
+        DetectedFramework::Zend          => "Zend/Laminas",
+        DetectedFramework::Unknown       => "PHP",
     }
 }

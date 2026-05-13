@@ -3,7 +3,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
 use crate::state::app_state::{AppState, Panel};
-use crate::ui::theme::{Colors, divider, section_label, status_dot};
+use crate::ui::theme::{Colors, divider, section_label, status_dot, with_alpha};
 
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
     ui.spacing_mut().item_spacing.y = 2.0;
@@ -155,9 +155,7 @@ fn paint_v_mark(painter: &egui::Painter, rect: egui::Rect) {
     for (i, (width, alpha)) in lines.iter().enumerate() {
         let y = oy + 18.5 + i as f32 * 1.8;
         let cx = ox + 13.2;
-        let color = Color32::from_rgba_unmultiplied(
-            Colors::ACCENT.r(), Colors::ACCENT.g(), Colors::ACCENT.b(), *alpha,
-        );
+        let color = with_alpha(Colors::ACCENT, *alpha);
         painter.rect_filled(
             egui::Rect::from_center_size(egui::pos2(cx, y), egui::vec2(*width, 0.64)),
             egui::CornerRadius::ZERO,

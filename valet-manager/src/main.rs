@@ -8,6 +8,7 @@ mod php;
 mod services;
 mod state;
 mod ui;
+mod nginx;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
@@ -48,7 +49,8 @@ fn main() -> eframe::Result {
     // Command dispatcher
     let state_clone = Arc::clone(&shared_state);
     let event_tx_clone = event_tx.clone();
-    rt.spawn(app::run_dispatcher(cmd_rx, event_tx_clone, state_clone));
+    let cmd_tx_clone = cmd_tx.clone();
+    rt.spawn(app::run_dispatcher(cmd_rx, event_tx_clone, state_clone, cmd_tx_clone));
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()

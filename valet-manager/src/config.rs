@@ -13,6 +13,8 @@ pub struct AppConfig {
     pub site_scan_debounce_ms: u64,
     pub default_parent_directory: String,
     pub favorites: Vec<String>,
+    pub version_registry_ttl_hours: u64,
+    pub version_registry_auto_refresh: bool,
 }
 
 impl Default for AppConfig {
@@ -27,6 +29,8 @@ impl Default for AppConfig {
             site_scan_debounce_ms: 500,
             default_parent_directory: "~/Sites".to_string(),
             favorites: Vec::new(),
+            version_registry_ttl_hours: 24,
+            version_registry_auto_refresh: true,
         }
     }
 }
@@ -92,6 +96,16 @@ mod tests {
         assert_eq!(cfg.editor_command, restored.editor_command);
         assert!((cfg.font_size - restored.font_size).abs() < f32::EPSILON);
         assert_eq!(cfg.service_poll_interval_secs, restored.service_poll_interval_secs);
+    }
+
+    #[test]
+    fn default_version_registry_ttl_is_24() {
+        assert_eq!(AppConfig::default().version_registry_ttl_hours, 24);
+    }
+
+    #[test]
+    fn default_version_registry_auto_refresh_is_true() {
+        assert!(AppConfig::default().version_registry_auto_refresh);
     }
 
     #[test]
