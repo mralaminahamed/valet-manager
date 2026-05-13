@@ -1,9 +1,10 @@
 // Re-export ServiceStatus so callers don't need two imports
 #[allow(unused_imports)]
 pub use crate::services::monitor::ServiceStatus;
+use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExtensionType {
     Core,
     Bundled,
@@ -12,7 +13,7 @@ pub enum ExtensionType {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PhpExtension {
     pub name: String,
     pub enabled: bool,
@@ -20,7 +21,7 @@ pub struct PhpExtension {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum IniType {
     #[default]
     Cli,
@@ -38,7 +39,7 @@ impl IniType {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IniEntry {
     pub key: String,
     pub value: String,
@@ -46,7 +47,7 @@ pub struct IniEntry {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IniSection {
     pub name: String,
     pub entries: Vec<IniEntry>,
