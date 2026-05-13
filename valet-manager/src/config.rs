@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,5 +27,73 @@ impl Default for AppConfig {
             default_parent_directory: "~/Sites".to_string(),
             favorites: Vec::new(),
         }
+    }
+}
+
+pub fn config_path() -> PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("/root"))
+        .join(".config")
+        .join("valet-manager")
+        .join("config.toml")
+}
+
+pub fn load() -> AppConfig {
+    let path = config_path();
+    let Ok(content) = std::fs::read_to_string(&path) else {
+        return AppConfig::default();
+    };
+    toml::from_str(&content).unwrap_or_default()
+}
+
+pub fn save(cfg: &AppConfig) -> anyhow::Result<()> {
+    let path = config_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let content = toml::to_string_pretty(cfg)?;
+    std::fs::write(&path, content)?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_editor_is_code() {
+        assert_eq!(AppConfig::default().editor_command, "code");
+    }
+
+    #[test]
+    fn default_theme_is_dark() {
+        assert_eq!(AppConfig::default().theme, "dark");
+    }
+
+    #[test]
+    fn default_font_size_is_14() {
+        assert!((AppConfig::default().font_size - 14.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn default_poll_interval_is_5() {
+        assert_eq!(AppConfig::default().service_poll_interval_secs, 5);
+    }
+
+    #[test]
+    fn toml_roundtrip() {
+        let cfg = AppConfig::default();
+        let serialized = toml::to_string_pretty(&cfg).unwrap();
+        let restored: AppConfig = toml::from_str(&serialized).unwrap();
+        assert_eq!(cfg.editor_command, restored.editor_command);
+        assert!((cfg.font_size - restored.font_size).abs() < f32::EPSILON);
+        assert_eq!(cfg.service_poll_interval_secs, restored.service_poll_interval_secs);
+    }
+
+    #[test]
+    fn config_path_ends_with_config_toml() {
+        let p = config_path();
+        assert!(p.to_string_lossy().ends_with("config.toml"));
+        assert!(p.to_string_lossy().contains("valet-manager"));
     }
 }
