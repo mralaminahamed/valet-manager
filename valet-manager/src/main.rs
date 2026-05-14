@@ -11,6 +11,8 @@ mod ui;
 mod nginx;
 mod cli_tools;
 mod creator;
+mod tray;
+mod notifications;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
@@ -53,6 +55,41 @@ fn main() -> eframe::Result {
     let event_tx_clone = event_tx.clone();
     let cmd_tx_clone = cmd_tx.clone();
     rt.spawn(app::run_dispatcher(cmd_rx, event_tx_clone, state_clone, cmd_tx_clone));
+
+    // ── System tray (Linux: needs DISPLAY/WAYLAND_DISPLAY; gracefully no-op otherwise) ──
+    let (tray_tx, mut tray_rx) = mpsc::channel::<tray::TrayEvent>(8);
+    let _tray = if std::env::var("DISPLAY").is_ok() || std::env::var("WAYLAND_DISPLAY").is_ok() {
+        match tray::build_tray("8.3", &[], tray::HealthState::Ok) {
+            Ok(t) => {
+                tray::spawn_menu_drain(tray_tx);
+                Some(t)
+            }
+            Err(e) => {
+                tracing::warn!("tray icon init failed: {e}");
+                None
+            }
+        }
+    } else {
+        tracing::info!("no display server detected — skipping tray icon");
+        None
+    };
+
+    // Tray event → AppCommand bridge
+    let cmd_tx_tray = cmd_tx.clone();
+    rt.spawn(async move {
+        while let Some(ev) = tray_rx.recv().await {
+            match ev {
+                tray::TrayEvent::Open => { /* no-op for now */ }
+                tray::TrayEvent::Quit => std::process::exit(0),
+                tray::TrayEvent::RestartServices => {
+                    let _ = cmd_tx_tray.send(commands::AppCommand::RefreshAll).await;
+                }
+                tray::TrayEvent::SwitchPhp(v) => {
+                    let _ = cmd_tx_tray.send(commands::AppCommand::SwitchGlobalPhp(v)).await;
+                }
+            }
+        }
+    });
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()

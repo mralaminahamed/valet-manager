@@ -11,3 +11,5 @@ pub mod dnsmasq;
 pub mod sharing;
 pub mod logs;
 pub mod diagnostics;
+pub mod settings;
+pub mod onboarding;

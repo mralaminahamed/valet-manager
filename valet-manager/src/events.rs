@@ -47,6 +47,10 @@ pub enum AppEvent {
     // Phase 5 — Diagnostics
     DiagnosticsOutputLine(crate::creator::output_streamer::OutputLine),
     DiagnosticsComplete,
+    // Phase 6 — Settings & Onboarding
+    SettingsLoaded(crate::config::AppConfig),
+    SettingsSaved,
+    OnboardingComplete,
 }
 
 #[cfg(test)]

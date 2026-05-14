@@ -81,6 +81,13 @@ pub struct AppState {
     // Phase 5 — Diagnostics
     pub diagnostics_output: Vec<crate::creator::output_streamer::OutputLine>,
     pub diagnostics_running: bool,
+    // Phase 6 — Toasts, Settings, Onboarding
+    pub toasts: Vec<crate::ui::components::toast::Toast>,
+    pub config: crate::config::AppConfig,
+    pub config_draft: crate::config::AppConfig,
+    pub onboarding_complete: bool,
+    pub onboarding_step: u8,
+    pub onboarding_diagnose_output: Vec<crate::creator::output_streamer::OutputLine>,
 }
 
 impl Default for AppState {
@@ -121,6 +128,12 @@ impl Default for AppState {
             logs_lines: Vec::new(),
             diagnostics_output: Vec::new(),
             diagnostics_running: false,
+            toasts: Vec::new(),
+            config: crate::config::load(),
+            config_draft: crate::config::load(),
+            onboarding_complete: crate::config::is_onboarded(),
+            onboarding_step: 0,
+            onboarding_diagnose_output: Vec::new(),
         }
     }
 }
@@ -143,6 +156,8 @@ pub struct UiState {
     pub php_install_modal: bool,
     pub confirm_delete_php: Option<String>,
     pub selected_extension: Option<String>,
+    // Phase 6 — responsive sidebar
+    pub mobile_sidebar_open: bool,
 }
 
 impl Default for UiState {
@@ -162,6 +177,7 @@ impl Default for UiState {
             php_install_modal: false,
             confirm_delete_php: None,
             selected_extension: None,
+            mobile_sidebar_open: false,
         }
     }
 }

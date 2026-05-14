@@ -65,6 +65,10 @@ pub enum AppCommand {
     RunDiagnostics,
     TrustValet,
     RestartAllServices,
+    // Phase 6 — Settings & Onboarding
+    LoadSettings,
+    SaveSettings(crate::config::AppConfig),
+    MarkOnboardingComplete,
 }
 
 #[derive(Debug, Clone)]

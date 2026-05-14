@@ -12,7 +12,8 @@ use crate::state::app_state::{AppState, Panel};
 use crate::ui::{panels::{dashboard, php_versions, php_extensions, php_ini}, sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics};
+use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding};
+use crate::ui::components::toast::{self, ToastType};
 
 pub struct ValetManagerApp {
     state: AppState,
@@ -148,6 +149,22 @@ impl ValetManagerApp {
                 }
                 AppEvent::DiagnosticsComplete => {
                     self.state.diagnostics_running = false;
+                }
+                // Phase 6
+                AppEvent::SettingsLoaded(cfg) => {
+                    self.state.config = cfg.clone();
+                    self.state.config_draft = cfg;
+                }
+                AppEvent::SettingsSaved => {
+                    toast::push_toast(
+                        &mut self.state.toasts,
+                        "Settings saved",
+                        ToastType::Success,
+                    );
+                }
+                AppEvent::OnboardingComplete => {
+                    self.state.onboarding_complete = true;
+                    self.state.onboarding_step = 0;
                 }
             }
         }
@@ -300,14 +317,25 @@ impl eframe::App for ValetManagerApp {
                 });
             });
 
-        // ── Sidebar ───────────────────────────────────────────────────────
-        egui::Panel::left("sidebar")
-            .exact_size(220.0)
-            .resizable(false)
-            .frame(egui::Frame::NONE.fill(theme::Colors::DEEP_BG))
-            .show_inside(ui, |ui| {
-                sidebar::render(ui, &self.state, &self.cmd_tx);
-            });
+        // Decide sidebar mode based on viewport width.
+        let viewport_w = ctx.input(|i| i.viewport().outer_rect.map(|r| r.width()).unwrap_or_else(|| i.content_rect().width()));
+        let hide_sidebar = sidebar::should_hide(viewport_w);
+        let icon_only    = sidebar::should_show_icons(viewport_w);
+
+        // ── Sidebar (skip entirely if hidden / mobile mode) ─────────────────
+        if !hide_sidebar {
+            let sidebar_w = if icon_only { 44.0 } else { 220.0 };
+            egui::Panel::left("sidebar")
+                .exact_size(sidebar_w)
+                .resizable(false)
+                .frame(egui::Frame::NONE.fill(theme::Colors::DEEP_BG))
+                .show_inside(ui, |ui| {
+                    sidebar::render(ui, &self.state, &self.cmd_tx, icon_only);
+                });
+        }
+
+        // Onboarding gates content — only show normal panels when complete (or valet detected).
+        let onboarding_gate = self.state.valet_variant.is_none() && !self.state.onboarding_complete;
 
         // ── Content panel ─────────────────────────────────────────────────
         egui::CentralPanel::default()
@@ -315,6 +343,12 @@ impl eframe::App for ValetManagerApp {
             .show_inside(ui, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     ui.add_space(4.0);
+
+                    if onboarding_gate {
+                        onboarding::render(ui, &mut self.state, &self.cmd_tx);
+                        return;
+                    }
+
                     match self.state.ui.active_panel {
                         Panel::Dashboard => {
                             dashboard::render(ui, &self.state, &self.cmd_tx);
@@ -355,9 +389,63 @@ impl eframe::App for ValetManagerApp {
                         Panel::Diagnostics => {
                             diagnostics::render(ui, &self.state, &self.cmd_tx);
                         }
+                        Panel::Settings => {
+                            settings::render(ui, &mut self.state, &self.cmd_tx);
+                        }
                         _ => stub_panel(ui, &self.state.ui.active_panel),
                     }
                 });
+            });
+
+        // ── Mobile hamburger overlay ─────────────────────────────────────
+        if hide_sidebar {
+            render_mobile_hamburger(&ctx, &mut self.state, &self.cmd_tx);
+        }
+
+        // ── Floating toasts ──────────────────────────────────────────────
+        toast::render_toasts(&ctx, &mut self.state.toasts);
+    }
+}
+
+fn render_mobile_hamburger(
+    ctx: &egui::Context,
+    state: &mut AppState,
+    cmd_tx: &mpsc::Sender<AppCommand>,
+) {
+    egui::Area::new(egui::Id::new("mobile_hamburger"))
+        .order(egui::Order::Foreground)
+        .anchor(egui::Align2::LEFT_TOP, egui::vec2(8.0, 42.0))
+        .show(ctx, |ui| {
+            let resp = ui.add(
+                egui::Button::new(
+                    egui::RichText::new("≡")
+                        .size(18.0)
+                        .color(theme::Colors::TEXT_PRIMARY),
+                )
+                .fill(theme::Colors::CARD)
+                .stroke(egui::Stroke::new(0.5, theme::Colors::BORDER_MED))
+                .corner_radius(4.0)
+                .min_size(egui::vec2(32.0, 32.0)),
+            );
+            if resp.clicked() {
+                state.ui.mobile_sidebar_open = !state.ui.mobile_sidebar_open;
+            }
+        });
+
+    if state.ui.mobile_sidebar_open {
+        egui::Area::new(egui::Id::new("mobile_sidebar_overlay"))
+            .order(egui::Order::Tooltip)
+            .anchor(egui::Align2::LEFT_TOP, egui::vec2(0.0, 38.0))
+            .show(ctx, |ui| {
+                egui::Frame::NONE
+                    .fill(theme::Colors::DEEP_BG)
+                    .stroke(egui::Stroke::new(0.5, theme::Colors::BORDER_MED))
+                    .show(ui, |ui| {
+                        ui.set_min_width(220.0);
+                        let total_h = ctx.input(|i| i.viewport().outer_rect.map(|r| r.height()).unwrap_or_else(|| i.content_rect().height()));
+                        ui.set_min_height(total_h - 38.0);
+                        sidebar::render(ui, state, cmd_tx, false);
+                    });
             });
     }
 }
@@ -916,6 +1004,59 @@ pub async fn run_dispatcher(
                     )
                     .await;
                     let _ = forward.await;
+                });
+            }
+            AppCommand::LoadSettings => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let cfg = tokio::task::spawn_blocking(crate::config::load)
+                        .await
+                        .unwrap_or_default();
+                    let _ = tx.send(AppEvent::SettingsLoaded(cfg)).await;
+                });
+            }
+            AppCommand::SaveSettings(cfg) => {
+                let tx = tx.clone();
+                let state_clone = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let cfg_for_save = cfg.clone();
+                    let result = tokio::task::spawn_blocking(move || {
+                        crate::config::save(&cfg_for_save)
+                    })
+                    .await;
+                    match result {
+                        Ok(Ok(())) => {
+                            {
+                                let mut s = state_clone.write().await;
+                                s.config = cfg.clone();
+                                s.config_draft = cfg;
+                            }
+                            let _ = tx.send(AppEvent::SettingsSaved).await;
+                        }
+                        Ok(Err(e)) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            AppCommand::MarkOnboardingComplete => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let result = tokio::task::spawn_blocking(crate::config::mark_onboarded).await;
+                    match result {
+                        Ok(Ok(())) => {
+                            let _ = tx.send(AppEvent::OnboardingComplete).await;
+                        }
+                        Ok(Err(e)) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
                 });
             }
             AppCommand::RestartAllServices => {

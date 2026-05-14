@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[allow(dead_code)]
 pub struct AppConfig {
     pub editor_command: String,
@@ -15,6 +15,8 @@ pub struct AppConfig {
     pub favorites: Vec<String>,
     pub version_registry_ttl_hours: u64,
     pub version_registry_auto_refresh: bool,
+    #[serde(default)]
+    pub notifications: crate::notifications::NotificationPrefs,
 }
 
 impl Default for AppConfig {
@@ -31,8 +33,34 @@ impl Default for AppConfig {
             favorites: Vec::new(),
             version_registry_ttl_hours: 24,
             version_registry_auto_refresh: true,
+            notifications: crate::notifications::NotificationPrefs::default(),
         }
     }
+}
+
+/// Path of the onboarding sentinel file (touched on completion).
+#[allow(dead_code)]
+pub fn onboarded_path() -> PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("/root"))
+        .join(".config")
+        .join("valet-manager")
+        .join(".onboarded")
+}
+
+#[allow(dead_code)]
+pub fn is_onboarded() -> bool {
+    onboarded_path().exists()
+}
+
+#[allow(dead_code)]
+pub fn mark_onboarded() -> anyhow::Result<()> {
+    let path = onboarded_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(&path, b"1")?;
+    Ok(())
 }
 
 #[allow(dead_code)]
@@ -113,5 +141,21 @@ mod tests {
         let p = config_path();
         assert!(p.to_string_lossy().ends_with("config.toml"));
         assert!(p.to_string_lossy().contains("valet-manager"));
+    }
+
+    #[test]
+    fn default_notification_prefs_roundtrip_via_appconfig() {
+        let cfg = AppConfig::default();
+        let s = toml::to_string_pretty(&cfg).unwrap();
+        let r: AppConfig = toml::from_str(&s).unwrap();
+        assert_eq!(cfg.notifications, r.notifications);
+        assert!(cfg.notifications.php_switched);
+        assert!(!cfg.notifications.update_available);
+    }
+
+    #[test]
+    fn onboarded_path_ends_with_sentinel() {
+        let p = onboarded_path();
+        assert!(p.to_string_lossy().ends_with(".onboarded"));
     }
 }

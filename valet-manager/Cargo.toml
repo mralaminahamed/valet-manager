@@ -36,3 +36,17 @@ rfd             = "0.15"
 semver          = "1.0.25"
 flate2          = "1.1"
 tar             = "0.4.44"
+
+[package.metadata.deb]
+maintainer = "Al Amin Ahamed <n.mukto@codexpert.io>"
+copyright = "2026, Al Amin Ahamed"
+license-file = ["../LICENSE", "0"]
+extended-description = "Native Linux GUI for managing Laravel Valet+ development environments."
+section = "devel"
+priority = "optional"
+depends = "$auto, nginx, dnsmasq"
+assets = [
+    ["target/release/valet-manager", "usr/bin/", "755"],
+    ["packaging/valet-manager.desktop", "usr/share/applications/", "644"],
+    ["packaging/polkit/com.valetmanager.policy", "usr/share/polkit-1/actions/", "644"],
+]

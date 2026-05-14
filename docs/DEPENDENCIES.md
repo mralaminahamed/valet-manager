@@ -69,6 +69,9 @@ tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # ── Tray + desktop notifications ─────────────────────────────────────
+# System packages required at link time:
+#   Debian/Ubuntu: sudo apt install libxdo-dev libdbus-1-dev
+#   tray-icon -> muda links against libxdo for global menu accessibility.
 tray-icon   = "0.21"
 notify-rust = "4"
 

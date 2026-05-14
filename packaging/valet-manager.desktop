@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Valet Manager
+GenericName=Valet+ Manager
+Comment=Native Linux GUI for Laravel Valet+
+Exec=valet-manager
+Icon=valet-manager
+Terminal=false
+Categories=Development;
+Keywords=valet;laravel;php;nginx;
+StartupWMClass=Valet Manager
