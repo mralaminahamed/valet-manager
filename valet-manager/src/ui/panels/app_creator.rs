@@ -454,6 +454,36 @@ fn render_step_configure(
     });
     ui.add_space(12.0);
 
+    // Duration warning banner (Magento etc.)
+    if let Some(warning) = &pt.duration_warning {
+        ui.horizontal(|ui| {
+            ui.add_space(22.0);
+            let avail = ui.available_width() - 44.0;
+            egui::Frame::NONE
+                .fill(crate::ui::theme::with_alpha(Colors::WARNING, 30))
+                .corner_radius(egui::CornerRadius::same(6))
+                .stroke(egui::Stroke::new(0.5, Colors::WARNING))
+                .inner_margin(egui::Margin { left: 12, right: 12, top: 8, bottom: 8 })
+                .show(ui, |ui| {
+                    ui.set_min_width(avail);
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            RichText::new("⏱")
+                                .size(13.0)
+                                .color(Colors::WARNING),
+                        );
+                        ui.add_space(6.0);
+                        ui.label(
+                            RichText::new(warning)
+                                .size(12.0)
+                                .color(Colors::WARNING),
+                        );
+                    });
+                });
+        });
+        ui.add_space(10.0);
+    }
+
     // Form — 2-col grid
     let options = pt.options.clone();
     let tld = state.tld.clone();
