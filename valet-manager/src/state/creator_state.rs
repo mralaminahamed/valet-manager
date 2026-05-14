@@ -24,6 +24,14 @@ pub struct CreatorState {
     pub error: Option<String>,                   // last error message
     pub is_running: bool,                        // install in progress
     pub cancel_requested: bool,
+    // Wizard UI state
+    pub active_group: crate::creator::project_types::ProjectGroup,
+    pub post_install_link: bool,
+    pub post_install_secure: bool,
+    pub post_install_isolate: bool,
+    pub isolate_php_version: Option<String>,
+    pub post_install_open_browser: bool,
+    pub post_install_open_editor: bool,
 }
 
 impl Default for CreatorState {
@@ -36,6 +44,13 @@ impl Default for CreatorState {
             error: None,
             is_running: false,
             cancel_requested: false,
+            active_group: crate::creator::project_types::ProjectGroup::WordPress,
+            post_install_link: true,
+            post_install_secure: true,
+            post_install_isolate: false,
+            isolate_php_version: None,
+            post_install_open_browser: false,
+            post_install_open_editor: false,
         }
     }
 }

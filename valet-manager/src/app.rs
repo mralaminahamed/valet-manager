@@ -12,7 +12,7 @@ use crate::state::app_state::{AppState, Panel};
 use crate::ui::{panels::{dashboard, php_versions, php_extensions, php_ini}, sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, parks, nginx};
+use crate::ui::panels::{sites, parks, nginx, app_creator};
 
 pub struct ValetManagerApp {
     state: AppState,
@@ -276,6 +276,9 @@ impl eframe::App for ValetManagerApp {
                         }
                         Panel::Nginx => {
                             nginx::render(ui, &self.state, &self.cmd_tx);
+                        }
+                        Panel::AppCreator => {
+                            app_creator::render(ui, &mut self.state, &self.cmd_tx);
                         }
                         _ => stub_panel(ui, &self.state.ui.active_panel),
                     }

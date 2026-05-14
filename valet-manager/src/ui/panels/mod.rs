@@ -1,3 +1,4 @@
+pub mod app_creator;
 pub mod dashboard;
 pub mod nginx;
 pub mod parks;

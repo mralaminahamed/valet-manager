@@ -1,6 +1,7 @@
 pub mod theme;
 pub mod sidebar;
 pub mod panels;
+pub mod components;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
