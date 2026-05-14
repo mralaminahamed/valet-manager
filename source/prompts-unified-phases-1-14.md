@@ -22,7 +22,7 @@ acceptance criteria — the design HTML describes exactly what it should look li
 
 ```
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 ```
 
@@ -79,7 +79,7 @@ You are building Phase 1 of Valet Manager from scratch.
 STEP 0 — FETCH DESIGN (before writing any code)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: full app shell, sidebar navigation, dashboard panel.
@@ -241,7 +241,7 @@ Phase 1 complete. Implement PHP management backend and PHP panels UI.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: PHP Versions panel, PHP Extensions panel.
@@ -339,7 +339,7 @@ Phase 2 complete. Implement site scanning and sites/parks/nginx panels.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: Sites panel (table, framework badges, PHP dropdown, ⋮ menu).
@@ -421,7 +421,7 @@ Phase 3 complete. Implement the App Creator wizard for WP and Laravel.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: App Creator wizard — all 5 steps (SelectType, Configure,
@@ -516,7 +516,7 @@ Phase 4 complete. Extend App Creator to all project types.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: App Creator Step 1 (all framework groups and cards),
@@ -583,7 +583,7 @@ Phase 5 complete. Implement remaining management panels.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: design system tokens (Colors::*, card_frame, section_label).
@@ -637,7 +637,7 @@ Phase 6 complete. System tray, notifications, settings, packaging.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: design system for Toast notifications, Settings panel layout,
@@ -702,7 +702,7 @@ Phase 7 complete. Close all PHPMon feature gaps.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: dashboard alert banners (all 4 types),
@@ -762,7 +762,7 @@ Phase 8 complete. Command palette, .env editor, Artisan, Database.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: Command Palette overlay, Database Manager panel.
@@ -827,7 +827,7 @@ Phase 9 complete. SSL dashboard, Xdebug, Mail catcher, Queue workers.
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: apply the established design system (card_frame, status dots,
@@ -890,7 +890,7 @@ Full spec: source/spec-site-config-phase-11.md
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: Site configuration panel tabs (PHP, WordPress, Laravel,
@@ -948,7 +948,7 @@ Full spec: source/spec-phpmyadmin-phase-12.md
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: phpMyAdmin tab in site config panel, install button with
@@ -1000,7 +1000,7 @@ Full spec: docs/prompts/PHASE-13.md
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: framework badges in Sites panel (all 21 colors),
@@ -1045,7 +1045,7 @@ Full spec: docs/prompts/PHASE-14.md
 STEP 0 — FETCH DESIGN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Fetch this design file, read its readme, and implement the relevant aspects of the design.
-https://api.anthropic.com/v1/design/h/jmk7RhPIhqHKTxgaGrX_TQ?open_file=Valet+Manager.html
+https://api.anthropic.com/v1/design/h/349IlgTDPibEvDh1X1PltA?open_file=Valet+Manager.html
 Implement: Valet Manager.html
 
 Focus on for this phase: title bar refresh indicator, PHP version patch update

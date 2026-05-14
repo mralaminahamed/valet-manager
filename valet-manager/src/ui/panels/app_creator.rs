@@ -133,28 +133,23 @@ fn render_step_select_type(
         ui.add_space(22.0);
         ui.spacing_mut().item_spacing.x = 8.0;
 
-        let tabs: &[(&str, Option<ProjectGroup>)] = &[
-            ("Laravel",   Some(ProjectGroup::Laravel)),
-            ("WordPress", Some(ProjectGroup::WordPress)),
-            ("PHP",       None),
-            ("Node",      None),
-            ("Static",    None),
+        let tabs: &[(&str, ProjectGroup)] = &[
+            ("Laravel",   ProjectGroup::Laravel),
+            ("WordPress", ProjectGroup::WordPress),
+            ("PHP",       ProjectGroup::Php),
+            ("Node",      ProjectGroup::Node),
+            ("Static",    ProjectGroup::Static),
         ];
 
-        for (label, group_opt) in tabs {
-            let active = match group_opt {
-                Some(g) => &state.creator.active_group == g,
-                None => false,
-            };
+        for (label, group) in tabs {
+            let active = state.creator.active_group == *group;
             let resp = if active {
                 accent_button(ui, *label)
             } else {
                 ghost_button(ui, *label)
             };
             if resp.clicked() {
-                if let Some(g) = group_opt {
-                    state.creator.active_group = g.clone();
-                }
+                state.creator.active_group = *group;
             }
         }
     });
@@ -209,13 +204,33 @@ fn render_step_select_type(
         }
     });
 
+    // Manual-download hint (ExpressionEngine et al.)
+    let needs_manual_download = state
+        .creator
+        .selected_type
+        .as_ref()
+        .map(|t| t.show_manual_download)
+        .unwrap_or(false);
+    if needs_manual_download {
+        ui.add_space(4.0);
+        ui.horizontal(|ui| {
+            ui.add_space(22.0);
+            ui.label(
+                RichText::new("Manual installation required — visit expressionengine.com/download")
+                    .size(11.0)
+                    .color(Colors::WARNING),
+            );
+        });
+    }
+
     // Footer
     ui.add_space(12.0);
     ui.horizontal(|ui| {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             ui.add_space(22.0);
             let has_selection = state.creator.selected_type.is_some();
-            if has_selection {
+            let can_proceed = has_selection && !needs_manual_download;
+            if can_proceed {
                 if accent_button(ui, "Next →").clicked() {
                     if let Some(pt) = state.creator.selected_type.clone() {
                         let _ = cmd_tx.try_send(AppCommand::CreatorSelectType {
@@ -272,6 +287,16 @@ fn render_type_card(
             egui::StrokeKind::Inside,
         );
 
+        // Node group: 3px-wide left-border strip in INFO color along inside-left.
+        // Render BEFORE inner content so content overlays cleanly.
+        if pt.group == ProjectGroup::Node {
+            let strip_rect = egui::Rect::from_min_max(
+                egui::pos2(rect.min.x, rect.min.y),
+                egui::pos2(rect.min.x + 3.0, rect.max.y),
+            );
+            painter.rect_filled(strip_rect, CornerRadius::same(0), Colors::INFO);
+        }
+
         // Inner content
         let inner = rect.shrink2(egui::vec2(12.0, 12.0));
 
@@ -323,6 +348,65 @@ fn render_type_card(
             egui::FontId::proportional(11.0),
             Colors::TEXT_SECONDARY,
         );
+
+        // Below-description extensions
+        let extra_y = desc_pos.y + 16.0;
+
+        // Node port note
+        if pt.group == ProjectGroup::Node {
+            if let Some(port) = pt.default_port {
+                painter.text(
+                    egui::pos2(inner.min.x, extra_y),
+                    egui::Align2::LEFT_TOP,
+                    format!("Served via proxy → :{}", port),
+                    egui::FontId::proportional(10.5),
+                    Colors::INFO,
+                );
+            }
+        }
+
+        // Magento duration warning
+        if let Some(warning) = &pt.duration_warning {
+            painter.text(
+                egui::pos2(inner.min.x, extra_y),
+                egui::Align2::LEFT_TOP,
+                warning,
+                egui::FontId::proportional(10.5),
+                Colors::WARNING,
+            );
+        }
+
+        // ExpressionEngine "Download required" pill badge
+        if pt.show_manual_download {
+            let badge_text = "Download required";
+            let font = egui::FontId::proportional(10.0);
+            // Measure text width — approximate via Galley measurement.
+            let galley = painter.layout_no_wrap(
+                badge_text.to_string(),
+                font.clone(),
+                Colors::WARNING,
+            );
+            let pad_h = 6.0;
+            let pad_v = 2.0;
+            let badge_w = galley.size().x + pad_h * 2.0;
+            let badge_h = galley.size().y + pad_v * 2.0;
+            let badge_rect = egui::Rect::from_min_size(
+                egui::pos2(inner.min.x, extra_y),
+                egui::vec2(badge_w, badge_h),
+            );
+            painter.rect_filled(
+                badge_rect,
+                CornerRadius::same(12),
+                crate::ui::theme::with_alpha(Colors::WARNING, 30),
+            );
+            painter.text(
+                badge_rect.left_top() + egui::vec2(pad_h, pad_v),
+                egui::Align2::LEFT_TOP,
+                badge_text,
+                font,
+                Colors::WARNING,
+            );
+        }
     }
 
     if resp.clicked() {
@@ -800,6 +884,66 @@ fn render_step_complete(
             let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(domain.clone()));
         }
         ui.add_space(4.0);
+
+        // Node.js extensions: second URL + dev server label + systemd indicator
+        let is_node = state
+            .creator
+            .selected_type
+            .as_ref()
+            .map(|t| t.group == ProjectGroup::Node)
+            .unwrap_or(false);
+        if is_node {
+            let port: u16 = state
+                .creator
+                .form_values
+                .get("port")
+                .and_then(|p| p.parse::<u16>().ok())
+                .or_else(|| {
+                    state
+                        .creator
+                        .selected_type
+                        .as_ref()
+                        .and_then(|t| t.default_port)
+                })
+                .unwrap_or(3000);
+
+            ui.label(
+                RichText::new("Dev server (via npm run dev)")
+                    .size(10.5)
+                    .color(Colors::TEXT_TERTIARY),
+            );
+            ui.add_space(2.0);
+            ui.label(
+                RichText::new(format!("http://localhost:{}", port))
+                    .size(13.0)
+                    .color(Colors::INFO)
+                    .monospace(),
+            );
+            ui.add_space(4.0);
+
+            let systemd_on = state
+                .creator
+                .form_values
+                .get("with_systemd")
+                .map(|v| v == "true")
+                .unwrap_or(false);
+            if systemd_on {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new("✓")
+                            .size(12.0)
+                            .color(Colors::ACCENT),
+                    );
+                    ui.add_space(4.0);
+                    ui.label(
+                        RichText::new("Systemd service created")
+                            .size(12.0)
+                            .color(Colors::TEXT_SECONDARY),
+                    );
+                });
+                ui.add_space(4.0);
+            }
+        }
 
         // Directory path
         ui.label(
