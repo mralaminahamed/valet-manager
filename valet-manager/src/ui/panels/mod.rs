@@ -23,3 +23,4 @@ pub mod ssl_certs;
 pub mod xdebug;
 pub mod mail_catcher;
 pub mod queue;
+pub mod site_config;

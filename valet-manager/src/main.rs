@@ -22,6 +22,10 @@ mod database;
 mod ssl;
 mod mail;
 mod queue;
+mod site_config;
+mod wordpress;
+mod laravel;
+mod http_servers;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
@@ -76,6 +80,9 @@ fn main() -> eframe::Result {
     if let Some(cmd) = initial_deeplink {
         let _ = cmd_tx.try_send(cmd);
     }
+
+    // Phase 11 — detect installed HTTP servers at startup.
+    let _ = cmd_tx.try_send(AppCommand::DetectInstalledServers);
 
     // ── System tray (Linux: needs DISPLAY/WAYLAND_DISPLAY; gracefully no-op otherwise) ──
     let (tray_tx, mut tray_rx) = mpsc::channel::<tray::TrayEvent>(8);

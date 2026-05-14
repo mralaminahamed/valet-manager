@@ -111,6 +111,42 @@ pub enum AppCommand {
     StartQueueWorker(String),
     StopQueueWorker(String),
     RemoveQueueWorker(String),
+    // Phase 11 — Per-site config
+    LoadSiteConfig(String),
+    SaveSiteConfig {
+        site: String,
+        config: crate::site_config::models::SiteConfig,
+    },
+    SaveSiteConfigToProject {
+        site: String,
+        config: crate::site_config::models::SiteConfig,
+    },
+    ResetSiteConfig(String),
+    ApplyPhpIniOverrides { site: String },
+    SetSitePhpVersion { site: String, version: Option<String> },
+    EnableWpMultisite {
+        site: String,
+        multisite_type: crate::site_config::models::MultisiteType,
+    },
+    DisableWpMultisite(String),
+    SetWpConfigConstants {
+        site: String,
+        config: crate::site_config::models::WordPressConfig,
+    },
+    FetchWpNetworkSites(String),
+    SetLaravelOctane { site: String, enabled: bool },
+    DetectInstalledServers,
+    SetSiteHttpServer {
+        site: String,
+        server_type: crate::site_config::models::HttpServerType,
+    },
+    AddBasicAuth {
+        site: String,
+        username: String,
+        password: String,
+    },
+    RemoveBasicAuth { site: String, username: String },
+    DetectLaravelPackages(String),
 }
 
 #[derive(Debug, Clone)]

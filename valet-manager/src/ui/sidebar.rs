@@ -105,6 +105,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>, 
     nav_item(ui, "✉", "Mail Catcher",   Panel::MailCatcher,   &state.ui.active_panel, cmd_tx, icon_only);
 
     if !icon_only { section_label(ui, "tools"); }
+    nav_item(ui, "✎", "Site Config",    Panel::SiteConfig,    &state.ui.active_panel, cmd_tx, icon_only);
     nav_item(ui, "↗", "Sharing",        Panel::Sharing,       &state.ui.active_panel, cmd_tx, icon_only);
     nav_item(ui, "◇", "Drivers",        Panel::Drivers,       &state.ui.active_panel, cmd_tx, icon_only);
     nav_item(ui, "≡", "Logs",           Panel::Logs,          &state.ui.active_panel, cmd_tx, icon_only);

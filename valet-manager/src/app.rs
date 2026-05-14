@@ -12,7 +12,7 @@ use crate::state::app_state::{AppState, Panel};
 use crate::ui::{panels::{dashboard, php_versions, php_extensions, php_ini}, sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding, phpinfo, compat, history, env_editor, artisan as artisan_panel, database as database_panel, ssl_certs, xdebug as xdebug_panel, mail_catcher, queue as queue_panel};
+use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding, phpinfo, compat, history, env_editor, artisan as artisan_panel, database as database_panel, ssl_certs, xdebug as xdebug_panel, mail_catcher, queue as queue_panel, site_config as site_config_panel};
 use crate::ui::command_palette;
 use crate::ui::components::toast::{self, ToastType};
 
@@ -263,6 +263,67 @@ impl ValetManagerApp {
                 }
                 AppEvent::QueueWorkerChanged(_id) => {
                     // Caller will dispatch RefreshQueueWorkers separately.
+                }
+                // Phase 11 — Per-site config
+                AppEvent::SiteConfigLoaded { site, config } => {
+                    self.state.site_configs.insert(site.clone(), config.clone());
+                    if self.state.site_config_selected.as_deref() == Some(site.as_str())
+                        || self.state.site_config_draft.is_none()
+                    {
+                        self.state.site_config_draft = Some(config);
+                        self.state.site_config_selected = Some(site);
+                    }
+                }
+                AppEvent::SiteConfigSaved(_site) => {
+                    toast::push_toast(
+                        &mut self.state.toasts,
+                        "Site config saved",
+                        ToastType::Success,
+                    );
+                }
+                AppEvent::SiteConfigReset(site) => {
+                    self.state.site_configs.remove(&site);
+                    if self.state.site_config_selected.as_deref() == Some(site.as_str()) {
+                        self.state.site_config_draft = Some(Default::default());
+                    }
+                    toast::push_toast(
+                        &mut self.state.toasts,
+                        "Site config reset",
+                        ToastType::Info,
+                    );
+                }
+                AppEvent::WpMultisiteEnabled { .. } => {
+                    toast::push_toast(
+                        &mut self.state.toasts,
+                        "WordPress multisite enabled",
+                        ToastType::Success,
+                    );
+                }
+                AppEvent::WpMultisiteDisabled(_) => {
+                    toast::push_toast(
+                        &mut self.state.toasts,
+                        "WordPress multisite disabled",
+                        ToastType::Info,
+                    );
+                }
+                AppEvent::WpNetworkSitesLoaded { site, sites } => {
+                    self.state.wp_network_sites.insert(site, sites);
+                }
+                AppEvent::InstalledServersDetected(servers) => {
+                    self.state.installed_http_servers = servers;
+                }
+                AppEvent::SiteConfigOutputLine(line) => {
+                    self.state.site_config_output.push(line);
+                    if self.state.site_config_output.len() > 1000 {
+                        let overflow = self.state.site_config_output.len() - 1000;
+                        self.state.site_config_output.drain(0..overflow);
+                    }
+                }
+                AppEvent::LaravelPackagesDetected { site, packages } => {
+                    self.state.laravel_packages.insert(site, packages);
+                }
+                AppEvent::OctaneProcessUpdated(p) => {
+                    self.state.octane_processes.insert(p.site.clone(), p);
                 }
             }
         }
@@ -530,6 +591,9 @@ impl eframe::App for ValetManagerApp {
                         Panel::QueueWorkers => {
                             queue_panel::render(ui, &mut self.state, &self.cmd_tx);
                         }
+                        Panel::SiteConfig => {
+                            site_config_panel::render(ui, &mut self.state, &self.cmd_tx);
+                        }
                         _ => stub_panel(ui, &self.state.ui.active_panel),
                     }
                 });
@@ -637,6 +701,7 @@ fn panel_display_name(panel: &Panel) -> &'static str {
         Panel::History       => "History",
         Panel::Diagnostics   => "Diagnostics",
         Panel::AppCreator    => "App Creator",
+        Panel::SiteConfig    => "Site Config",
     }
 }
 
@@ -1887,6 +1952,309 @@ pub async fn run_dispatcher(
                     let _ = tokio::fs::remove_file(&path).await;
                     let _ = tx.send(AppEvent::QueueWorkerChanged(id)).await;
                     let _ = cmd_tx_inner.send(AppCommand::RefreshQueueWorkers).await;
+                });
+            }
+            // Phase 11 — Per-site config
+            AppCommand::LoadSiteConfig(name) => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let site = {
+                        let s = state_c.read().await;
+                        s.sites.iter().find(|x| x.name == name).cloned()
+                    };
+                    if let Some(site) = site {
+                        let config = crate::site_config::reader::load(&name, &site.path).await;
+                        let _ = tx.send(AppEvent::SiteConfigLoaded { site: name, config }).await;
+                    }
+                });
+            }
+            AppCommand::SaveSiteConfig { site, config } => {
+                let tx = tx.clone();
+                let state_c = Arc::clone(&state);
+                tokio::spawn(async move {
+                    if let Err(e) = crate::site_config::writer::save(&site, &config).await {
+                        let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        return;
+                    }
+                    // Apply .user.ini for the site if it exists in state.
+                    let site_obj = {
+                        let s = state_c.read().await;
+                        s.sites.iter().find(|x| x.name == site).cloned()
+                    };
+                    if let Some(s) = site_obj {
+                        let _ = crate::php::user_ini::apply(&s, &config.php.ini_overrides).await;
+                    }
+                    let _ = tx.send(AppEvent::SiteConfigSaved(site)).await;
+                });
+            }
+            AppCommand::SaveSiteConfigToProject { site, config } => {
+                let tx = tx.clone();
+                let state_c = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let site_obj = {
+                        let s = state_c.read().await;
+                        s.sites.iter().find(|x| x.name == site).cloned()
+                    };
+                    if let Some(s) = site_obj {
+                        if let Err(e) = crate::site_config::writer::save_to_site_root(&s.path, &config).await {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                            return;
+                        }
+                    }
+                    let _ = tx.send(AppEvent::SiteConfigSaved(site)).await;
+                });
+            }
+            AppCommand::ResetSiteConfig(name) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let _ = crate::site_config::writer::reset(&name).await;
+                    let _ = tx.send(AppEvent::SiteConfigReset(name)).await;
+                });
+            }
+            AppCommand::ApplyPhpIniOverrides { site } => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (site_obj, overrides) = {
+                        let s = state_c.read().await;
+                        let site_obj = s.sites.iter().find(|x| x.name == site).cloned();
+                        let overrides = s.site_configs.get(&site)
+                            .map(|c| c.php.ini_overrides.clone())
+                            .unwrap_or_default();
+                        (site_obj, overrides)
+                    };
+                    if let Some(s_obj) = site_obj {
+                        if let Err(e) = crate::php::user_ini::apply(&s_obj, &overrides).await {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            AppCommand::SetSitePhpVersion { site, version } => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let site_path = {
+                        let s = state_c.read().await;
+                        s.sites.iter().find(|x| x.name == site).map(|x| x.path.clone())
+                    };
+                    if let Some(p) = site_path {
+                        match version {
+                            Some(ref v) => {
+                                if let Err(e) = crate::php::switcher::isolate_site(&p, v).await {
+                                    let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                                } else {
+                                    let _ = tx.send(AppEvent::SiteIsolated { site: site.clone(), version: v.clone() }).await;
+                                }
+                            }
+                            None => {
+                                if let Err(e) = crate::php::switcher::unisolate_site(&p).await {
+                                    let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                                } else {
+                                    let _ = tx.send(AppEvent::SiteUnisolated(site.clone())).await;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            AppCommand::EnableWpMultisite { site, multisite_type } => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (site_obj, wp_cfg) = {
+                        let s = state_c.read().await;
+                        let so = s.sites.iter().find(|x| x.name == site).cloned();
+                        let cfg = s.site_configs.get(&site)
+                            .and_then(|c| c.wordpress.clone())
+                            .unwrap_or_default();
+                        (so, cfg)
+                    };
+                    if let Some(s_obj) = site_obj {
+                        let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                        let tx_lines = tx.clone();
+                        let forward = tokio::spawn(async move {
+                            while let Some(line) = out_rx.recv().await {
+                                let _ = tx_lines.send(AppEvent::SiteConfigOutputLine(line)).await;
+                            }
+                        });
+                        let _ = crate::wordpress::multisite::enable(&s_obj, multisite_type, &wp_cfg, out_tx).await;
+                        let _ = forward.await;
+                        let _ = tx.send(AppEvent::WpMultisiteEnabled { site, output: Vec::new() }).await;
+                    }
+                });
+            }
+            AppCommand::DisableWpMultisite(site) => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let site_obj = {
+                        let s = state_c.read().await;
+                        s.sites.iter().find(|x| x.name == site).cloned()
+                    };
+                    if let Some(s_obj) = site_obj {
+                        let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                        let tx_lines = tx.clone();
+                        let forward = tokio::spawn(async move {
+                            while let Some(line) = out_rx.recv().await {
+                                let _ = tx_lines.send(AppEvent::SiteConfigOutputLine(line)).await;
+                            }
+                        });
+                        let _ = crate::wordpress::multisite::disable(&s_obj, out_tx).await;
+                        let _ = forward.await;
+                        let _ = tx.send(AppEvent::WpMultisiteDisabled(site)).await;
+                    }
+                });
+            }
+            AppCommand::SetWpConfigConstants { site, config } => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let site_path = {
+                        let s = state_c.read().await;
+                        s.sites.iter().find(|x| x.name == site).map(|x| x.path.clone())
+                    };
+                    if let Some(p) = site_path {
+                        if let Err(e) = crate::wordpress::config_editor::write_constants(&p, &config).await {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            AppCommand::FetchWpNetworkSites(site) => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let site_obj = {
+                        let s = state_c.read().await;
+                        s.sites.iter().find(|x| x.name == site).cloned()
+                    };
+                    if let Some(s_obj) = site_obj {
+                        match crate::wordpress::multisite::fetch_network_sites(&s_obj).await {
+                            Ok(sites) => {
+                                let _ = tx.send(AppEvent::WpNetworkSitesLoaded { site, sites }).await;
+                            }
+                            Err(e) => {
+                                let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                            }
+                        }
+                    }
+                });
+            }
+            AppCommand::SetLaravelOctane { site, enabled } => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (site_obj, laravel_cfg) = {
+                        let s = state_c.read().await;
+                        let so = s.sites.iter().find(|x| x.name == site).cloned();
+                        let lc = s.site_configs.get(&site)
+                            .and_then(|c| c.laravel.clone())
+                            .unwrap_or_default();
+                        (so, lc)
+                    };
+                    if let Some(s_obj) = site_obj {
+                        if enabled {
+                            match crate::laravel::octane::start(&s_obj, &laravel_cfg, "php").await {
+                                Ok(p) => { let _ = tx.send(AppEvent::OctaneProcessUpdated(p)).await; }
+                                Err(e) => { let _ = tx.send(AppEvent::Error(e.to_string())).await; }
+                            }
+                        } else {
+                            let mut p = crate::site_config::models::OctaneProcess::default();
+                            p.site = site.clone();
+                            p.running = false;
+                            let _ = tx.send(AppEvent::OctaneProcessUpdated(p)).await;
+                        }
+                    }
+                });
+            }
+            AppCommand::DetectInstalledServers => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let servers = crate::http_servers::detector::detect_installed().await;
+                    let _ = tx.send(AppEvent::InstalledServersDetected(servers)).await;
+                });
+            }
+            AppCommand::SetSiteHttpServer { site, server_type } => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let mut new_cfg = {
+                        let s = state_c.read().await;
+                        s.site_configs.get(&site).cloned().unwrap_or_default()
+                    };
+                    new_cfg.server.server_type = server_type;
+                    if let Err(e) = crate::site_config::writer::save(&site, &new_cfg).await {
+                        let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                    } else {
+                        let _ = tx.send(AppEvent::SiteConfigLoaded { site, config: new_cfg }).await;
+                    }
+                });
+            }
+            AppCommand::AddBasicAuth { site, username, password } => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let hash = crate::http_servers::basic_auth::hash_password(&password);
+                    let mut cfg = {
+                        let s = state_c.read().await;
+                        s.site_configs.get(&site).cloned().unwrap_or_default()
+                    };
+                    // Replace or insert the user.
+                    let users = &mut cfg.server.basic_auth.users;
+                    if let Some(existing) = users.iter_mut().find(|u| u.username == username) {
+                        existing.password_hash = hash;
+                    } else {
+                        users.push(crate::site_config::models::BasicAuthUser {
+                            username,
+                            password_hash: hash,
+                        });
+                    }
+                    cfg.server.basic_auth.enabled = true;
+                    if let Err(e) = crate::site_config::writer::save(&site, &cfg).await {
+                        let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        return;
+                    }
+                    let _ = crate::http_servers::basic_auth::write_htpasswd(
+                        &site,
+                        &cfg.server.basic_auth.users,
+                    ).await;
+                    let _ = tx.send(AppEvent::SiteConfigLoaded { site, config: cfg }).await;
+                });
+            }
+            AppCommand::RemoveBasicAuth { site, username } => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let mut cfg = {
+                        let s = state_c.read().await;
+                        s.site_configs.get(&site).cloned().unwrap_or_default()
+                    };
+                    cfg.server.basic_auth.users.retain(|u| u.username != username);
+                    if let Err(e) = crate::site_config::writer::save(&site, &cfg).await {
+                        let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        return;
+                    }
+                    let _ = crate::http_servers::basic_auth::write_htpasswd(
+                        &site,
+                        &cfg.server.basic_auth.users,
+                    ).await;
+                    let _ = tx.send(AppEvent::SiteConfigLoaded { site, config: cfg }).await;
+                });
+            }
+            AppCommand::DetectLaravelPackages(site) => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let site_path = {
+                        let s = state_c.read().await;
+                        s.sites.iter().find(|x| x.name == site).map(|x| x.path.clone())
+                    };
+                    if let Some(p) = site_path {
+                        let pkg = crate::laravel::packages::detect(&p).await.unwrap_or_default();
+                        let _ = tx.send(AppEvent::LaravelPackagesDetected { site, packages: pkg }).await;
+                    }
                 });
             }
         }

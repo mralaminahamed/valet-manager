@@ -33,6 +33,7 @@ pub enum Panel {
     Diagnostics,
     AppCreator,
     Settings,
+    SiteConfig,
 }
 
 #[derive(Debug)]
@@ -138,6 +139,15 @@ pub struct AppState {
     pub queue_add_connection: String,
     pub queue_add_queue: String,
     pub queue_add_start_on_boot: bool,
+    // Phase 11 — Site config
+    pub site_configs: std::collections::HashMap<String, crate::site_config::models::SiteConfig>,
+    pub site_config_selected: Option<String>,
+    pub site_config_draft: Option<crate::site_config::models::SiteConfig>,
+    pub wp_network_sites: std::collections::HashMap<String, Vec<crate::site_config::models::WpNetworkSite>>,
+    pub installed_http_servers: Vec<crate::site_config::models::HttpServerType>,
+    pub site_config_output: Vec<crate::creator::output_streamer::OutputLine>,
+    pub laravel_packages: std::collections::HashMap<String, crate::laravel::packages::LaravelPackages>,
+    pub octane_processes: std::collections::HashMap<String, crate::site_config::models::OctaneProcess>,
 }
 
 impl Default for AppState {
@@ -236,6 +246,15 @@ impl Default for AppState {
             queue_add_connection: "redis".to_string(),
             queue_add_queue: "default".to_string(),
             queue_add_start_on_boot: false,
+            // Phase 11
+            site_configs: std::collections::HashMap::new(),
+            site_config_selected: None,
+            site_config_draft: None,
+            wp_network_sites: std::collections::HashMap::new(),
+            installed_http_servers: Vec::new(),
+            site_config_output: Vec::new(),
+            laravel_packages: std::collections::HashMap::new(),
+            octane_processes: std::collections::HashMap::new(),
         }
     }
 }
@@ -262,6 +281,10 @@ pub struct UiState {
     pub mobile_sidebar_open: bool,
     // Phase 9 — command palette
     pub palette: crate::ui::command_palette::PaletteState,
+    // Phase 11 — Site config panel UI state
+    pub site_config_tab: u8,
+    pub site_config_new_auth_user: String,
+    pub site_config_new_auth_pass: String,
 }
 
 impl Default for UiState {
@@ -283,6 +306,9 @@ impl Default for UiState {
             selected_extension: None,
             mobile_sidebar_open: false,
             palette: crate::ui::command_palette::PaletteState::default(),
+            site_config_tab: 0,
+            site_config_new_auth_user: String::new(),
+            site_config_new_auth_pass: String::new(),
         }
     }
 }

@@ -8,3 +8,4 @@ pub mod ini_manager;
 pub mod phpinfo_parser;
 pub mod compat_checker;
 pub mod xdebug;
+pub mod user_ini;

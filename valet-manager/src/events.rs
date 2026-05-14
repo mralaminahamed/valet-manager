@@ -97,6 +97,26 @@ pub enum AppEvent {
     // Phase 10 — Queue workers
     QueueWorkersLoaded(Vec<crate::queue::QueueWorker>),
     QueueWorkerChanged(String),
+    // Phase 11 — Per-site config
+    SiteConfigLoaded {
+        site: String,
+        config: crate::site_config::models::SiteConfig,
+    },
+    SiteConfigSaved(String),
+    SiteConfigReset(String),
+    WpMultisiteEnabled { site: String, output: Vec<String> },
+    WpMultisiteDisabled(String),
+    WpNetworkSitesLoaded {
+        site: String,
+        sites: Vec<crate::site_config::models::WpNetworkSite>,
+    },
+    InstalledServersDetected(Vec<crate::site_config::models::HttpServerType>),
+    SiteConfigOutputLine(crate::creator::output_streamer::OutputLine),
+    LaravelPackagesDetected {
+        site: String,
+        packages: crate::laravel::packages::LaravelPackages,
+    },
+    OctaneProcessUpdated(crate::site_config::models::OctaneProcess),
 }
 
 #[cfg(test)]
