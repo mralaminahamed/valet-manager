@@ -13,6 +13,9 @@ mod cli_tools;
 mod creator;
 mod tray;
 mod notifications;
+mod history;
+mod deep_link;
+mod updater;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
@@ -21,6 +24,13 @@ use commands::AppCommand;
 use events::AppEvent;
 
 fn main() -> eframe::Result {
+    // Parse a deep-link argument before any tokio/UI setup.
+    let initial_deeplink: Option<AppCommand> = std::env::args()
+        .nth(1)
+        .filter(|a| a.starts_with("valet-manager://"))
+        .map(|a| deep_link::parse(&a))
+        .and_then(|l| deep_link::to_command(&l));
+
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
@@ -55,6 +65,11 @@ fn main() -> eframe::Result {
     let event_tx_clone = event_tx.clone();
     let cmd_tx_clone = cmd_tx.clone();
     rt.spawn(app::run_dispatcher(cmd_rx, event_tx_clone, state_clone, cmd_tx_clone));
+
+    // Queue a deep-link command at startup if one was provided.
+    if let Some(cmd) = initial_deeplink {
+        let _ = cmd_tx.try_send(cmd);
+    }
 
     // ── System tray (Linux: needs DISPLAY/WAYLAND_DISPLAY; gracefully no-op otherwise) ──
     let (tray_tx, mut tray_rx) = mpsc::channel::<tray::TrayEvent>(8);

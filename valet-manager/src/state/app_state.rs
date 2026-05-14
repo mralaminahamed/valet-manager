@@ -88,6 +88,17 @@ pub struct AppState {
     pub onboarding_complete: bool,
     pub onboarding_step: u8,
     pub onboarding_diagnose_output: Vec<crate::creator::output_streamer::OutputLine>,
+    // Phase 7 — phpinfo
+    pub phpinfo_sections: Vec<crate::php::phpinfo_parser::PhpInfoSection>,
+    pub phpinfo_selected_section: usize,
+    pub phpinfo_search: String,
+    // Phase 7 — compatibility
+    pub site_compat: Vec<crate::php::compat_checker::SiteCompat>,
+    // Phase 7 — history
+    pub history: Vec<crate::history::HistoryEntry>,
+    pub history_expanded: Option<i64>,
+    // Phase 7 — updater
+    pub update_info: Option<crate::updater::UpdateInfo>,
 }
 
 impl Default for AppState {
@@ -134,6 +145,13 @@ impl Default for AppState {
             onboarding_complete: crate::config::is_onboarded(),
             onboarding_step: 0,
             onboarding_diagnose_output: Vec::new(),
+            phpinfo_sections: Vec::new(),
+            phpinfo_selected_section: 0,
+            phpinfo_search: String::new(),
+            site_compat: Vec::new(),
+            history: Vec::new(),
+            history_expanded: None,
+            update_info: None,
         }
     }
 }

@@ -51,6 +51,17 @@ pub enum AppEvent {
     SettingsLoaded(crate::config::AppConfig),
     SettingsSaved,
     OnboardingComplete,
+    // Phase 7 — phpinfo
+    PhpInfoLoaded {
+        version: String,
+        sections: Vec<crate::php::phpinfo_parser::PhpInfoSection>,
+    },
+    // Phase 7 — Compatibility
+    CompatChecked(Vec<crate::php::compat_checker::SiteCompat>),
+    // Phase 7 — History
+    HistoryLoaded(Vec<crate::history::HistoryEntry>),
+    // Phase 7 — Updater
+    UpdateAvailable(crate::updater::UpdateInfo),
 }
 
 #[cfg(test)]

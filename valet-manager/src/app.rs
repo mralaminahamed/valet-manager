@@ -12,7 +12,7 @@ use crate::state::app_state::{AppState, Panel};
 use crate::ui::{panels::{dashboard, php_versions, php_extensions, php_ini}, sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding};
+use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding, phpinfo, compat, history};
 use crate::ui::components::toast::{self, ToastType};
 
 pub struct ValetManagerApp {
@@ -165,6 +165,20 @@ impl ValetManagerApp {
                 AppEvent::OnboardingComplete => {
                     self.state.onboarding_complete = true;
                     self.state.onboarding_step = 0;
+                }
+                // Phase 7
+                AppEvent::PhpInfoLoaded { version: _, sections } => {
+                    self.state.phpinfo_sections = sections;
+                    self.state.phpinfo_selected_section = 0;
+                }
+                AppEvent::CompatChecked(list) => {
+                    self.state.site_compat = list;
+                }
+                AppEvent::HistoryLoaded(list) => {
+                    self.state.history = list;
+                }
+                AppEvent::UpdateAvailable(info) => {
+                    self.state.update_info = Some(info);
                 }
             }
         }
@@ -391,6 +405,15 @@ impl eframe::App for ValetManagerApp {
                         }
                         Panel::Settings => {
                             settings::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::PhpInfo => {
+                            phpinfo::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::PhpCompat => {
+                            compat::render(ui, &self.state, &self.cmd_tx);
+                        }
+                        Panel::History => {
+                            history::render(ui, &mut self.state, &self.cmd_tx);
                         }
                         _ => stub_panel(ui, &self.state.ui.active_panel),
                     }
@@ -1076,6 +1099,124 @@ pub async fn run_dispatcher(
                     .await;
                     let _ = forward.await;
                 });
+            }
+            // Phase 7 — phpinfo
+            AppCommand::LoadPhpInfo(ver) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    match crate::php::phpinfo_parser::load(&ver).await {
+                        Ok(html) => {
+                            let sections = crate::php::phpinfo_parser::parse(&html);
+                            let _ = tx
+                                .send(AppEvent::PhpInfoLoaded { version: ver, sections })
+                                .await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            // Phase 7 — Compatibility
+            AppCommand::CheckCompat => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let (sites_snapshot, active_php) = {
+                        let s = state.read().await;
+                        (s.sites.clone(), s.active_php.clone())
+                    };
+                    let result = tokio::task::spawn_blocking(move || {
+                        sites_snapshot
+                            .iter()
+                            .map(|site| {
+                                let in_use = site
+                                    .php_version
+                                    .clone()
+                                    .unwrap_or_else(|| active_php.clone());
+                                crate::php::compat_checker::evaluate_site(
+                                    &site.name, &site.path, &in_use,
+                                )
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .await
+                    .unwrap_or_default();
+                    let _ = tx.send(AppEvent::CompatChecked(result)).await;
+                });
+            }
+            // Phase 7 — History
+            AppCommand::LoadHistory => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let entries = tokio::task::spawn_blocking(|| {
+                        match crate::history::open() {
+                            Ok(conn) => {
+                                crate::history::list_recent(&conn, 500).unwrap_or_default()
+                            }
+                            Err(_) => Vec::new(),
+                        }
+                    })
+                    .await
+                    .unwrap_or_default();
+                    let _ = tx.send(AppEvent::HistoryLoaded(entries)).await;
+                });
+            }
+            AppCommand::RerunHistory(id) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let _ = tx
+                        .send(AppEvent::Error(format!(
+                            "Re-run of history entry {} not yet implemented",
+                            id
+                        )))
+                        .await;
+                });
+            }
+            // Phase 7 — Updater
+            AppCommand::CheckForUpdates => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let skip = {
+                        let s = state.read().await;
+                        s.config.skip_version.clone()
+                    };
+                    match crate::updater::check().await {
+                        Ok(info) => {
+                            if info.is_newer
+                                && skip.as_deref() != Some(info.latest.as_str())
+                            {
+                                let _ = tx.send(AppEvent::UpdateAvailable(info)).await;
+                            }
+                        }
+                        Err(_) => {
+                            // Silent failure — updater is non-critical.
+                        }
+                    }
+                });
+            }
+            AppCommand::SkipUpdate(version) => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let cfg = {
+                        let mut s = state.write().await;
+                        s.config.skip_version = Some(version);
+                        s.config_draft.skip_version = s.config.skip_version.clone();
+                        s.config.clone()
+                    };
+                    let _ = tokio::task::spawn_blocking(move || {
+                        let _ = crate::config::save(&cfg);
+                    })
+                    .await;
+                    drop(tx);
+                });
+            }
+            AppCommand::OpenUpdatePage => {
+                let _ = tokio::process::Command::new("xdg-open")
+                    .arg(crate::updater::releases_url())
+                    .spawn();
             }
         }
     }

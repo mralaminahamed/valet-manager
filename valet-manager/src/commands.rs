@@ -69,6 +69,17 @@ pub enum AppCommand {
     LoadSettings,
     SaveSettings(crate::config::AppConfig),
     MarkOnboardingComplete,
+    // Phase 7 — phpinfo
+    LoadPhpInfo(String),
+    // Phase 7 — Compatibility
+    CheckCompat,
+    // Phase 7 — History
+    LoadHistory,
+    RerunHistory(i64),
+    // Phase 7 — Updater
+    CheckForUpdates,
+    SkipUpdate(String),
+    OpenUpdatePage,
 }
 
 #[derive(Debug, Clone)]

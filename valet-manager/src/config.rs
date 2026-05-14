@@ -17,6 +17,8 @@ pub struct AppConfig {
     pub version_registry_auto_refresh: bool,
     #[serde(default)]
     pub notifications: crate::notifications::NotificationPrefs,
+    #[serde(default)]
+    pub skip_version: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -34,6 +36,7 @@ impl Default for AppConfig {
             version_registry_ttl_hours: 24,
             version_registry_auto_refresh: true,
             notifications: crate::notifications::NotificationPrefs::default(),
+            skip_version: None,
         }
     }
 }

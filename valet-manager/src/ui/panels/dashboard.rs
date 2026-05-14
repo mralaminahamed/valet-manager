@@ -4,6 +4,7 @@ use tokio::sync::mpsc::Sender;
 use crate::commands::AppCommand;
 use crate::services::monitor::ServiceStatus;
 use crate::state::app_state::AppState;
+use crate::ui::components::banner::{alert_banner, alert_banner_with_actions, BannerLevel};
 use crate::ui::theme::{
     Colors, accent_button, card_frame, divider, ghost_button, section_label,
     status_color, status_dot, with_alpha,
@@ -45,7 +46,47 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
 
     // ── Alert banner ────────────────────────────────────────────────────
     if let Some(err) = &state.ui.last_error {
-        alert_banner(ui, Colors::DANGER, "⚠", err, None, cmd_tx);
+        legacy_alert_banner(ui, Colors::DANGER, "⚠", err, None, cmd_tx);
+        ui.add_space(6.0);
+    }
+
+    // ── Update available banner ────────────────────────────────────────
+    if let Some(info) = &state.update_info {
+        if info.is_newer {
+            let latest = info.latest.clone();
+            let cmd_tx_inner = cmd_tx.clone();
+            alert_banner_with_actions(
+                ui,
+                BannerLevel::Info,
+                "↑",
+                &format!("Version {} available", info.latest),
+                |ui| {
+                    if ghost_button(ui, "Skip").clicked() {
+                        let _ = cmd_tx_inner.try_send(AppCommand::SkipUpdate(latest.clone()));
+                    }
+                    ui.add_space(6.0);
+                    if accent_button(ui, "Update").clicked() {
+                        let _ = cmd_tx_inner.try_send(AppCommand::OpenUpdatePage);
+                    }
+                },
+            );
+            ui.add_space(6.0);
+        }
+    }
+
+    // ── PHP compat banner ──────────────────────────────────────────────
+    let incompat = state
+        .site_compat
+        .iter()
+        .filter(|c| c.status == crate::php::compat_checker::CompatStatus::Incompatible)
+        .count();
+    if incompat > 0 {
+        alert_banner(
+            ui,
+            BannerLevel::Warning,
+            "⚠",
+            &format!("{} sites have PHP compat issues", incompat),
+        );
         ui.add_space(6.0);
     }
 
@@ -125,7 +166,7 @@ fn stat_card(ui: &mut egui::Ui, title: &str, value: &str, value_color: Color32) 
     });
 }
 
-fn alert_banner(
+fn legacy_alert_banner(
     ui: &mut egui::Ui,
     color: Color32,
     icon: &str,

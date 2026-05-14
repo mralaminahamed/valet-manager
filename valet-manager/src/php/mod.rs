@@ -5,3 +5,5 @@ pub mod switcher;
 pub mod fpm_manager;
 pub mod extension_manager;
 pub mod ini_manager;
+pub mod phpinfo_parser;
+pub mod compat_checker;

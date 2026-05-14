@@ -13,3 +13,6 @@ pub mod logs;
 pub mod diagnostics;
 pub mod settings;
 pub mod onboarding;
+pub mod phpinfo;
+pub mod compat;
+pub mod history;
