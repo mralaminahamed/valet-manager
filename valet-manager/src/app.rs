@@ -12,7 +12,7 @@ use crate::state::app_state::{AppState, Panel};
 use crate::ui::{panels::{dashboard, php_versions, php_extensions, php_ini}, sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, parks, nginx, app_creator};
+use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics};
 
 pub struct ValetManagerApp {
     state: AppState,
@@ -88,6 +88,66 @@ impl ValetManagerApp {
                 AppEvent::NginxReloaded => {}
                 AppEvent::ParksUpdated(parks) => {
                     self.state.parks = parks;
+                }
+                // Phase 5 — Proxies
+                AppEvent::ProxiesRefreshed(list) => {
+                    self.state.proxies = list;
+                }
+                AppEvent::ProxyAdded(_) | AppEvent::ProxyRemoved(_) => {
+                    // Caller dispatches a follow-up RefreshProxies; nothing to do here.
+                }
+                AppEvent::ProxyProbed { domain, result } => {
+                    self.state.proxy_status.insert(domain, result);
+                }
+                // Phase 5 — Dnsmasq
+                AppEvent::TldChanged(new_tld) => {
+                    self.state.tld = new_tld;
+                }
+                AppEvent::DnsOutputLine(line) => {
+                    self.state.dns_tester_output.push(line);
+                    if self.state.dns_tester_output.len() > 1000 {
+                        let overflow = self.state.dns_tester_output.len() - 1000;
+                        self.state.dns_tester_output.drain(0..overflow);
+                    }
+                }
+                // Phase 5 — Sharing
+                AppEvent::SharingStarted(session) => {
+                    self.state.share_active = Some(session);
+                }
+                AppEvent::SharingStopped => {
+                    self.state.share_active = None;
+                }
+                AppEvent::SharingOutputLine(line) => {
+                    if self.state.share_active.is_some() {
+                        if let Some(url) = crate::valet::sharing::parse_public_url(&line.text) {
+                            if let Some(session) = self.state.share_active.as_mut() {
+                                if session.public_url.is_none() {
+                                    session.public_url = Some(url);
+                                }
+                            }
+                        }
+                    }
+                    self.state.share_output.push(line);
+                    if self.state.share_output.len() > 1000 {
+                        let overflow = self.state.share_output.len() - 1000;
+                        self.state.share_output.drain(0..overflow);
+                    }
+                }
+                // Phase 5 — Logs
+                AppEvent::LogsLoaded { source, lines } => {
+                    self.state.logs_source = source;
+                    self.state.logs_lines = lines;
+                }
+                // Phase 5 — Diagnostics
+                AppEvent::DiagnosticsOutputLine(line) => {
+                    self.state.diagnostics_output.push(line);
+                    if self.state.diagnostics_output.len() > 1000 {
+                        let overflow = self.state.diagnostics_output.len() - 1000;
+                        self.state.diagnostics_output.drain(0..overflow);
+                    }
+                }
+                AppEvent::DiagnosticsComplete => {
+                    self.state.diagnostics_running = false;
                 }
             }
         }
@@ -279,6 +339,21 @@ impl eframe::App for ValetManagerApp {
                         }
                         Panel::AppCreator => {
                             app_creator::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::Proxies => {
+                            proxies::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::Dnsmasq => {
+                            dnsmasq::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::Sharing => {
+                            sharing::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::Logs => {
+                            logs::render(ui, &self.state, &self.cmd_tx);
+                        }
+                        Panel::Diagnostics => {
+                            diagnostics::render(ui, &self.state, &self.cmd_tx);
                         }
                         _ => stub_panel(ui, &self.state.ui.active_panel),
                     }
@@ -651,6 +726,216 @@ pub async fn run_dispatcher(
             AppCommand::CreatorSelectType { type_id: _ } => {}
             AppCommand::CreatorUpdateField { key: _, value: _ } => {}
             AppCommand::CreatorNextStep => {}
+            // Phase 5 — Proxies
+            AppCommand::RefreshProxies => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let paths = { state.read().await.valet_paths.clone() };
+                    if let Some(paths) = paths {
+                        match crate::nginx::proxy_manager::list_proxies(&paths).await {
+                            Ok(list) => {
+                                let _ = tx.send(AppEvent::ProxiesRefreshed(list)).await;
+                            }
+                            Err(e) => {
+                                let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                            }
+                        }
+                    }
+                });
+            }
+            AppCommand::AddProxy { domain, target, secure } => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                let cmd_tx_inner = cmd_tx.clone();
+                tokio::spawn(async move {
+                    let paths = { state.read().await.valet_paths.clone() };
+                    if let Some(paths) = paths {
+                        let (out_tx, _out_rx) = mpsc::channel(64);
+                        let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                        match crate::nginx::proxy_manager::add_proxy(
+                            &domain, &target, secure, &paths, out_tx, cancel_rx,
+                        )
+                        .await
+                        {
+                            Ok(_) => {
+                                let _ = tx.send(AppEvent::ProxyAdded(domain)).await;
+                                let _ = cmd_tx_inner.send(AppCommand::RefreshProxies).await;
+                            }
+                            Err(e) => {
+                                let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                            }
+                        }
+                    }
+                });
+            }
+            AppCommand::RemoveProxy(domain) => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                let cmd_tx_inner = cmd_tx.clone();
+                tokio::spawn(async move {
+                    let paths = { state.read().await.valet_paths.clone() };
+                    if let Some(paths) = paths {
+                        let (out_tx, _out_rx) = mpsc::channel(64);
+                        let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                        match crate::nginx::proxy_manager::remove_proxy(
+                            &domain, &paths, out_tx, cancel_rx,
+                        )
+                        .await
+                        {
+                            Ok(_) => {
+                                let _ = tx.send(AppEvent::ProxyRemoved(domain)).await;
+                                let _ = cmd_tx_inner.send(AppCommand::RefreshProxies).await;
+                            }
+                            Err(e) => {
+                                let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                            }
+                        }
+                    }
+                });
+            }
+            AppCommand::TestProxy(domain) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let url = format!("https://{}", domain);
+                    let result = crate::nginx::proxy_manager::probe_http(url).await;
+                    let _ = tx
+                        .send(AppEvent::ProxyProbed { domain, result })
+                        .await;
+                });
+            }
+            // Phase 5 — Dnsmasq
+            AppCommand::ChangeTld(new_tld) => {
+                let tx = tx.clone();
+                let cmd_tx_inner = cmd_tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, _out_rx) = mpsc::channel(64);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    match crate::valet::dns_tester::change_tld(&new_tld, out_tx, cancel_rx).await {
+                        Ok(_) => {
+                            let _ = tx.send(AppEvent::TldChanged(new_tld)).await;
+                            let _ = cmd_tx_inner.send(AppCommand::RefreshAll).await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            AppCommand::TestDns(host) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::DnsOutputLine(line)).await;
+                        }
+                    });
+                    let _ = crate::valet::dns_tester::run_dig(&host, out_tx, cancel_rx).await;
+                    let _ = forward.await;
+                });
+            }
+            // Phase 5 — Sharing
+            AppCommand::StartSharing { site, tool, token } => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let session = crate::valet::sharing::ShareSession {
+                        site: site.clone(),
+                        tool,
+                        public_url: None,
+                    };
+                    let _ = tx.send(AppEvent::SharingStarted(session)).await;
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::SharingOutputLine(line)).await;
+                        }
+                    });
+                    let _ = crate::valet::sharing::start(&site, tool, &token, out_tx, cancel_rx).await;
+                    let _ = forward.await;
+                    let _ = tx.send(AppEvent::SharingStopped).await;
+                });
+            }
+            AppCommand::StopSharing => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let _ = tx.send(AppEvent::SharingStopped).await;
+                });
+            }
+            // Phase 5 — Logs
+            AppCommand::LoadLogs(source) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    match crate::system::log_reader::tail(source, 500).await {
+                        Ok(lines) => {
+                            let _ = tx.send(AppEvent::LogsLoaded { source, lines }).await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            // Phase 5 — Diagnostics
+            AppCommand::RunDiagnostics => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::DiagnosticsOutputLine(line)).await;
+                        }
+                    });
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "valet", &["diagnose"], None, out_tx, cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                    let _ = tx.send(AppEvent::DiagnosticsComplete).await;
+                });
+            }
+            AppCommand::TrustValet => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::DiagnosticsOutputLine(line)).await;
+                        }
+                    });
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "valet", &["trust"], None, out_tx, cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                });
+            }
+            AppCommand::RestartAllServices => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::DiagnosticsOutputLine(line)).await;
+                        }
+                    });
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "valet", &["restart"], None, out_tx, cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                });
+            }
         }
     }
 }

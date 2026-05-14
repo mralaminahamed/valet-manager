@@ -48,6 +48,23 @@ pub enum AppCommand {
     CreatorSelectType { type_id: String },
     CreatorUpdateField { key: String, value: String },
     CreatorNextStep,
+    // Phase 5 — Proxies
+    RefreshProxies,
+    AddProxy { domain: String, target: String, secure: bool },
+    RemoveProxy(String),
+    TestProxy(String),
+    // Phase 5 — Dnsmasq / TLD
+    ChangeTld(String),
+    TestDns(String),
+    // Phase 5 — Sharing
+    StartSharing { site: String, tool: crate::valet::sharing::ShareTool, token: String },
+    StopSharing,
+    // Phase 5 — Logs
+    LoadLogs(crate::system::log_reader::LogSource),
+    // Phase 5 — Diagnostics
+    RunDiagnostics,
+    TrustValet,
+    RestartAllServices,
 }
 
 #[derive(Debug, Clone)]

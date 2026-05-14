@@ -30,6 +30,23 @@ pub enum AppEvent {
     CreatorOutputLine(crate::creator::output_streamer::OutputLine),
     CreatorComplete { site_name: String, domain: String },
     CreatorFailed(String),
+    // Phase 5 — Proxies
+    ProxiesRefreshed(Vec<crate::nginx::proxy_manager::ValetProxy>),
+    ProxyAdded(String),
+    ProxyRemoved(String),
+    ProxyProbed { domain: String, result: crate::nginx::proxy_manager::HttpProbe },
+    // Phase 5 — Dnsmasq
+    TldChanged(String),
+    DnsOutputLine(crate::creator::output_streamer::OutputLine),
+    // Phase 5 — Sharing
+    SharingStarted(crate::valet::sharing::ShareSession),
+    SharingStopped,
+    SharingOutputLine(crate::creator::output_streamer::OutputLine),
+    // Phase 5 — Logs
+    LogsLoaded { source: crate::system::log_reader::LogSource, lines: Vec<String> },
+    // Phase 5 — Diagnostics
+    DiagnosticsOutputLine(crate::creator::output_streamer::OutputLine),
+    DiagnosticsComplete,
 }
 
 #[cfg(test)]

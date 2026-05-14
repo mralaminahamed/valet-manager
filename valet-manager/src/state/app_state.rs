@@ -62,6 +62,25 @@ pub struct AppState {
     pub site_sort_favorites_top: bool,
     // Phase 4
     pub creator: CreatorState,
+    // Phase 5 — Proxies
+    pub proxies: Vec<crate::nginx::proxy_manager::ValetProxy>,
+    pub proxy_status: std::collections::HashMap<String, crate::nginx::proxy_manager::HttpProbe>,
+    // Phase 5 — Dnsmasq
+    pub dns_tester_host: String,
+    pub dns_tester_output: Vec<crate::creator::output_streamer::OutputLine>,
+    pub tld_input: String,
+    // Phase 5 — Sharing
+    pub share_tool: crate::valet::sharing::ShareTool,
+    pub share_tokens: std::collections::HashMap<String, String>,
+    pub share_site: Option<String>,
+    pub share_active: Option<crate::valet::sharing::ShareSession>,
+    pub share_output: Vec<crate::creator::output_streamer::OutputLine>,
+    // Phase 5 — Logs
+    pub logs_source: crate::system::log_reader::LogSource,
+    pub logs_lines: Vec<String>,
+    // Phase 5 — Diagnostics
+    pub diagnostics_output: Vec<crate::creator::output_streamer::OutputLine>,
+    pub diagnostics_running: bool,
 }
 
 impl Default for AppState {
@@ -88,6 +107,20 @@ impl Default for AppState {
             site_filter_favorites: false,
             site_sort_favorites_top: true,
             creator: CreatorState::default(),
+            proxies: Vec::new(),
+            proxy_status: std::collections::HashMap::new(),
+            dns_tester_host: String::new(),
+            dns_tester_output: Vec::new(),
+            tld_input: String::new(),
+            share_tool: crate::valet::sharing::ShareTool::Ngrok,
+            share_tokens: std::collections::HashMap::new(),
+            share_site: None,
+            share_active: None,
+            share_output: Vec::new(),
+            logs_source: crate::system::log_reader::LogSource::NginxError,
+            logs_lines: Vec::new(),
+            diagnostics_output: Vec::new(),
+            diagnostics_running: false,
         }
     }
 }

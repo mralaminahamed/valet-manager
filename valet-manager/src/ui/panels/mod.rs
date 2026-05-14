@@ -6,3 +6,8 @@ pub mod php_extensions;
 pub mod php_ini;
 pub mod php_versions;
 pub mod sites;
+pub mod proxies;
+pub mod dnsmasq;
+pub mod sharing;
+pub mod logs;
+pub mod diagnostics;
