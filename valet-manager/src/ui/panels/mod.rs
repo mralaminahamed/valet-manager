@@ -16,3 +16,6 @@ pub mod onboarding;
 pub mod phpinfo;
 pub mod compat;
 pub mod history;
+pub mod env_editor;
+pub mod artisan;
+pub mod database;

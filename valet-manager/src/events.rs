@@ -62,6 +62,29 @@ pub enum AppEvent {
     HistoryLoaded(Vec<crate::history::HistoryEntry>),
     // Phase 7 — Updater
     UpdateAvailable(crate::updater::UpdateInfo),
+    // Phase 9 — .env editor
+    EnvFileLoaded {
+        site: String,
+        entries: Vec<crate::env_file::EnvEntry>,
+        example: Vec<crate::env_file::EnvEntry>,
+    },
+    EnvFileSaved,
+    // Phase 9 — Artisan
+    ArtisanCommandsLoaded {
+        site: String,
+        tool: crate::artisan::ArtisanTool,
+        commands: Vec<crate::artisan::ArtisanCommand>,
+    },
+    ArtisanOutputLine(crate::creator::output_streamer::OutputLine),
+    ArtisanComplete,
+    // Phase 9 — Database
+    DatabasesLoaded(Vec<crate::database::DbDatabase>),
+    TablesLoaded {
+        database: String,
+        tables: Vec<crate::database::DbTable>,
+    },
+    MigrationOutput(crate::creator::output_streamer::OutputLine),
+    MigrationComplete,
 }
 
 #[cfg(test)]

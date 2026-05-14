@@ -12,7 +12,8 @@ use crate::state::app_state::{AppState, Panel};
 use crate::ui::{panels::{dashboard, php_versions, php_extensions, php_ini}, sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding, phpinfo, compat, history};
+use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding, phpinfo, compat, history, env_editor, artisan as artisan_panel, database as database_panel};
+use crate::ui::command_palette;
 use crate::ui::components::toast::{self, ToastType};
 
 pub struct ValetManagerApp {
@@ -180,6 +181,52 @@ impl ValetManagerApp {
                 AppEvent::UpdateAvailable(info) => {
                     self.state.update_info = Some(info);
                 }
+                // Phase 9 — .env editor
+                AppEvent::EnvFileLoaded { site, entries, example } => {
+                    self.state.env_selected_site = Some(site);
+                    self.state.env_entries = entries;
+                    self.state.env_example_entries = example;
+                }
+                AppEvent::EnvFileSaved => {
+                    toast::push_toast(
+                        &mut self.state.toasts,
+                        ".env saved",
+                        ToastType::Success,
+                    );
+                }
+                // Phase 9 — Artisan
+                AppEvent::ArtisanCommandsLoaded { site, tool, commands } => {
+                    self.state.artisan_site = Some(site);
+                    self.state.artisan_tool = Some(tool);
+                    self.state.artisan_commands = commands;
+                    self.state.artisan_autocomplete_selected = 0;
+                }
+                AppEvent::ArtisanOutputLine(line) => {
+                    self.state.artisan_output.push(line);
+                    if self.state.artisan_output.len() > 1000 {
+                        let overflow = self.state.artisan_output.len() - 1000;
+                        self.state.artisan_output.drain(0..overflow);
+                    }
+                }
+                AppEvent::ArtisanComplete => {}
+                // Phase 9 — Database
+                AppEvent::DatabasesLoaded(list) => {
+                    self.state.databases = list;
+                }
+                AppEvent::TablesLoaded { database, tables } => {
+                    self.state.db_selected_database = Some(database);
+                    self.state.db_tables = tables;
+                }
+                AppEvent::MigrationOutput(line) => {
+                    self.state.db_migration_output.push(line);
+                    if self.state.db_migration_output.len() > 1000 {
+                        let overflow = self.state.db_migration_output.len() - 1000;
+                        self.state.db_migration_output.drain(0..overflow);
+                    }
+                }
+                AppEvent::MigrationComplete => {
+                    self.state.db_migration_running = false;
+                }
             }
         }
     }
@@ -193,9 +240,10 @@ impl eframe::App for ValetManagerApp {
         ctx.request_repaint_after(Duration::from_secs(1));
 
         // Keyboard shortcuts
+        let mut toggle_palette = false;
         ui.input(|i| {
             if i.key_pressed(egui::Key::K) && i.modifiers.ctrl {
-                let _ = self.cmd_tx.try_send(AppCommand::OpenCommandPalette);
+                toggle_palette = true;
             }
             if i.key_pressed(egui::Key::R) && i.modifiers.ctrl {
                 let _ = self.cmd_tx.try_send(AppCommand::RefreshAll);
@@ -204,6 +252,15 @@ impl eframe::App for ValetManagerApp {
                 let _ = self.cmd_tx.try_send(AppCommand::OpenPanel(Panel::Settings));
             }
         });
+        if toggle_palette {
+            let now_open = !self.state.ui.palette.open;
+            self.state.ui.palette.open = now_open;
+            if now_open {
+                self.state.ui.palette.index = command_palette::build_index(&self.state);
+                self.state.ui.palette.query.clear();
+                self.state.ui.palette.selected = 0;
+            }
+        }
 
         // ── Titlebar ─────────────────────────────────────────────────────
         egui::Panel::top("titlebar")
@@ -415,6 +472,15 @@ impl eframe::App for ValetManagerApp {
                         Panel::History => {
                             history::render(ui, &mut self.state, &self.cmd_tx);
                         }
+                        Panel::EnvEditor => {
+                            env_editor::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::Artisan => {
+                            artisan_panel::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::Database => {
+                            database_panel::render(ui, &mut self.state, &self.cmd_tx);
+                        }
                         _ => stub_panel(ui, &self.state.ui.active_panel),
                     }
                 });
@@ -423,6 +489,11 @@ impl eframe::App for ValetManagerApp {
         // ── Mobile hamburger overlay ─────────────────────────────────────
         if hide_sidebar {
             render_mobile_hamburger(&ctx, &mut self.state, &self.cmd_tx);
+        }
+
+        // ── Command palette overlay ──────────────────────────────────────
+        if let Some(cmd) = command_palette::render(&ctx, &mut self.state.ui.palette) {
+            let _ = self.cmd_tx.try_send(cmd);
         }
 
         // ── Floating toasts ──────────────────────────────────────────────
@@ -1217,6 +1288,247 @@ pub async fn run_dispatcher(
                 let _ = tokio::process::Command::new("xdg-open")
                     .arg(crate::updater::releases_url())
                     .spawn();
+            }
+            // Phase 9 — .env editor
+            AppCommand::LoadEnvFile(site) => {
+                let tx = tx.clone();
+                let state_clone = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let site_path = {
+                        let s = state_clone.read().await;
+                        s.sites
+                            .iter()
+                            .find(|x| x.domain == site)
+                            .map(|x| x.path.clone())
+                    };
+                    let Some(path) = site_path else {
+                        let _ = tx
+                            .send(AppEvent::Error(format!("site not found: {}", site)))
+                            .await;
+                        return;
+                    };
+                    let result = tokio::task::spawn_blocking(move || {
+                        let env_text = std::fs::read_to_string(path.join(".env")).unwrap_or_default();
+                        let example_text = std::fs::read_to_string(path.join(".env.example")).unwrap_or_default();
+                        (
+                            crate::env_file::parse(&env_text),
+                            crate::env_file::parse(&example_text),
+                        )
+                    })
+                    .await;
+                    match result {
+                        Ok((entries, example)) => {
+                            let _ = tx
+                                .send(AppEvent::EnvFileLoaded { site, entries, example })
+                                .await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            AppCommand::SaveEnvFile { site, content } => {
+                let tx = tx.clone();
+                let state_clone = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let site_path = {
+                        let s = state_clone.read().await;
+                        s.sites
+                            .iter()
+                            .find(|x| x.domain == site)
+                            .map(|x| x.path.clone())
+                    };
+                    let Some(path) = site_path else {
+                        let _ = tx
+                            .send(AppEvent::Error(format!("site not found: {}", site)))
+                            .await;
+                        return;
+                    };
+                    let result = tokio::task::spawn_blocking(move || {
+                        crate::env_file::save_atomic(&path.join(".env"), &content)
+                    })
+                    .await;
+                    match result {
+                        Ok(Ok(())) => {
+                            let _ = tx.send(AppEvent::EnvFileSaved).await;
+                        }
+                        Ok(Err(e)) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            // Phase 9 — Artisan
+            AppCommand::LoadArtisanCommands(site) => {
+                let tx = tx.clone();
+                let state_clone = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let site_path = {
+                        let s = state_clone.read().await;
+                        s.sites
+                            .iter()
+                            .find(|x| x.domain == site)
+                            .map(|x| x.path.clone())
+                    };
+                    let Some(path) = site_path else {
+                        let _ = tx
+                            .send(AppEvent::Error(format!("site not found: {}", site)))
+                            .await;
+                        return;
+                    };
+                    let Some(tool) = crate::artisan::detect_tool(&path) else {
+                        let _ = tx
+                            .send(AppEvent::Error(format!(
+                                "no artisan/bin-console/bin-magento at {}",
+                                path.display()
+                            )))
+                            .await;
+                        return;
+                    };
+                    match crate::artisan::discover(&path, tool).await {
+                        Ok(commands) => {
+                            let _ = tx
+                                .send(AppEvent::ArtisanCommandsLoaded {
+                                    site,
+                                    tool,
+                                    commands,
+                                })
+                                .await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
+                    }
+                });
+            }
+            AppCommand::RunArtisan { site, command, args } => {
+                let tx = tx.clone();
+                let state_clone = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let site_path = {
+                        let s = state_clone.read().await;
+                        s.sites
+                            .iter()
+                            .find(|x| x.domain == site)
+                            .map(|x| x.path.clone())
+                    };
+                    let Some(path) = site_path else {
+                        let _ = tx
+                            .send(AppEvent::Error(format!("site not found: {}", site)))
+                            .await;
+                        return;
+                    };
+                    let tool = crate::artisan::detect_tool(&path)
+                        .unwrap_or(crate::artisan::ArtisanTool::Artisan);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::ArtisanOutputLine(line)).await;
+                        }
+                    });
+                    // Build argv: tool's binary, optional script, command, then args by whitespace
+                    let mut argv: Vec<String> = Vec::new();
+                    let script = tool.script();
+                    if !script.is_empty() {
+                        argv.push(script.to_string());
+                    }
+                    argv.push(command);
+                    for tok in args.split_whitespace() {
+                        argv.push(tok.to_string());
+                    }
+                    let bin = tool.binary();
+                    let argv_refs: Vec<&str> = argv.iter().map(|s| s.as_str()).collect();
+                    let _ = crate::creator::output_streamer::stream_command(
+                        bin,
+                        &argv_refs,
+                        Some(&path),
+                        out_tx,
+                        cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                    let _ = tx.send(AppEvent::ArtisanComplete).await;
+                });
+            }
+            // Phase 9 — Database
+            AppCommand::RefreshDatabases => {
+                let tx = tx.clone();
+                let state_clone = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let creds = { state_clone.read().await.db_credentials.clone() };
+                    let dbs = crate::database::list_databases(&creds)
+                        .await
+                        .unwrap_or_default();
+                    let _ = tx.send(AppEvent::DatabasesLoaded(dbs)).await;
+                });
+            }
+            AppCommand::SelectDatabase(name) => {
+                let tx = tx.clone();
+                let state_clone = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let creds = { state_clone.read().await.db_credentials.clone() };
+                    let tables = crate::database::list_tables(&creds, &name)
+                        .await
+                        .unwrap_or_default();
+                    let _ = tx
+                        .send(AppEvent::TablesLoaded { database: name, tables })
+                        .await;
+                });
+            }
+            AppCommand::RunMigration { site, action } => {
+                let tx = tx.clone();
+                let state_clone = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let site_path = {
+                        let s = state_clone.read().await;
+                        s.sites
+                            .iter()
+                            .find(|x| x.domain == site)
+                            .map(|x| x.path.clone())
+                    };
+                    let Some(path) = site_path else {
+                        let _ = tx
+                            .send(AppEvent::Error(format!("site not found: {}", site)))
+                            .await;
+                        return;
+                    };
+                    {
+                        let mut s = state_clone.write().await;
+                        s.db_migration_running = true;
+                    }
+                    let argv: Vec<&str> = match action.as_str() {
+                        "fresh"    => vec!["artisan", "migrate:fresh", "--force"],
+                        "seed"     => vec!["artisan", "db:seed", "--force"],
+                        "rollback" => vec!["artisan", "migrate:rollback", "--force"],
+                        _           => vec!["artisan", "migrate", "--force"],
+                    };
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::MigrationOutput(line)).await;
+                        }
+                    });
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "php",
+                        &argv,
+                        Some(&path),
+                        out_tx,
+                        cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                    let _ = tx.send(AppEvent::MigrationComplete).await;
+                });
             }
         }
     }

@@ -16,6 +16,9 @@ mod notifications;
 mod history;
 mod deep_link;
 mod updater;
+mod env_file;
+mod artisan;
+mod database;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};

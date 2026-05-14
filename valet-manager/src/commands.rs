@@ -80,6 +80,16 @@ pub enum AppCommand {
     CheckForUpdates,
     SkipUpdate(String),
     OpenUpdatePage,
+    // Phase 9 — .env editor
+    LoadEnvFile(String),
+    SaveEnvFile { site: String, content: String },
+    // Phase 9 — Artisan
+    LoadArtisanCommands(String),
+    RunArtisan { site: String, command: String, args: String },
+    // Phase 9 — Database
+    RefreshDatabases,
+    SelectDatabase(String),
+    RunMigration { site: String, action: String },
 }
 
 #[derive(Debug, Clone)]

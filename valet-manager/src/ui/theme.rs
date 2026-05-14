@@ -24,6 +24,8 @@ impl Colors {
     pub const INFO:           Color32 = Color32::from_rgb(0x37, 0x8A, 0xDD);
     #[allow(dead_code)]
     pub const SUCCESS:        Color32 = Color32::from_rgb(0x5D, 0xCA, 0xA5); // same as ACCENT
+    #[allow(dead_code)]
+    pub const PURPLE:         Color32 = Color32::from_rgb(0x9B, 0x5F, 0xF5);
     // Close button danger tint: rgba(226,75,74,0.18) = premultiplied ~(41,14,13,46)
     pub const CLOSE_BTN_BG:   Color32 = Color32::from_rgba_premultiplied(41, 14, 13, 46);
 }
@@ -223,5 +225,31 @@ pub fn framework_display_name(fw: &DetectedFramework) -> &'static str {
         DetectedFramework::Symfony       => "Symfony",
         DetectedFramework::Zend          => "Zend/Laminas",
         DetectedFramework::Unknown       => "PHP",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn purple_is_distinct_from_accent() {
+        assert_ne!(Colors::PURPLE, Colors::ACCENT);
+    }
+
+    #[test]
+    fn purple_rgb_matches_design_token() {
+        assert_eq!(Colors::PURPLE, Color32::from_rgb(0x9B, 0x5F, 0xF5));
+    }
+
+    #[test]
+    fn with_alpha_sets_alpha_byte() {
+        let c = with_alpha(Colors::ACCENT, 100);
+        assert_eq!(c.a(), 100);
+        // Premultiplied opaque returns same color
+        let opaque = with_alpha(Colors::ACCENT, 255);
+        assert_eq!(opaque.r(), Colors::ACCENT.r());
+        assert_eq!(opaque.g(), Colors::ACCENT.g());
+        assert_eq!(opaque.b(), Colors::ACCENT.b());
     }
 }

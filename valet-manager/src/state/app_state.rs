@@ -99,6 +99,29 @@ pub struct AppState {
     pub history_expanded: Option<i64>,
     // Phase 7 — updater
     pub update_info: Option<crate::updater::UpdateInfo>,
+    // Phase 9 — .env editor
+    pub env_selected_site: Option<String>,
+    pub env_entries: Vec<crate::env_file::EnvEntry>,
+    pub env_example_entries: Vec<crate::env_file::EnvEntry>,
+    pub env_active_group: String,
+    pub env_show_secrets: bool,
+    // Phase 9 — Artisan
+    pub artisan_site: Option<String>,
+    pub artisan_tool: Option<crate::artisan::ArtisanTool>,
+    pub artisan_commands: Vec<crate::artisan::ArtisanCommand>,
+    pub artisan_input: String,
+    pub artisan_args: String,
+    pub artisan_autocomplete_selected: usize,
+    pub artisan_output: Vec<crate::creator::output_streamer::OutputLine>,
+    // Phase 9 — Database
+    pub db_engine: crate::database::DbEngine,
+    pub db_credentials: crate::database::DbCredentials,
+    pub db_selected_site: Option<String>,
+    pub databases: Vec<crate::database::DbDatabase>,
+    pub db_selected_database: Option<String>,
+    pub db_tables: Vec<crate::database::DbTable>,
+    pub db_migration_output: Vec<crate::creator::output_streamer::OutputLine>,
+    pub db_migration_running: bool,
 }
 
 impl Default for AppState {
@@ -152,6 +175,29 @@ impl Default for AppState {
             history: Vec::new(),
             history_expanded: None,
             update_info: None,
+            // Phase 9 — .env editor
+            env_selected_site: None,
+            env_entries: Vec::new(),
+            env_example_entries: Vec::new(),
+            env_active_group: "APP".to_string(),
+            env_show_secrets: false,
+            // Phase 9 — Artisan
+            artisan_site: None,
+            artisan_tool: None,
+            artisan_commands: Vec::new(),
+            artisan_input: String::new(),
+            artisan_args: String::new(),
+            artisan_autocomplete_selected: 0,
+            artisan_output: Vec::new(),
+            // Phase 9 — Database
+            db_engine: crate::database::DbEngine::MySql,
+            db_credentials: crate::database::DbCredentials::default(),
+            db_selected_site: None,
+            databases: Vec::new(),
+            db_selected_database: None,
+            db_tables: Vec::new(),
+            db_migration_output: Vec::new(),
+            db_migration_running: false,
         }
     }
 }
@@ -176,6 +222,8 @@ pub struct UiState {
     pub selected_extension: Option<String>,
     // Phase 6 — responsive sidebar
     pub mobile_sidebar_open: bool,
+    // Phase 9 — command palette
+    pub palette: crate::ui::command_palette::PaletteState,
 }
 
 impl Default for UiState {
@@ -196,6 +244,7 @@ impl Default for UiState {
             confirm_delete_php: None,
             selected_extension: None,
             mobile_sidebar_open: false,
+            palette: crate::ui::command_palette::PaletteState::default(),
         }
     }
 }
