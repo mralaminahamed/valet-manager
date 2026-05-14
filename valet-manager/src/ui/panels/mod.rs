@@ -19,3 +19,7 @@ pub mod history;
 pub mod env_editor;
 pub mod artisan;
 pub mod database;
+pub mod ssl_certs;
+pub mod xdebug;
+pub mod mail_catcher;
+pub mod queue;

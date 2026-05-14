@@ -19,6 +19,9 @@ mod updater;
 mod env_file;
 mod artisan;
 mod database;
+mod ssl;
+mod mail;
+mod queue;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};

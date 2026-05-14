@@ -122,6 +122,22 @@ pub struct AppState {
     pub db_tables: Vec<crate::database::DbTable>,
     pub db_migration_output: Vec<crate::creator::output_streamer::OutputLine>,
     pub db_migration_running: bool,
+    // Phase 10 — SSL certs
+    pub ssl_certs: Vec<crate::ssl::cert_reader::CertInfo>,
+    pub ssl_ca_trusted: bool,
+    // Phase 10 — Xdebug
+    pub xdebug_configs: std::collections::HashMap<String, crate::php::xdebug::XdebugConfig>,
+    pub xdebug_install_output: Vec<crate::creator::output_streamer::OutputLine>,
+    // Phase 10 — Mail catcher
+    pub mail_status: crate::mail::mailpit::MailStatus,
+    pub mail_apply_site: Option<String>,
+    // Phase 10 — Queue workers
+    pub queue_workers: Vec<crate::queue::QueueWorker>,
+    pub queue_add_modal: bool,
+    pub queue_add_site: Option<String>,
+    pub queue_add_connection: String,
+    pub queue_add_queue: String,
+    pub queue_add_start_on_boot: bool,
 }
 
 impl Default for AppState {
@@ -198,6 +214,28 @@ impl Default for AppState {
             db_tables: Vec::new(),
             db_migration_output: Vec::new(),
             db_migration_running: false,
+            // Phase 10 — SSL certs
+            ssl_certs: Vec::new(),
+            ssl_ca_trusted: true,
+            // Phase 10 — Xdebug
+            xdebug_configs: std::collections::HashMap::new(),
+            xdebug_install_output: Vec::new(),
+            // Phase 10 — Mail catcher
+            mail_status: crate::mail::mailpit::MailStatus {
+                tool: crate::mail::mailpit::MailTool::Mailpit,
+                running: false,
+                smtp_port: 1025,
+                http_port: 8025,
+                unread: 0,
+            },
+            mail_apply_site: None,
+            // Phase 10 — Queue workers
+            queue_workers: Vec::new(),
+            queue_add_modal: false,
+            queue_add_site: None,
+            queue_add_connection: "redis".to_string(),
+            queue_add_queue: "default".to_string(),
+            queue_add_start_on_boot: false,
         }
     }
 }
@@ -302,5 +340,39 @@ mod tests {
     #[test]
     fn app_state_ini_raw_defaults_empty() {
         assert_eq!(AppState::default().ini_raw, "");
+    }
+
+    // Phase 10 default-state assertions
+    #[test]
+    fn app_state_ssl_certs_defaults_empty() {
+        assert!(AppState::default().ssl_certs.is_empty());
+    }
+
+    #[test]
+    fn app_state_ssl_ca_trusted_defaults_true() {
+        assert!(AppState::default().ssl_ca_trusted);
+    }
+
+    #[test]
+    fn app_state_xdebug_configs_defaults_empty() {
+        assert!(AppState::default().xdebug_configs.is_empty());
+    }
+
+    #[test]
+    fn app_state_mail_status_defaults_stopped() {
+        let s = AppState::default();
+        assert!(!s.mail_status.running);
+        assert_eq!(s.mail_status.smtp_port, 1025);
+        assert_eq!(s.mail_status.http_port, 8025);
+        assert_eq!(s.mail_status.unread, 0);
+    }
+
+    #[test]
+    fn app_state_queue_workers_defaults_empty() {
+        let s = AppState::default();
+        assert!(s.queue_workers.is_empty());
+        assert!(!s.queue_add_modal);
+        assert_eq!(s.queue_add_connection, "redis");
+        assert_eq!(s.queue_add_queue, "default");
     }
 }

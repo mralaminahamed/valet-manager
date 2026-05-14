@@ -136,6 +136,49 @@ pub fn build_index(state: &AppState) -> Vec<PaletteResult> {
         shortcut: None,
     });
 
+    // Phase 10 — Install Xdebug entries for PHP versions where it's not installed
+    for v in &state.php_versions {
+        let needs_install = state
+            .xdebug_configs
+            .get(&v.version)
+            .map(|c| !c.installed)
+            .unwrap_or(false);
+        if needs_install {
+            idx.push(PaletteResult {
+                label: format!("Install Xdebug for PHP {}", v.version),
+                subtitle: Some(format!("php{}-xdebug", v.version)),
+                category: PaletteCategory::Action,
+                action: AppCommand::InstallXdebug(v.version.clone()),
+                shortcut: None,
+            });
+        }
+    }
+
+    // Phase 10 — Mail catcher actions
+    idx.push(PaletteResult {
+        label: "Mail catcher: Start".to_string(),
+        subtitle: None,
+        category: PaletteCategory::Action,
+        action: AppCommand::StartMailCatcher,
+        shortcut: None,
+    });
+    idx.push(PaletteResult {
+        label: "Mail catcher: Stop".to_string(),
+        subtitle: None,
+        category: PaletteCategory::Action,
+        action: AppCommand::StopMailCatcher,
+        shortcut: None,
+    });
+
+    // Phase 10 — SSL refresh
+    idx.push(PaletteResult {
+        label: "Refresh SSL certs".to_string(),
+        subtitle: None,
+        category: PaletteCategory::Action,
+        action: AppCommand::RefreshSslCerts,
+        shortcut: None,
+    });
+
     idx
 }
 
@@ -367,5 +410,20 @@ mod tests {
         assert!(!s.open);
         assert_eq!(s.selected, 0);
         assert!(s.query.is_empty());
+    }
+
+    #[test]
+    fn build_index_includes_mail_catcher_actions() {
+        let state = AppState::default();
+        let idx = build_index(&state);
+        assert!(idx.iter().any(|r| r.label == "Mail catcher: Start"));
+        assert!(idx.iter().any(|r| r.label == "Mail catcher: Stop"));
+    }
+
+    #[test]
+    fn build_index_includes_ssl_refresh() {
+        let state = AppState::default();
+        let idx = build_index(&state);
+        assert!(idx.iter().any(|r| r.label == "Refresh SSL certs"));
     }
 }

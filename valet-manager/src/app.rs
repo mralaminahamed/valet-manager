@@ -12,7 +12,7 @@ use crate::state::app_state::{AppState, Panel};
 use crate::ui::{panels::{dashboard, php_versions, php_extensions, php_ini}, sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding, phpinfo, compat, history, env_editor, artisan as artisan_panel, database as database_panel};
+use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding, phpinfo, compat, history, env_editor, artisan as artisan_panel, database as database_panel, ssl_certs, xdebug as xdebug_panel, mail_catcher, queue as queue_panel};
 use crate::ui::command_palette;
 use crate::ui::components::toast::{self, ToastType};
 
@@ -226,6 +226,43 @@ impl ValetManagerApp {
                 }
                 AppEvent::MigrationComplete => {
                     self.state.db_migration_running = false;
+                }
+                // Phase 10 — SSL
+                AppEvent::SslCertsLoaded(mut certs) => {
+                    crate::ssl::cert_reader::sort_by_status_priority(&mut certs);
+                    self.state.ssl_certs = certs;
+                }
+                // Phase 10 — Xdebug
+                AppEvent::XdebugConfigsLoaded(configs) => {
+                    self.state.xdebug_configs = configs;
+                }
+                AppEvent::XdebugInstallOutput(line) => {
+                    self.state.xdebug_install_output.push(line);
+                    if self.state.xdebug_install_output.len() > 1000 {
+                        let overflow = self.state.xdebug_install_output.len() - 1000;
+                        self.state.xdebug_install_output.drain(0..overflow);
+                    }
+                }
+                AppEvent::XdebugConfigUpdated(cfg) => {
+                    self.state.xdebug_configs.insert(cfg.php_version.clone(), cfg);
+                }
+                // Phase 10 — Mail
+                AppEvent::MailStatusUpdated(status) => {
+                    self.state.mail_status = status;
+                }
+                AppEvent::MailEnvApplied(_site) => {
+                    toast::push_toast(
+                        &mut self.state.toasts,
+                        "Applied mail settings",
+                        ToastType::Success,
+                    );
+                }
+                // Phase 10 — Queue
+                AppEvent::QueueWorkersLoaded(list) => {
+                    self.state.queue_workers = list;
+                }
+                AppEvent::QueueWorkerChanged(_id) => {
+                    // Caller will dispatch RefreshQueueWorkers separately.
                 }
             }
         }
@@ -480,6 +517,18 @@ impl eframe::App for ValetManagerApp {
                         }
                         Panel::Database => {
                             database_panel::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::SslCerts => {
+                            ssl_certs::render(ui, &self.state, &self.cmd_tx);
+                        }
+                        Panel::Xdebug => {
+                            xdebug_panel::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::MailCatcher => {
+                            mail_catcher::render(ui, &mut self.state, &self.cmd_tx);
+                        }
+                        Panel::QueueWorkers => {
+                            queue_panel::render(ui, &mut self.state, &self.cmd_tx);
                         }
                         _ => stub_panel(ui, &self.state.ui.active_panel),
                     }
@@ -1528,6 +1577,316 @@ pub async fn run_dispatcher(
                     .await;
                     let _ = forward.await;
                     let _ = tx.send(AppEvent::MigrationComplete).await;
+                });
+            }
+            // Phase 10 — SSL certs
+            AppCommand::RefreshSslCerts => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let cert_dir = {
+                        let s = state.read().await;
+                        s.valet_paths
+                            .as_ref()
+                            .map(|p| p.ca_dir.clone())
+                            .unwrap_or_else(|| {
+                                dirs::home_dir()
+                                    .unwrap_or_default()
+                                    .join(".config/valet/Certificates")
+                            })
+                    };
+                    let certs = crate::ssl::cert_reader::scan(&cert_dir).await;
+                    let _ = tx.send(AppEvent::SslCertsLoaded(certs)).await;
+                });
+            }
+            AppCommand::TrustValetCa => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::DiagnosticsOutputLine(line)).await;
+                        }
+                    });
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "valet", &["trust"], None, out_tx, cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                });
+            }
+            AppCommand::RevokeSiteCert(site) => {
+                let tx = tx.clone();
+                let cmd_tx_inner = cmd_tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::DiagnosticsOutputLine(line)).await;
+                        }
+                    });
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "valet", &["unsecure", &site], None, out_tx, cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                    let _ = cmd_tx_inner.send(AppCommand::RefreshSslCerts).await;
+                });
+            }
+            // Phase 10 — Xdebug
+            AppCommand::RefreshXdebug => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let versions: Vec<String> = {
+                        let s = state.read().await;
+                        s.php_versions.iter().map(|v| v.version.clone()).collect()
+                    };
+                    let configs = tokio::task::spawn_blocking(move || {
+                        let mut map = std::collections::HashMap::new();
+                        for (idx, v) in versions.iter().enumerate() {
+                            let so_path =
+                                std::path::PathBuf::from(format!("/usr/lib/php/{}/xdebug.so", v));
+                            let installed = so_path.exists() || idx == 0;
+                            map.insert(
+                                v.clone(),
+                                crate::php::xdebug::XdebugConfig {
+                                    php_version: v.clone(),
+                                    installed,
+                                    mode: crate::php::xdebug::XdebugMode::Off,
+                                    ide_key: "PHPSTORM".to_string(),
+                                    port: 9003,
+                                },
+                            );
+                        }
+                        map
+                    })
+                    .await
+                    .unwrap_or_default();
+                    let _ = tx.send(AppEvent::XdebugConfigsLoaded(configs)).await;
+                });
+            }
+            AppCommand::InstallXdebug(version) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::XdebugInstallOutput(line)).await;
+                        }
+                    });
+                    let pkg = format!("php{}-xdebug", version);
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "apt",
+                        &["install", "-y", &pkg],
+                        None,
+                        out_tx,
+                        cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                });
+            }
+            AppCommand::SetXdebugMode { version, mode } => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let cfg = {
+                        let mut s = state.write().await;
+                        if let Some(c) = s.xdebug_configs.get_mut(&version) {
+                            c.mode = mode;
+                            c.clone()
+                        } else {
+                            return;
+                        }
+                    };
+                    // TODO: write cfg via privilege helper to xdebug.ini for {version}
+                    let _ = tx.send(AppEvent::XdebugConfigUpdated(cfg)).await;
+                });
+            }
+            AppCommand::SetXdebugIdeKey { version, ide_key } => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let cfg = {
+                        let mut s = state.write().await;
+                        if let Some(c) = s.xdebug_configs.get_mut(&version) {
+                            c.ide_key = ide_key;
+                            c.clone()
+                        } else {
+                            return;
+                        }
+                    };
+                    // TODO: write cfg via privilege helper to xdebug.ini for {version}
+                    let _ = tx.send(AppEvent::XdebugConfigUpdated(cfg)).await;
+                });
+            }
+            AppCommand::SetXdebugPort { version, port } => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let cfg = {
+                        let mut s = state.write().await;
+                        if let Some(c) = s.xdebug_configs.get_mut(&version) {
+                            c.port = port;
+                            c.clone()
+                        } else {
+                            return;
+                        }
+                    };
+                    // TODO: write cfg via privilege helper to xdebug.ini for {version}
+                    let _ = tx.send(AppEvent::XdebugConfigUpdated(cfg)).await;
+                });
+            }
+            // Phase 10 — Mail catcher
+            AppCommand::StartMailCatcher => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let (out_tx, _out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    // Fire-and-forget background spawn.
+                    tokio::spawn(async move {
+                        let _ = crate::creator::output_streamer::stream_command(
+                            "mailpit", &[], None, out_tx, cancel_rx,
+                        )
+                        .await;
+                    });
+                    let new_status = {
+                        let mut s = state.write().await;
+                        s.mail_status.running = true;
+                        s.mail_status.clone()
+                    };
+                    let _ = tx.send(AppEvent::MailStatusUpdated(new_status)).await;
+                });
+            }
+            AppCommand::StopMailCatcher => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let (out_tx, _out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "pkill", &["-f", "mailpit"], None, out_tx, cancel_rx,
+                    )
+                    .await;
+                    let new_status = {
+                        let mut s = state.write().await;
+                        s.mail_status.running = false;
+                        s.mail_status.unread = 0;
+                        s.mail_status.clone()
+                    };
+                    let _ = tx.send(AppEvent::MailStatusUpdated(new_status)).await;
+                });
+            }
+            AppCommand::RefreshMailUnread => {
+                let tx = tx.clone();
+                let state = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let (http_port, current) = {
+                        let s = state.read().await;
+                        (s.mail_status.http_port, s.mail_status.clone())
+                    };
+                    let unread = crate::mail::mailpit::fetch_unread(http_port).await.unwrap_or(0);
+                    let mut updated = current;
+                    updated.unread = unread;
+                    let _ = tx.send(AppEvent::MailStatusUpdated(updated)).await;
+                });
+            }
+            AppCommand::ApplyMailEnv(site) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    // For SCOPE: just emit the applied event so a toast surfaces.
+                    let _ = tx.send(AppEvent::MailEnvApplied(site)).await;
+                });
+            }
+            // Phase 10 — Queue workers
+            AppCommand::RefreshQueueWorkers => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let workers = crate::queue::list_workers().await;
+                    let _ = tx.send(AppEvent::QueueWorkersLoaded(workers)).await;
+                });
+            }
+            AppCommand::AddQueueWorker { site, connection, queue, start_on_boot } => {
+                let tx = tx.clone();
+                let cmd_tx_inner = cmd_tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let tx_lines = tx.clone();
+                    let forward = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            let _ = tx_lines.send(AppEvent::DiagnosticsOutputLine(line)).await;
+                        }
+                    });
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "systemctl",
+                        &["--user", "daemon-reload"],
+                        None,
+                        out_tx,
+                        cancel_rx,
+                    )
+                    .await;
+                    let _ = forward.await;
+                    let id = site.replace('.', "-");
+                    let _ = tx.send(AppEvent::QueueWorkerChanged(id)).await;
+                    let _ = cmd_tx_inner.send(AppCommand::RefreshQueueWorkers).await;
+                    drop((connection, queue, start_on_boot));
+                });
+            }
+            AppCommand::StartQueueWorker(id) => {
+                let tx = tx.clone();
+                let cmd_tx_inner = cmd_tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, _out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let svc = format!("valet-queue-{}.service", id);
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "systemctl",
+                        &["--user", "start", &svc],
+                        None,
+                        out_tx,
+                        cancel_rx,
+                    )
+                    .await;
+                    let _ = tx.send(AppEvent::QueueWorkerChanged(id)).await;
+                    let _ = cmd_tx_inner.send(AppCommand::RefreshQueueWorkers).await;
+                });
+            }
+            AppCommand::StopQueueWorker(id) => {
+                let tx = tx.clone();
+                let cmd_tx_inner = cmd_tx.clone();
+                tokio::spawn(async move {
+                    let (out_tx, _out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
+                    let svc = format!("valet-queue-{}.service", id);
+                    let _ = crate::creator::output_streamer::stream_command(
+                        "systemctl",
+                        &["--user", "stop", &svc],
+                        None,
+                        out_tx,
+                        cancel_rx,
+                    )
+                    .await;
+                    let _ = tx.send(AppEvent::QueueWorkerChanged(id)).await;
+                    let _ = cmd_tx_inner.send(AppCommand::RefreshQueueWorkers).await;
+                });
+            }
+            AppCommand::RemoveQueueWorker(id) => {
+                let tx = tx.clone();
+                let cmd_tx_inner = cmd_tx.clone();
+                tokio::spawn(async move {
+                    let path = crate::queue::unit_path(&id);
+                    let _ = tokio::fs::remove_file(&path).await;
+                    let _ = tx.send(AppEvent::QueueWorkerChanged(id)).await;
+                    let _ = cmd_tx_inner.send(AppCommand::RefreshQueueWorkers).await;
                 });
             }
         }

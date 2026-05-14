@@ -90,6 +90,41 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         ui.add_space(6.0);
     }
 
+    // ── SSL cert status banner ──────────────────────────────────────────
+    let ssl_critical = state
+        .ssl_certs
+        .iter()
+        .filter(|c| {
+            matches!(
+                c.status,
+                crate::ssl::cert_reader::CertStatus::Critical
+                    | crate::ssl::cert_reader::CertStatus::Expired
+            )
+        })
+        .count();
+    let ssl_warning = state
+        .ssl_certs
+        .iter()
+        .filter(|c| c.status == crate::ssl::cert_reader::CertStatus::Warning)
+        .count();
+    if ssl_critical > 0 {
+        alert_banner(
+            ui,
+            BannerLevel::Danger,
+            "⚠",
+            &format!("{} SSL certs expired or critical", ssl_critical),
+        );
+        ui.add_space(6.0);
+    } else if ssl_warning > 0 {
+        alert_banner(
+            ui,
+            BannerLevel::Warning,
+            "⚠",
+            &format!("{} SSL certs expiring soon", ssl_warning),
+        );
+        ui.add_space(6.0);
+    }
+
     // ── Stats grid (4 equal columns) ────────────────────────────────────
     let running = state.services.iter().filter(|s| s.status == ServiceStatus::Running).count();
     let total   = state.services.len();

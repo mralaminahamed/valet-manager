@@ -85,6 +85,18 @@ pub enum AppEvent {
     },
     MigrationOutput(crate::creator::output_streamer::OutputLine),
     MigrationComplete,
+    // Phase 10 — SSL certs
+    SslCertsLoaded(Vec<crate::ssl::cert_reader::CertInfo>),
+    // Phase 10 — Xdebug
+    XdebugConfigsLoaded(std::collections::HashMap<String, crate::php::xdebug::XdebugConfig>),
+    XdebugInstallOutput(crate::creator::output_streamer::OutputLine),
+    XdebugConfigUpdated(crate::php::xdebug::XdebugConfig),
+    // Phase 10 — Mail catcher
+    MailStatusUpdated(crate::mail::mailpit::MailStatus),
+    MailEnvApplied(String),
+    // Phase 10 — Queue workers
+    QueueWorkersLoaded(Vec<crate::queue::QueueWorker>),
+    QueueWorkerChanged(String),
 }
 
 #[cfg(test)]

@@ -90,6 +90,27 @@ pub enum AppCommand {
     RefreshDatabases,
     SelectDatabase(String),
     RunMigration { site: String, action: String },
+    // Phase 10 — SSL certs
+    RefreshSslCerts,
+    TrustValetCa,
+    RevokeSiteCert(String),
+    // Phase 10 — Xdebug
+    RefreshXdebug,
+    InstallXdebug(String),
+    SetXdebugMode { version: String, mode: crate::php::xdebug::XdebugMode },
+    SetXdebugIdeKey { version: String, ide_key: String },
+    SetXdebugPort   { version: String, port: u16 },
+    // Phase 10 — Mail catcher
+    StartMailCatcher,
+    StopMailCatcher,
+    RefreshMailUnread,
+    ApplyMailEnv(String),
+    // Phase 10 — Queue workers
+    RefreshQueueWorkers,
+    AddQueueWorker { site: String, connection: String, queue: String, start_on_boot: bool },
+    StartQueueWorker(String),
+    StopQueueWorker(String),
+    RemoveQueueWorker(String),
 }
 
 #[derive(Debug, Clone)]

@@ -7,3 +7,4 @@ pub mod extension_manager;
 pub mod ini_manager;
 pub mod phpinfo_parser;
 pub mod compat_checker;
+pub mod xdebug;
