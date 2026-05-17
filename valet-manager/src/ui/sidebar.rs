@@ -2,8 +2,8 @@ use egui::{Color32, RichText, Stroke};
 use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
-use crate::state::app_state::{AppState, Panel};
-use crate::ui::theme::{Colors, divider, section_label, status_dot, with_alpha};
+use crate::state::app_state::{AppState, Screen};
+use crate::ui::theme::{Colors, divider, section_label, with_alpha};
 
 /// Viewport ≥ 1000 px → full 220 px sidebar with labels.
 #[allow(dead_code)]
@@ -24,26 +24,9 @@ pub fn should_hide(viewport_width: f32) -> bool {
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>, icon_only: bool) {
     ui.spacing_mut().item_spacing.y = 2.0;
 
-    // ── Brand area ────────────────────────────────────────────────────
+    // ── Brand ──────────────────────────────────────────────────────────
     ui.add_space(14.0);
-    if icon_only {
-        ui.horizontal(|ui| {
-            ui.add_space(2.0);
-            let (icon_rect, _) =
-                ui.allocate_exact_size(egui::vec2(28.0, 28.0), egui::Sense::hover());
-            if ui.is_rect_visible(icon_rect) {
-                let painter = ui.painter();
-                painter.rect_filled(icon_rect, egui::CornerRadius::same(7), Colors::ACCENT_DEEP);
-                painter.rect_stroke(
-                    icon_rect,
-                    egui::CornerRadius::same(7),
-                    egui::Stroke::new(0.5, with_alpha(Colors::ACCENT, 38)),
-                    egui::StrokeKind::Inside,
-                );
-                paint_v_mark(painter, icon_rect);
-            }
-        });
-    } else {
+    if !icon_only {
         ui.horizontal(|ui| {
             ui.add_space(14.0);
             let (icon_rect, _) =
@@ -75,113 +58,212 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>, 
                 );
             });
         });
+    } else {
+        ui.horizontal(|ui| {
+            ui.add_space(2.0);
+            let (icon_rect, _) =
+                ui.allocate_exact_size(egui::vec2(28.0, 28.0), egui::Sense::hover());
+            if ui.is_rect_visible(icon_rect) {
+                let painter = ui.painter();
+                painter.rect_filled(icon_rect, egui::CornerRadius::same(7), Colors::ACCENT_DEEP);
+                paint_v_mark(painter, icon_rect);
+            }
+        });
     }
     ui.add_space(12.0);
     divider(ui);
-    ui.add_space(4.0);
+    ui.add_space(6.0);
 
-    // ── Nav sections ───────────────────────────────────────────────────
-    if !icon_only { section_label(ui, "management"); }
-    nav_item(ui, "⊞", "Dashboard",      Panel::Dashboard,     &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⌥", "PHP Versions",   Panel::PhpVersions,   &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "◻", "PHP Extensions", Panel::PhpExtensions, &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "≡", "PHP INI",        Panel::PhpIni,        &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "ⓘ", "phpinfo()",      Panel::PhpInfo,       &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "✓", "PHP Compat",     Panel::PhpCompat,     &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "◈", "Sites",          Panel::Sites,         &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⌂", "Parks",          Panel::Parks,         &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⚙", "Nginx",          Panel::Nginx,         &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "✚", "App Creator",   Panel::AppCreator,    &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⇆", "Proxies",        Panel::Proxies,       &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⬡", "dnsmasq",        Panel::Dnsmasq,       &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "🔒", "SSL Certs",     Panel::SslCerts,      &state.ui.active_panel, cmd_tx, icon_only);
+    // ── Workspace nav ──────────────────────────────────────────────────
+    if !icon_only {
+        section_label(ui, "workspace");
+        ui.add_space(2.0);
+    }
 
-    if !icon_only { section_label(ui, "development"); }
-    nav_item(ui, "⊟", "Database",       Panel::Database,      &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "≣", ".env Editor",    Panel::EnvEditor,     &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "▶", "Artisan",        Panel::Artisan,       &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⏭", "Queue Workers",  Panel::QueueWorkers,  &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⊗", "Xdebug",         Panel::Xdebug,        &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "✉", "Mail Catcher",   Panel::MailCatcher,   &state.ui.active_panel, cmd_tx, icon_only);
+    let site_count = state.sites.len();
+    let svc_count  = state.services.len();
 
-    if !icon_only { section_label(ui, "tools"); }
-    nav_item(ui, "✎", "Site Config",    Panel::SiteConfig,    &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "↗", "Sharing",        Panel::Sharing,       &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "◇", "Drivers",        Panel::Drivers,       &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "≡", "Logs",           Panel::Logs,          &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⌛", "History",        Panel::History,       &state.ui.active_panel, cmd_tx, icon_only);
-    nav_item(ui, "⊕", "Diagnostics",    Panel::Diagnostics,   &state.ui.active_panel, cmd_tx, icon_only);
+    screen_nav_item(ui, "◈", "Sites",    Screen::Sites,    &state.ui.active_screen, Some(site_count), cmd_tx, icon_only);
+    screen_nav_item(ui, "◻", "Services", Screen::Services, &state.ui.active_screen, Some(svc_count),  cmd_tx, icon_only);
+    screen_nav_item(ui, "≡", "Logs",     Screen::Logs,     &state.ui.active_screen, None,             cmd_tx, icon_only);
+    screen_nav_item(ui, "⬡", "DNS",      Screen::Dns,      &state.ui.active_screen, None,             cmd_tx, icon_only);
+    screen_nav_item(ui, "⚙", "Settings", Screen::Settings, &state.ui.active_screen, None,             cmd_tx, icon_only);
 
-    // ── Settings + service strip pinned at bottom ────────────────────
-    ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-        nav_item(ui, "⚙", "Settings", Panel::Settings, &state.ui.active_panel, cmd_tx, icon_only);
+    ui.add_space(8.0);
+
+    // ── Quick actions ──────────────────────────────────────────────────
+    if !icon_only {
+        section_label(ui, "quick actions");
+        ui.add_space(2.0);
+
+        quick_action(ui, "✚", "Park directory", cmd_tx, AppCommand::OpenAddSiteModal);
+        quick_action(ui, "⌨", "Open shell",     cmd_tx, AppCommand::OpenShellWindow);
+        quick_action_label(ui, "⊟", "phpMyAdmin", ":8082", cmd_tx, AppCommand::OpenPmaWindow);
+        quick_action(ui, "✉", "Mailpit inbox",  cmd_tx, AppCommand::OpenMailpitWindow);
+    }
+
+    ui.add_space(8.0);
+
+    // ── Footer ─────────────────────────────────────────────────────────
+    if !icon_only {
+        let avail = ui.available_height();
+        ui.add_space((avail - 52.0).max(0.0));
 
         divider(ui);
-        if !icon_only {
-            section_label(ui, "services");
+        ui.add_space(6.0);
 
-            for svc in state.services.iter().rev() {
-                ui.horizontal(|ui| {
-                    ui.add_space(10.0);
-                    status_dot(ui, &svc.status);
-                    ui.add_space(4.0);
-                    let mut label = svc.display_name.clone();
-                    if svc.name == "mailpit" {
-                        if let Some(n) = svc.unread_count.filter(|&n| n > 0) {
-                            label.push_str(&format!(" · {}", n));
-                        }
-                    }
-                    ui.label(RichText::new(&label).size(12.0).color(Colors::TEXT_SECONDARY));
-                });
-            }
-        } else {
-            // Icon-only: just status dots
-            for svc in state.services.iter().rev() {
-                ui.horizontal(|ui| {
-                    ui.add_space(10.0);
-                    status_dot(ui, &svc.status);
-                });
-            }
-        }
-        ui.add_space(4.0);
-    });
+        ui.horizontal(|ui| {
+            ui.add_space(14.0);
+            let all_running = state.services.iter().all(|s| s.status == crate::services::monitor::ServiceStatus::Running);
+            let dot_color = if all_running { Colors::ACCENT } else { Colors::WARNING };
+            let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
+            ui.painter().circle_filled(dot_rect.center(), 4.0, dot_color);
+            ui.add_space(8.0);
+            ui.vertical(|ui| {
+                let health = if all_running { "All services healthy" } else { "Some services stopped" };
+                ui.label(RichText::new(health).size(11.5).color(Colors::TEXT_PRIMARY).strong());
+                ui.label(
+                    RichText::new(format!("valet · {} sites", state.site_count))
+                        .size(10.5)
+                        .color(Colors::TEXT_TERTIARY),
+                );
+            });
+        });
+        ui.add_space(8.0);
+    }
 }
 
-fn nav_item(
+fn screen_nav_item(
     ui: &mut egui::Ui,
     icon: &str,
     label: &str,
-    panel: Panel,
-    active: &Panel,
+    screen: Screen,
+    active: &Screen,
+    count: Option<usize>,
     cmd_tx: &Sender<AppCommand>,
     icon_only: bool,
 ) {
-    let is_active = active == &panel;
-    let bg = if is_active { Colors::ACCENT_DARK } else { Color32::TRANSPARENT };
-    let fg = if is_active { Color32::WHITE } else { Colors::TEXT_SECONDARY };
-    let border = if is_active {
-        Stroke::new(0.5, with_alpha(Colors::ACCENT, 51))
-    } else {
-        Stroke::NONE
-    };
+    let is_active = active == &screen;
+    let text_color = if is_active { Colors::ACCENT } else { Colors::TEXT_SECONDARY };
+    let bg = if is_active { with_alpha(Colors::ACCENT, 18) } else { Color32::TRANSPARENT };
 
-    let text = if icon_only { icon.to_string() } else { format!("{} {}", icon, label) };
-    let (min_w, min_h) = if icon_only { (28.0, 28.0) } else { (204.0, 28.0) };
+    let desired_size = egui::vec2(ui.available_width(), 32.0);
+    let (rect, resp) = ui.allocate_exact_size(desired_size, egui::Sense::click());
 
-    let btn = egui::Button::new(
-        RichText::new(text)
-            .size(12.5)
-            .color(fg),
-    )
-    .fill(bg)
-    .stroke(border)
-    .corner_radius(4.0)
-    .min_size(egui::vec2(min_w, min_h));
+    if ui.is_rect_visible(rect) {
+        if resp.hovered() || is_active {
+            ui.painter().rect_filled(rect, egui::CornerRadius::same(6), bg);
+        }
+        if is_active {
+            ui.painter().rect_stroke(
+                rect,
+                egui::CornerRadius::same(6),
+                egui::Stroke::new(0.5, with_alpha(Colors::ACCENT, 38)),
+                egui::StrokeKind::Inside,
+            );
+        }
+        let inner_rect = rect.shrink2(egui::vec2(10.0, 0.0));
+        if icon_only {
+            ui.painter().text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                icon,
+                egui::FontId::proportional(14.0),
+                text_color,
+            );
+        } else {
+            ui.painter().text(
+                egui::pos2(inner_rect.left(), rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                icon,
+                egui::FontId::proportional(14.0),
+                text_color,
+            );
+            ui.painter().text(
+                egui::pos2(inner_rect.left() + 22.0, rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                label,
+                egui::FontId::proportional(12.5),
+                text_color,
+            );
+            if let Some(n) = count {
+                if n > 0 {
+                    let badge_str = n.to_string();
+                    let badge_rect = egui::Rect::from_min_size(
+                        egui::pos2(inner_rect.right() - 26.0, rect.center().y - 9.0),
+                        egui::vec2(26.0, 18.0),
+                    );
+                    ui.painter().rect_filled(badge_rect, egui::CornerRadius::same(9), with_alpha(Colors::ACCENT, 22));
+                    ui.painter().text(
+                        badge_rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        &badge_str,
+                        egui::FontId::proportional(10.5),
+                        Colors::ACCENT,
+                    );
+                }
+            }
+        }
+    }
 
-    let resp = ui.add(btn);
-    let resp = if icon_only { resp.on_hover_text(label) } else { resp };
     if resp.clicked() {
-        let _ = cmd_tx.try_send(AppCommand::OpenPanel(panel));
+        let _ = cmd_tx.try_send(AppCommand::OpenScreen(screen));
+    }
+}
+
+fn quick_action(
+    ui: &mut egui::Ui,
+    icon: &str,
+    label: &str,
+    cmd_tx: &Sender<AppCommand>,
+    cmd: AppCommand,
+) {
+    quick_action_label(ui, icon, label, "", cmd_tx, cmd);
+}
+
+fn quick_action_label(
+    ui: &mut egui::Ui,
+    icon: &str,
+    label: &str,
+    badge: &str,
+    cmd_tx: &Sender<AppCommand>,
+    cmd: AppCommand,
+) {
+    let desired_size = egui::vec2(ui.available_width(), 30.0);
+    let (rect, resp) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+
+    if ui.is_rect_visible(rect) {
+        if resp.hovered() {
+            ui.painter().rect_filled(rect, egui::CornerRadius::same(5), with_alpha(Colors::ACCENT, 12));
+        }
+        let inner_rect = rect.shrink2(egui::vec2(14.0, 0.0));
+        ui.painter().text(
+            egui::pos2(inner_rect.left(), rect.center().y),
+            egui::Align2::LEFT_CENTER,
+            icon,
+            egui::FontId::proportional(12.0),
+            Colors::TEXT_TERTIARY,
+        );
+        ui.painter().text(
+            egui::pos2(inner_rect.left() + 20.0, rect.center().y),
+            egui::Align2::LEFT_CENTER,
+            label,
+            egui::FontId::proportional(12.0),
+            Colors::TEXT_SECONDARY,
+        );
+        if !badge.is_empty() {
+            ui.painter().text(
+                egui::pos2(inner_rect.right(), rect.center().y),
+                egui::Align2::RIGHT_CENTER,
+                badge,
+                egui::FontId::monospace(10.0),
+                Colors::TEXT_TERTIARY,
+            );
+        }
+    }
+
+    if resp.clicked() {
+        let _ = cmd_tx.try_send(cmd);
     }
 }
 
