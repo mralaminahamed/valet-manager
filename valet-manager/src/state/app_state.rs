@@ -6,6 +6,16 @@ use crate::valet::variant::{ValetPaths, ValetVariant};
 use crate::state::creator_state::CreatorState;
 
 #[derive(Debug, Clone, PartialEq, Default)]
+pub enum Screen {
+    #[default]
+    Sites,
+    Services,
+    Logs,
+    Dns,
+    Settings,
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Panel {
     #[default]
     Dashboard,
@@ -34,6 +44,33 @@ pub enum Panel {
     AppCreator,
     Settings,
     SiteConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub enum SiteStatusFilter {
+    #[default]
+    All,
+    Running,
+    Stopped,
+    Failed,
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub enum SettingsSection {
+    #[default]
+    Appearance,
+    Behavior,
+    Php,
+    Tls,
+    Paths,
+    Updates,
+    About,
+}
+
+#[derive(Debug, Clone)]
+pub struct DnsAlias {
+    pub from: String,
+    pub to: String,
 }
 
 #[derive(Debug)]
@@ -65,6 +102,7 @@ pub struct AppState {
     pub creator: CreatorState,
     // Phase 5 — Proxies
     pub proxies: Vec<crate::nginx::proxy_manager::ValetProxy>,
+    pub dns_aliases: Vec<DnsAlias>,
     pub proxy_status: std::collections::HashMap<String, crate::nginx::proxy_manager::HttpProbe>,
     // Phase 5 — Dnsmasq
     pub dns_tester_host: String,
@@ -216,6 +254,7 @@ impl Default for AppState {
             site_sort_favorites_top: true,
             creator: CreatorState::default(),
             proxies: Vec::new(),
+            dns_aliases: Vec::new(),
             proxy_status: std::collections::HashMap::new(),
             dns_tester_host: String::new(),
             dns_tester_output: Vec::new(),
@@ -312,6 +351,18 @@ impl Default for AppState {
 #[allow(dead_code)]
 pub struct UiState {
     pub active_panel: Panel,
+    pub active_screen: Screen,
+    // Floating windows
+    pub shell_open: bool,
+    pub mailpit_open: bool,
+    pub pma_open: bool,
+    // Add-site modal
+    pub add_site_modal_open: bool,
+    pub add_site_modal_tab: u8,
+    // Site status filter
+    pub site_status_filter: SiteStatusFilter,
+    // Settings left-nav
+    pub settings_section: SettingsSection,
     pub loading: bool,
     pub toast_queue: Vec<String>,
     pub last_error: Option<String>,
@@ -340,6 +391,14 @@ impl Default for UiState {
     fn default() -> Self {
         Self {
             active_panel: Panel::default(),
+            active_screen: Screen::default(),
+            shell_open: false,
+            mailpit_open: false,
+            pma_open: false,
+            add_site_modal_open: false,
+            add_site_modal_tab: 0,
+            site_status_filter: SiteStatusFilter::default(),
+            settings_section: SettingsSection::default(),
             loading: false,
             toast_queue: Vec::new(),
             last_error: None,
@@ -459,5 +518,31 @@ mod tests {
         assert!(s.version_registry.frameworks.contains_key("laravel"));
         assert!(s.version_registry.last_refreshed.is_none());
         assert!(!s.version_registry_loading);
+    }
+
+    #[test]
+    fn default_screen_is_sites() {
+        let state = AppState::default();
+        assert_eq!(state.ui.active_screen, Screen::Sites);
+    }
+
+    #[test]
+    fn default_site_filter_is_all() {
+        let state = AppState::default();
+        assert_eq!(state.ui.site_status_filter, SiteStatusFilter::All);
+    }
+
+    #[test]
+    fn default_settings_section_is_appearance() {
+        let state = AppState::default();
+        assert_eq!(state.ui.settings_section, SettingsSection::Appearance);
+    }
+
+    #[test]
+    fn floating_windows_default_closed() {
+        let state = AppState::default();
+        assert!(!state.ui.shell_open);
+        assert!(!state.ui.mailpit_open);
+        assert!(!state.ui.pma_open);
     }
 }
