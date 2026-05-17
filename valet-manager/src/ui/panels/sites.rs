@@ -6,8 +6,8 @@ use crate::php::detector::recommended_php_version;
 use crate::state::app_state::AppState;
 use crate::ui::DetectedFramework;
 use crate::ui::theme::{
-    Colors, accent_button, divider, framework_badge, framework_display_name, ghost_button,
-    with_alpha,
+    Colors, accent_button, danger_button, divider, framework_badge, framework_display_name,
+    ghost_button, with_alpha,
 };
 use crate::valet::site_scanner::ValetSite;
 
@@ -204,12 +204,16 @@ fn render_site_row(
 
     let (row_rect, row_resp) = ui.allocate_exact_size(
         egui::vec2(avail_w, ROW_HEIGHT),
-        egui::Sense::hover(),
+        egui::Sense::click(),
     );
 
     // Hover highlight
     if row_resp.hovered() {
         ui.painter().rect_filled(row_rect, CornerRadius::ZERO, Colors::CARD_HOVER);
+    }
+
+    if row_resp.clicked() {
+        let _ = cmd_tx.try_send(AppCommand::SelectSite(site.name.clone()));
     }
 
     // Border-bottom
@@ -317,11 +321,8 @@ fn render_site_row(
 
     // ── Col 6: Last hit (130px) ──────────────────────────────────────────
     row_cell(&mut child, COL_LASTHIT, ROW_HEIGHT, |ui| {
-        ui.label(
-            RichText::new("—")
-                .size(11.5)
-                .color(Colors::TEXT_TERTIARY),
-        );
+        let text = site.last_hit.as_deref().unwrap_or("—");
+        ui.label(RichText::new(text).size(11.5).color(Colors::TEXT_TERTIARY));
     });
 
     // ── Col 7: Action menu (28px) ────────────────────────────────────────
@@ -475,11 +476,26 @@ mod tests {
         assert_eq!(failed,  1);
         assert_eq!(secured, 1);
     }
+
+    #[test]
+    fn last_hit_some_shows_value() {
+        let mut site = make_site("x", crate::valet::site_scanner::SiteStatus::Running, false);
+        site.last_hit = Some("2m ago".into());
+        let text = site.last_hit.as_deref().unwrap_or("—");
+        assert_eq!(text, "2m ago");
+    }
+
+    #[test]
+    fn last_hit_none_shows_dash() {
+        let site = make_site("x", crate::valet::site_scanner::SiteStatus::Running, false);
+        let text = site.last_hit.as_deref().unwrap_or("—");
+        assert_eq!(text, "—");
+    }
 }
 
 // ── Public entry point ───────────────────────────────────────────────────────
 #[allow(dead_code)]
-pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
+pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     // ── Panel header ─────────────────────────────────────────────────────
     ui.horizontal(|ui| {
         ui.set_min_height(44.0);
@@ -628,4 +644,46 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                 });
             });
     });
+
+    // ── Detail footer ─────────────────────────────────────────────────────
+    if let Some(site_name) = state.site_config_selected.clone() {
+        if let Some(site) = state.sites.iter().find(|s| s.name == site_name) {
+            ui.add_space(8.0);
+            divider(ui);
+            ui.add_space(8.0);
+            ui.horizontal(|ui| {
+                ui.add_space(22.0);
+                ui.vertical(|ui| {
+                    ui.label(RichText::new(&site.domain).size(12.0).color(Colors::TEXT_PRIMARY).strong());
+                    ui.label(RichText::new(site.path.display().to_string()).size(10.5).color(Colors::TEXT_TERTIARY)
+                        .text_style(egui::TextStyle::Monospace));
+                });
+            });
+            ui.add_space(6.0);
+            ui.horizontal(|ui| {
+                ui.add_space(22.0);
+                if accent_button(ui, "↗ Open").clicked() {
+                    let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(site.domain.clone()));
+                }
+                ui.add_space(4.0);
+                if ghost_button(ui, "⌂ Reveal").clicked() {
+                    let _ = cmd_tx.try_send(AppCommand::RevealSiteInFiles(site.name.clone()));
+                }
+                ui.add_space(4.0);
+                if ghost_button(ui, "↺ Restart").clicked() {
+                    let _ = cmd_tx.try_send(AppCommand::RestartSite(site.name.clone()));
+                }
+                ui.add_space(4.0);
+                if ghost_button(ui, "⌨ Shell").clicked() {
+                    let _ = cmd_tx.try_send(AppCommand::OpenShellAtSite(site.name.clone()));
+                }
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.add_space(22.0);
+                    if danger_button(ui, "✕ Unpark").clicked() {
+                        let _ = cmd_tx.try_send(AppCommand::UnparkSite(site.name.clone()));
+                    }
+                });
+            });
+        }
+    }
 }

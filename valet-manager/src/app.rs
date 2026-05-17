@@ -582,7 +582,7 @@ impl eframe::App for ValetManagerApp {
 
                         match self.state.ui.active_screen {
                             Screen::Sites => {
-                                sites::render(ui, &self.state, &self.cmd_tx);
+                                sites::render(ui, &mut self.state, &self.cmd_tx);
                             }
                             Screen::Services => {
                                 crate::ui::screens::services::render(ui, &self.state, &self.cmd_tx);
@@ -2641,6 +2641,10 @@ pub async fn run_dispatcher(
                 s.shell_site = Some(site);
             }
             AppCommand::UnparkSite(_site) => {}
+            AppCommand::SelectSite(name) => {
+                let mut s = state.write().await;
+                s.site_config_selected = Some(name);
+            }
             // M1 — Shell
             AppCommand::RunShellCommand(cmd_str) => {
                 let mut s = state.write().await;

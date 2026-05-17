@@ -195,6 +195,7 @@ pub enum AppCommand {
     RestartSite(String),
     OpenShellAtSite(String),
     UnparkSite(String),
+    SelectSite(String),
     // M1 — Shell
     RunShellCommand(String),
     // M1 — DNS flush
