@@ -81,6 +81,62 @@ pub enum AddSiteTab {
     Proxy,
 }
 
+#[derive(Debug, Clone)]
+pub struct AddSiteFormState {
+    // Park tab
+    pub park_path: String,
+    pub park_domain: String,
+    pub park_domain_touched: bool,
+    pub park_framework: String,
+    pub park_php: String,
+    pub park_http_server: String,
+    pub park_secure: bool,
+    pub park_create_db: bool,
+    pub park_scoped_pma: bool,
+    pub park_bulk: bool,
+    // Create tab
+    pub create_template: String,
+    pub create_name: String,
+    pub create_location: String,
+    pub create_php: String,
+    pub create_git: bool,
+    pub create_install: bool,
+    pub create_migrate: bool,
+    // Proxy tab
+    pub proxy_domain: String,
+    pub proxy_target: String,
+    pub proxy_secure: bool,
+    pub proxy_websocket: bool,
+}
+
+impl Default for AddSiteFormState {
+    fn default() -> Self {
+        Self {
+            park_path: "~/Code/new-project".to_string(),
+            park_domain: "new-project".to_string(),
+            park_domain_touched: false,
+            park_framework: "Laravel".to_string(),
+            park_php: "8.3".to_string(),
+            park_http_server: "nginx".to_string(),
+            park_secure: true,
+            park_create_db: true,
+            park_scoped_pma: true,
+            park_bulk: false,
+            create_template: "laravel".to_string(),
+            create_name: "my-app".to_string(),
+            create_location: "~/Code".to_string(),
+            create_php: "8.3".to_string(),
+            create_git: true,
+            create_install: true,
+            create_migrate: true,
+            proxy_domain: "studio".to_string(),
+            proxy_target: "http://localhost:5173".to_string(),
+            proxy_secure: true,
+            proxy_websocket: true,
+        }
+    }
+}
+
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct AppState {
@@ -373,6 +429,7 @@ pub struct UiState {
     // Add-site modal
     pub add_site_modal_open: bool,
     pub add_site_modal_tab: AddSiteTab,
+    pub add_site_form: AddSiteFormState,
     // Site status filter
     pub site_status_filter: SiteStatusFilter,
     // Settings left-nav
@@ -411,6 +468,7 @@ impl Default for UiState {
             pma_open: false,
             add_site_modal_open: false,
             add_site_modal_tab: AddSiteTab::default(),
+            add_site_form: AddSiteFormState::default(),
             site_status_filter: SiteStatusFilter::default(),
             settings_section: SettingsSection::default(),
             loading: false,

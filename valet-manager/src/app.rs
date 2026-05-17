@@ -646,6 +646,9 @@ impl eframe::App for ValetManagerApp {
             render_mobile_hamburger(&ctx, &mut self.state, &self.cmd_tx);
         }
 
+        // ── Add-site modal ───────────────────────────────────────────────
+        crate::ui::modals::add_site::render(&ctx, &mut self.state, &self.cmd_tx);
+
         // ── Command palette overlay ──────────────────────────────────────
         if let Some(cmd) = command_palette::render(&ctx, &mut self.state.ui.palette) {
             let _ = self.cmd_tx.try_send(cmd);
