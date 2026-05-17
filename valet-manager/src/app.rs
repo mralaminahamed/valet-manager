@@ -2659,6 +2659,22 @@ pub async fn run_dispatcher(
             }
             // M1 — Mailpit
             AppCommand::RefreshMailpit => {}
+            // M5 — TLS
+            AppCommand::TrustCa => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let out = tokio::process::Command::new("sudo")
+                        .args(["valet", "trust"])
+                        .output()
+                        .await;
+                    let msg = match out {
+                        Ok(o) if o.status.success() => "CA trusted successfully".into(),
+                        Ok(o) => String::from_utf8_lossy(&o.stderr).trim().to_string(),
+                        Err(e) => e.to_string(),
+                    };
+                    let _ = tx.send(crate::events::AppEvent::Error(msg)).await;
+                });
+            }
         }
     }
 }

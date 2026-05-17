@@ -201,6 +201,8 @@ pub enum AppCommand {
     FlushDns,
     // M1 — Mailpit
     RefreshMailpit,
+    // M5 — TLS
+    TrustCa,
 }
 
 #[derive(Debug, Clone)]
