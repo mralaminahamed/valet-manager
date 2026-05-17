@@ -2499,6 +2499,16 @@ pub async fn run_dispatcher(
             AppCommand::ResetDatabase(_site) => {
                 // stub: reset database
             }
+            // M8 — Logs export
+            AppCommand::RevealInFiles(path) => {
+                let _ = tokio::process::Command::new("xdg-open")
+                    .arg(std::path::Path::new(&path).parent().unwrap_or(std::path::Path::new("/tmp")))
+                    .spawn();
+            }
+            AppCommand::ToggleLogsTail => {
+                let mut s = state.write().await;
+                s.logs_tail = !s.logs_tail;
+            }
             // Phase 14 — Version registry
             AppCommand::RefreshVersionRegistry => {
                 {

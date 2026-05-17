@@ -208,6 +208,9 @@ pub enum AppCommand {
     OpenNginxConfig(String),
     ExportDbSchema(String),
     ResetDatabase(String),
+    // M8 — Logs export
+    RevealInFiles(String),
+    ToggleLogsTail,
 }
 
 #[derive(Debug, Clone)]

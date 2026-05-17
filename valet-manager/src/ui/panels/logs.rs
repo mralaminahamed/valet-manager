@@ -38,6 +38,14 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         });
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             ui.add_space(8.0);
+            if ghost_button(ui, "↗ Export").clicked() {
+                let now = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+                let filename = format!("/tmp/valet-manager-logs-{}.txt", now);
+                let content = state.logs_lines.join("\n");
+                if std::fs::write(&filename, content).is_ok() {
+                    let _ = cmd_tx.try_send(AppCommand::RevealInFiles(filename));
+                }
+            }
             if ghost_button(ui, "Refresh").clicked() {
                 let _ = cmd_tx.try_send(AppCommand::LoadLogs(state.logs_source));
             }
@@ -50,6 +58,22 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
     ui.horizontal(|ui| {
         ui.add_space(22.0);
         ui.spacing_mut().item_spacing.x = 8.0;
+
+        // Pulse dot
+        let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
+        ui.painter().circle_filled(dot_rect.center(), 5.0, Colors::ACCENT);
+        ui.add_space(4.0);
+        let tail_label = if state.logs_tail { "Tailing live" } else { "Paused" };
+        ui.label(RichText::new(tail_label).size(11.5).color(Colors::TEXT_SECONDARY));
+        if ui.small_button(if state.logs_tail { "⏸" } else { "▶" }).clicked() {
+            let _ = cmd_tx.try_send(AppCommand::ToggleLogsTail);
+        }
+        ui.add_space(8.0);
+        // Thin vertical separator
+        let (sep, _) = ui.allocate_exact_size(egui::vec2(1.0, 16.0), egui::Sense::hover());
+        ui.painter().rect_filled(sep, CornerRadius::ZERO, Colors::BORDER);
+        ui.add_space(8.0);
+
         for src in SOURCES.iter() {
             let active = state.logs_source == *src;
             let resp = if active {
@@ -109,4 +133,21 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                 });
         });
     });
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn export_filename_format() {
+        // Verify the format string produces no colons or 'T' separators
+        let fake_now = chrono::DateTime::parse_from_rfc3339("2026-05-17T12:34:56+00:00")
+            .unwrap()
+            .with_timezone(&chrono::Local);
+        let ts = fake_now.format("%Y-%m-%d_%H-%M-%S").to_string();
+        let filename = format!("/tmp/valet-manager-logs-{}.txt", ts);
+        assert!(filename.contains("2026-05-17"));
+        assert!(!filename.contains(':'));
+        assert!(!filename.contains('T'));
+        assert!(filename.ends_with(".txt"));
+    }
 }

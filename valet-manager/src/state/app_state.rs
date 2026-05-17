@@ -181,6 +181,7 @@ pub struct AppState {
     // Phase 5 — Logs
     pub logs_source: crate::system::log_reader::LogSource,
     pub logs_lines: Vec<String>,
+    pub logs_tail: bool,
     // Phase 5 — Diagnostics
     pub diagnostics_output: Vec<crate::creator::output_streamer::OutputLine>,
     pub diagnostics_running: bool,
@@ -333,6 +334,7 @@ impl Default for AppState {
             share_output: Vec::new(),
             logs_source: crate::system::log_reader::LogSource::NginxError,
             logs_lines: Vec::new(),
+            logs_tail: true,
             diagnostics_output: Vec::new(),
             diagnostics_running: false,
             toasts: Vec::new(),
