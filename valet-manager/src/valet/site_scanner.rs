@@ -5,6 +5,26 @@ use std::path::{Path, PathBuf};
 use chrono::NaiveDate;
 use crate::ui::DetectedFramework;
 
+#[derive(Debug, Clone, PartialEq, Default)]
+pub enum SiteStatus {
+    Running,
+    Stopped,
+    Failed,
+    #[default]
+    Unknown,
+}
+
+impl SiteStatus {
+    pub fn label(&self) -> &'static str {
+        match self {
+            SiteStatus::Running => "Running",
+            SiteStatus::Stopped => "Stopped",
+            SiteStatus::Failed  => "Failed",
+            SiteStatus::Unknown => "Unknown",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum SiteType {
     Parked,
@@ -23,6 +43,9 @@ pub struct ValetSite {
     pub is_secured: bool,
     pub ssl_expiry: Option<NaiveDate>,
     pub is_favorite: bool,
+    pub status: SiteStatus,
+    pub last_hit: Option<String>,
+    pub proxy_target: Option<String>,
 }
 
 pub fn detect_framework(path: &Path) -> DetectedFramework {
@@ -170,6 +193,9 @@ pub async fn scan_all(
                 is_secured,
                 ssl_expiry: None,
                 is_favorite: false,
+                status: SiteStatus::Unknown,
+                last_hit: None,
+                proxy_target: None,
             });
         }
     }
@@ -200,6 +226,9 @@ pub async fn scan_all(
             is_secured,
             ssl_expiry: None,
             is_favorite: false,
+            status: SiteStatus::Unknown,
+            last_hit: None,
+            proxy_target: None,
         });
     }
 
@@ -570,5 +599,33 @@ mod tests {
         create_file(&dir, "artisan");
         assert_eq!(detect_framework(&dir), DetectedFramework::Craft);
         cleanup(&dir);
+    }
+
+    #[test]
+    fn site_status_label() {
+        assert_eq!(SiteStatus::Running.label(), "Running");
+        assert_eq!(SiteStatus::Failed.label(),  "Failed");
+        assert_eq!(SiteStatus::Unknown.label(), "Unknown");
+    }
+
+    #[test]
+    fn valet_site_defaults_status_unknown() {
+        let site = ValetSite {
+            name: "test".to_string(),
+            domain: "test.test".to_string(),
+            path: std::path::PathBuf::from("/tmp/test"),
+            site_type: SiteType::Parked,
+            framework: DetectedFramework::Unknown,
+            php_version: None,
+            is_secured: false,
+            ssl_expiry: None,
+            is_favorite: false,
+            status: SiteStatus::default(),
+            last_hit: None,
+            proxy_target: None,
+        };
+        assert_eq!(site.status, SiteStatus::Unknown);
+        assert!(site.last_hit.is_none());
+        assert!(site.proxy_target.is_none());
     }
 }

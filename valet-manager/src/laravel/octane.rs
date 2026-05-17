@@ -53,6 +53,9 @@ mod tests {
             is_secured: false,
             ssl_expiry: None,
             is_favorite: false,
+            status: crate::valet::site_scanner::SiteStatus::Unknown,
+            last_hit: None,
+            proxy_target: None,
         };
         let mut cfg = LaravelConfig::default();
         cfg.octane_server = OctaneServer::Swoole;
