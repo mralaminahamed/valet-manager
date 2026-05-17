@@ -19,6 +19,16 @@ pub struct AppConfig {
     pub notifications: crate::notifications::NotificationPrefs,
     #[serde(default)]
     pub skip_version: Option<String>,
+    // Phase 12 — phpMyAdmin
+    /// Lazily-generated phpMyAdmin blowfish_secret. None means "regenerate on first use".
+    #[serde(default)]
+    pub blowfish_secret: Option<String>,
+    /// Default MySQL user used when site .env/wp-config does not provide one.
+    #[serde(default)]
+    pub mysql_user: String,
+    /// Default MySQL password used when site .env/wp-config does not provide one.
+    #[serde(default)]
+    pub mysql_pass: String,
 }
 
 impl Default for AppConfig {
@@ -37,6 +47,9 @@ impl Default for AppConfig {
             version_registry_auto_refresh: true,
             notifications: crate::notifications::NotificationPrefs::default(),
             skip_version: None,
+            blowfish_secret: None,
+            mysql_user: String::new(),
+            mysql_pass: String::new(),
         }
     }
 }

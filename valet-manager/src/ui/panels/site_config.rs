@@ -16,7 +16,7 @@ use crate::ui::theme::{
 };
 use crate::ui::DetectedFramework;
 
-const TABS: &[&str] = &["PHP", "WordPress", "Laravel", "Server", "Database", "Development"];
+const TABS: &[&str] = &["PHP", "WordPress", "Laravel", "Server", "Database", "Development", "phpMyAdmin"];
 
 fn site_is_wp(state: &AppState, name: &str) -> bool {
     state.sites.iter().any(|s| {
@@ -130,6 +130,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                         3 => render_server_tab(ui, state, &selected, &mut draft, &mut to_send),
                         4 => render_db_tab(ui, &mut draft),
                         5 => render_dev_tab(ui, &mut draft),
+                        6 => render_pma_tab(ui, state, &selected, &mut draft, &mut to_send),
                         _ => {}
                     }
                 });
@@ -665,6 +666,126 @@ fn render_dev_tab(ui: &mut egui::Ui, draft: &mut SiteConfig) {
         });
         labeled_opt_text(ui, "Start command", &mut draft.development.start_command);
     });
+}
+
+// ── PHPMYADMIN TAB ────────────────────────────────────────────────────
+fn render_pma_tab(
+    ui: &mut egui::Ui,
+    state: &AppState,
+    site: &str,
+    draft: &mut SiteConfig,
+    to_send: &mut Vec<AppCommand>,
+) {
+    use crate::site_config::models::{PmaAccessMode, PmaDbScope};
+
+    section_label(ui, "phpMyAdmin");
+    card_frame().show(ui, |ui| {
+        // Enable toggle
+        let mut enabled = draft.phpmyadmin.enabled;
+        if ui.checkbox(&mut enabled, "Enable phpMyAdmin for this site").changed() {
+            draft.phpmyadmin.enabled = enabled;
+            if enabled {
+                to_send.push(AppCommand::ConfigurePhpMyAdminForSite(site.to_string()));
+            } else {
+                to_send.push(AppCommand::RemovePhpMyAdminFromSite(site.to_string()));
+            }
+        }
+        ui.add_space(8.0);
+
+        // Access mode radio row
+        ui.label(RichText::new("Access mode").size(11.0).color(Colors::TEXT_TERTIARY));
+        ui.horizontal(|ui| {
+            for (mode, label) in [
+                (PmaAccessMode::PathAlias, "Path alias"),
+                (PmaAccessMode::Subdomain, "Subdomain"),
+                (PmaAccessMode::GlobalOnly, "Global only"),
+            ] {
+                let active = draft.phpmyadmin.access_mode == mode;
+                let resp = if active { accent_button(ui, label) } else { ghost_button(ui, label) };
+                if resp.clicked() && !active {
+                    draft.phpmyadmin.access_mode = mode.clone();
+                    to_send.push(AppCommand::SetPmaAccessMode { site: site.to_string(), mode });
+                }
+            }
+        });
+        ui.add_space(8.0);
+
+        // DB scope radio row
+        ui.label(RichText::new("DB scope").size(11.0).color(Colors::TEXT_TERTIARY));
+        ui.horizontal(|ui| {
+            for (scope, label) in [
+                (PmaDbScope::SiteOnly, "Site only"),
+                (PmaDbScope::AllDatabases, "All databases"),
+            ] {
+                let active = draft.phpmyadmin.db_scope == scope;
+                let resp = if active { accent_button(ui, label) } else { ghost_button(ui, label) };
+                if resp.clicked() && !active {
+                    draft.phpmyadmin.db_scope = scope.clone();
+                    to_send.push(AppCommand::SetPmaDbScope { site: site.to_string(), scope });
+                }
+            }
+        });
+        ui.add_space(8.0);
+
+        // path_alias TextEdit when applicable
+        if draft.phpmyadmin.access_mode == PmaAccessMode::PathAlias {
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("Path alias").size(11.0).color(Colors::TEXT_TERTIARY));
+                ui.text_edit_singleline(&mut draft.phpmyadmin.path_alias);
+            });
+        }
+
+        // DB name override
+        labeled_opt_text(ui, "DB name override", &mut draft.phpmyadmin.db_name_override);
+    });
+
+    ui.add_space(10.0);
+
+    // Status card
+    if let Some(status) = state.pma_state.sites.get(site) {
+        section_label(ui, "Status");
+        card_frame().show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("Access URL").size(11.0).color(Colors::TEXT_TERTIARY));
+                let url = status.access_url.clone();
+                if ui.link(RichText::new(&url).size(13.0).color(Colors::ACCENT)).clicked() {
+                    to_send.push(AppCommand::OpenPhpMyAdmin {
+                        site: site.to_string(),
+                        scope: crate::site_config::models::PmaDbScope::SiteOnly,
+                    });
+                }
+            });
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("DB").size(11.0).color(Colors::TEXT_TERTIARY));
+                ui.label(RichText::new(&status.db_name).size(12.0).color(Colors::TEXT_PRIMARY).monospace());
+                ui.label(RichText::new("Detected from .env / wp-config.php").size(10.5).color(Colors::TEXT_TERTIARY));
+            });
+            ui.add_space(4.0);
+            ui.horizontal(|ui| {
+                if accent_button(ui, "Open phpMyAdmin").clicked() {
+                    to_send.push(AppCommand::OpenPhpMyAdmin {
+                        site: site.to_string(),
+                        scope: crate::site_config::models::PmaDbScope::SiteOnly,
+                    });
+                }
+                if ghost_button(ui, "Open (all DBs)").clicked() {
+                    to_send.push(AppCommand::OpenPhpMyAdmin {
+                        site: site.to_string(),
+                        scope: crate::site_config::models::PmaDbScope::AllDatabases,
+                    });
+                }
+            });
+        });
+    } else if draft.phpmyadmin.enabled {
+        ui.label(RichText::new("Configuring… (terminal output below)").size(12.0).color(Colors::TEXT_SECONDARY));
+    }
+
+    // Output stream
+    if !state.pma_state.output.is_empty() {
+        ui.add_space(10.0);
+        section_label(ui, "Output");
+        crate::ui::components::terminal_output::render(ui, &state.pma_state.output, true);
+    }
 }
 
 // Suppress unused warnings on imports until consumed by future iterations.

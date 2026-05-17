@@ -20,6 +20,80 @@ pub struct SiteConfig {
     pub database: DatabaseSiteConfig,
     #[serde(default)]
     pub development: DevSiteConfig,
+    #[serde(default)]
+    pub phpmyadmin: PhpMyAdminSiteConfig,
+}
+
+// ── PHPMYADMIN ────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub struct PhpMyAdminSiteConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub access_mode: PmaAccessMode,
+    #[serde(default = "default_pma_path_alias")]
+    pub path_alias: String,
+    #[serde(default)]
+    pub db_scope: PmaDbScope,
+    /// Optional override; when None, credentials are detected from .env / wp-config.php.
+    pub db_name_override: Option<String>,
+    /// Optional override; mirrors db_name_override. None falls back to detected user.
+    pub db_user_override: Option<String>,
+}
+
+impl Default for PhpMyAdminSiteConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            access_mode: PmaAccessMode::default(),
+            path_alias: default_pma_path_alias(),
+            db_scope: PmaDbScope::default(),
+            db_name_override: None,
+            db_user_override: None,
+        }
+    }
+}
+
+fn default_pma_path_alias() -> String {
+    "/phpmyadmin".to_string()
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PmaAccessMode {
+    #[default]
+    PathAlias,
+    Subdomain,
+    GlobalOnly,
+}
+
+impl PmaAccessMode {
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            PmaAccessMode::PathAlias => "Path alias",
+            PmaAccessMode::Subdomain => "Subdomain",
+            PmaAccessMode::GlobalOnly => "Global only",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PmaDbScope {
+    #[default]
+    SiteOnly,
+    AllDatabases,
+}
+
+impl PmaDbScope {
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            PmaDbScope::SiteOnly => "Site only",
+            PmaDbScope::AllDatabases => "All databases",
+        }
+    }
 }
 
 // ── PHP ───────────────────────────────────────────────────────────────

@@ -26,6 +26,7 @@ mod site_config;
 mod wordpress;
 mod laravel;
 mod http_servers;
+mod phpmyadmin;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
@@ -83,6 +84,9 @@ fn main() -> eframe::Result {
 
     // Phase 11 — detect installed HTTP servers at startup.
     let _ = cmd_tx.try_send(AppCommand::DetectInstalledServers);
+
+    // Phase 12 — probe for phpMyAdmin install at startup.
+    let _ = cmd_tx.try_send(AppCommand::CheckPhpMyAdminInstalled);
 
     // ── System tray (Linux: needs DISPLAY/WAYLAND_DISPLAY; gracefully no-op otherwise) ──
     let (tray_tx, mut tray_rx) = mpsc::channel::<tray::TrayEvent>(8);

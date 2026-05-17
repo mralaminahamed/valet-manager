@@ -166,6 +166,7 @@ fn render_site_row(
     site: &ValetSite,
     flex_width: f32,
     cmd_tx: &Sender<AppCommand>,
+    pma_enabled: bool,
 ) {
     let avail_w = ui.available_width();
 
@@ -308,6 +309,13 @@ fn render_site_row(
                 let _ = cmd_tx.try_send(AppCommand::OpenSiteInEditor(site_name.clone()));
             }
 
+            if pma_enabled && ui.button("Open phpMyAdmin").clicked() {
+                let _ = cmd_tx.try_send(AppCommand::OpenPhpMyAdmin {
+                    site: site_name.clone(),
+                    scope: crate::site_config::models::PmaDbScope::SiteOnly,
+                });
+            }
+
             ui.separator();
 
             if is_secured {
@@ -437,7 +445,8 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                 // Rows (scrollable)
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for site in &filtered {
-                        render_site_row(ui, site, flex_width, cmd_tx);
+                        let pma_enabled = state.pma_state.sites.get(&site.name).map(|s| s.enabled).unwrap_or(false);
+                        render_site_row(ui, site, flex_width, cmd_tx, pma_enabled);
                     }
                 });
             });

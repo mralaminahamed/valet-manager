@@ -39,6 +39,19 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
             if ghost_button(ui, "↺ Refresh").clicked() {
                 let _ = cmd_tx.try_send(AppCommand::RefreshAll);
             }
+            // phpMyAdmin quick action when any site has it enabled
+            let any_pma = state.pma_state.sites.values().any(|s| s.enabled);
+            if any_pma {
+                ui.add_space(6.0);
+                if accent_button(ui, "phpMyAdmin").clicked() {
+                    if let Some((site, _)) = state.pma_state.sites.iter().find(|(_, s)| s.enabled) {
+                        let _ = cmd_tx.try_send(AppCommand::OpenPhpMyAdmin {
+                            site: site.clone(),
+                            scope: crate::site_config::models::PmaDbScope::SiteOnly,
+                        });
+                    }
+                }
+            }
         });
     });
     divider(ui);

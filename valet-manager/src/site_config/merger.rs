@@ -188,6 +188,18 @@ pub fn merge(base: SiteConfig, overlay: SiteConfig) -> SiteConfig {
         },
         database: merge_database(base.database, overlay.database),
         development: merge_dev(base.development, overlay.development),
+        phpmyadmin: merge_phpmyadmin(base.phpmyadmin, overlay.phpmyadmin),
+    }
+}
+
+fn merge_phpmyadmin(base: crate::site_config::models::PhpMyAdminSiteConfig, overlay: crate::site_config::models::PhpMyAdminSiteConfig) -> crate::site_config::models::PhpMyAdminSiteConfig {
+    crate::site_config::models::PhpMyAdminSiteConfig {
+        enabled: base.enabled || overlay.enabled,
+        access_mode: if overlay.access_mode != crate::site_config::models::PmaAccessMode::default() { overlay.access_mode } else { base.access_mode },
+        db_scope: if overlay.db_scope != crate::site_config::models::PmaDbScope::default() { overlay.db_scope } else { base.db_scope },
+        db_name_override: overlay.db_name_override.or(base.db_name_override),
+        db_user_override: overlay.db_user_override.or(base.db_user_override),
+        path_alias: if !overlay.path_alias.is_empty() && overlay.path_alias != "/phpmyadmin" { overlay.path_alias } else { base.path_alias },
     }
 }
 

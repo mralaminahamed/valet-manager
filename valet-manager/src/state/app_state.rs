@@ -148,6 +148,44 @@ pub struct AppState {
     pub site_config_output: Vec<crate::creator::output_streamer::OutputLine>,
     pub laravel_packages: std::collections::HashMap<String, crate::laravel::packages::LaravelPackages>,
     pub octane_processes: std::collections::HashMap<String, crate::site_config::models::OctaneProcess>,
+    // Phase 12 — phpMyAdmin
+    pub pma_state: PhpMyAdminState,
+}
+
+#[derive(Debug, Clone, Default)]
+#[allow(dead_code)]
+pub struct PhpMyAdminState {
+    pub installed: bool,
+    pub install_path: Option<std::path::PathBuf>,
+    pub version: Option<String>,
+    pub global_site_configured: bool,
+    pub global_site_domain: String,
+    pub sites: HashMap<String, PmaSiteStatus>,
+    pub output: Vec<crate::creator::output_streamer::OutputLine>,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PmaSiteStatus {
+    pub enabled: bool,
+    pub access_url: String,
+    pub config_path: std::path::PathBuf,
+    pub db_name: String,
+    pub access_mode: crate::site_config::models::PmaAccessMode,
+    pub last_configured: Option<chrono::DateTime<chrono::Local>>,
+}
+
+impl Default for PmaSiteStatus {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            access_url: String::new(),
+            config_path: std::path::PathBuf::new(),
+            db_name: String::new(),
+            access_mode: crate::site_config::models::PmaAccessMode::default(),
+            last_configured: None,
+        }
+    }
 }
 
 impl Default for AppState {
@@ -255,6 +293,11 @@ impl Default for AppState {
             site_config_output: Vec::new(),
             laravel_packages: std::collections::HashMap::new(),
             octane_processes: std::collections::HashMap::new(),
+            // Phase 12 — phpMyAdmin
+            pma_state: PhpMyAdminState {
+                global_site_domain: "phpmyadmin.test".to_string(),
+                ..Default::default()
+            },
         }
     }
 }

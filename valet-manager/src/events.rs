@@ -117,6 +117,19 @@ pub enum AppEvent {
         packages: crate::laravel::packages::LaravelPackages,
     },
     OctaneProcessUpdated(crate::site_config::models::OctaneProcess),
+    // Phase 12 — phpMyAdmin
+    PhpMyAdminInstalledCheck {
+        installed: bool,
+        path: Option<std::path::PathBuf>,
+        version: Option<String>,
+    },
+    PhpMyAdminConfigured {
+        site: String,
+        status: crate::state::app_state::PmaSiteStatus,
+    },
+    PhpMyAdminRemoved(String),
+    PhpMyAdminOutputLine(crate::creator::output_streamer::OutputLine),
+    PhpMyAdminGlobalReady(String),
 }
 
 #[cfg(test)]

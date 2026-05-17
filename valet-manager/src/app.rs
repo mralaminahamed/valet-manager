@@ -325,6 +325,32 @@ impl ValetManagerApp {
                 AppEvent::OctaneProcessUpdated(p) => {
                     self.state.octane_processes.insert(p.site.clone(), p);
                 }
+                AppEvent::PhpMyAdminInstalledCheck { installed, path, version } => {
+                    self.state.pma_state.installed = installed;
+                    self.state.pma_state.install_path = path;
+                    self.state.pma_state.version = version;
+                }
+                AppEvent::PhpMyAdminConfigured { site, status } => {
+                    self.state.pma_state.sites.insert(site, status);
+                }
+                AppEvent::PhpMyAdminRemoved(site) => {
+                    self.state.pma_state.sites.remove(&site);
+                }
+                AppEvent::PhpMyAdminOutputLine(line) => {
+                    self.state.pma_state.output.push(line);
+                    if self.state.pma_state.output.len() > 1000 {
+                        let overflow = self.state.pma_state.output.len() - 1000;
+                        self.state.pma_state.output.drain(0..overflow);
+                    }
+                }
+                AppEvent::PhpMyAdminGlobalReady(url) => {
+                    self.state.pma_state.global_site_configured = true;
+                    self.state.pma_state.global_site_domain = url
+                        .trim_start_matches("https://")
+                        .trim_start_matches("http://")
+                        .trim_end_matches('/')
+                        .to_string();
+                }
             }
         }
     }
@@ -2254,6 +2280,182 @@ pub async fn run_dispatcher(
                     if let Some(p) = site_path {
                         let pkg = crate::laravel::packages::detect(&p).await.unwrap_or_default();
                         let _ = tx.send(AppEvent::LaravelPackagesDetected { site, packages: pkg }).await;
+                    }
+                });
+            }
+            // ── Phase 12 — phpMyAdmin ───────────────────────────────────────
+            AppCommand::CheckPhpMyAdminInstalled | AppCommand::RefreshPhpMyAdminStatus => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let info = crate::phpmyadmin::installer::detect().await;
+                    let (installed, path, version) = match info {
+                        Some(i) => (true, Some(i.path), i.version),
+                        None => (false, None, None),
+                    };
+                    let _ = tx.send(AppEvent::PhpMyAdminInstalledCheck { installed, path, version }).await;
+                });
+            }
+            AppCommand::InstallPhpMyAdmin => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    for line in crate::phpmyadmin::installer::install_command_hint().lines() {
+                        let _ = tx.send(AppEvent::PhpMyAdminOutputLine(crate::creator::output_streamer::OutputLine {
+                            text: line.to_string(),
+                            stream: crate::creator::output_streamer::Stream::Stdout,
+                            timestamp: chrono::Local::now(),
+                        })).await;
+                    }
+                });
+            }
+            AppCommand::UninstallPhpMyAdmin => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let _ = tx.send(AppEvent::PhpMyAdminOutputLine(crate::creator::output_streamer::OutputLine {
+                        text: "Uninstall must be done via apt or by removing the manual install dir.".to_string(),
+                        stream: crate::creator::output_streamer::Stream::Stdout,
+                        timestamp: chrono::Local::now(),
+                    })).await;
+                });
+            }
+            AppCommand::ConfigurePhpMyAdminForSite(site_name) => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (site, site_config, mut app_config, valet_paths, tld, pma_install, blowfish) = {
+                        let s = state_c.read().await;
+                        let site = s.sites.iter().find(|x| x.name == site_name).cloned();
+                        let site_config = s.site_configs.get(&site_name).cloned().unwrap_or_default();
+                        let app_config = s.config.clone();
+                        let valet_paths = s.valet_paths.clone();
+                        let tld = s.tld.clone();
+                        let pma_install = s.pma_state.install_path.clone();
+                        let blowfish = app_config.blowfish_secret.clone();
+                        (site, site_config, app_config, valet_paths, tld, pma_install, blowfish)
+                    };
+                    let Some(site) = site else {
+                        let _ = tx.send(AppEvent::Error(format!("Site '{site_name}' not found"))).await;
+                        return;
+                    };
+                    let Some(valet_paths) = valet_paths else {
+                        let _ = tx.send(AppEvent::Error("Valet paths not detected yet".to_string())).await;
+                        return;
+                    };
+                    // Ensure blowfish_secret persists.
+                    let blowfish_secret = match blowfish {
+                        Some(b) if !b.is_empty() => b,
+                        _ => {
+                            let new = crate::phpmyadmin::config_generator::generate_blowfish_secret();
+                            app_config.blowfish_secret = Some(new.clone());
+                            let _ = tokio::task::spawn_blocking({
+                                let cfg = app_config.clone();
+                                move || crate::config::save(&cfg)
+                            }).await;
+                            // Mirror into shared state.
+                            state_c.write().await.config = app_config.clone();
+                            new
+                        }
+                    };
+                    let pma_install_path = pma_install.unwrap_or_else(|| std::path::PathBuf::from("/usr/share/phpmyadmin"));
+                    let php_ver = site.php_version.clone().unwrap_or_else(|| "8.3".to_string());
+                    let php_fpm_socket = std::path::PathBuf::from(format!("/run/php/php{}-fpm.sock", php_ver));
+
+                    // Stream output lines via a channel; forward as events.
+                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(64);
+                    let tx_fwd = tx.clone();
+                    let fwd = tokio::spawn(async move {
+                        while let Some(line) = out_rx.recv().await {
+                            if tx_fwd.send(AppEvent::PhpMyAdminOutputLine(line)).await.is_err() { break; }
+                        }
+                    });
+
+                    let req = crate::phpmyadmin::ConfigureRequest {
+                        site: &site,
+                        site_config: &site_config,
+                        app_config: &app_config,
+                        valet_paths: &valet_paths,
+                        tld: &tld,
+                        pma_install_path,
+                        php_fpm_socket,
+                        blowfish_secret,
+                    };
+                    let result = crate::phpmyadmin::configure_for_site(req, out_tx).await;
+                    let _ = fwd.await;
+                    match result {
+                        Ok(status) => {
+                            let _ = tx.send(AppEvent::PhpMyAdminConfigured { site: site_name, status }).await;
+                        }
+                        Err(e) => { let _ = tx.send(AppEvent::Error(format!("phpMyAdmin configure failed: {e}"))).await; }
+                    }
+                });
+            }
+            AppCommand::RemovePhpMyAdminFromSite(site_name) => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let (site, valet_paths) = {
+                        let s = state_c.read().await;
+                        let site = s.sites.iter().find(|x| x.name == site_name).cloned();
+                        let valet_paths = s.valet_paths.clone();
+                        (site, valet_paths)
+                    };
+                    let _ = crate::phpmyadmin::config_generator::remove_site_config(&site_name).await;
+                    if let (Some(site), Some(valet_paths)) = (site, valet_paths) {
+                        let nginx_path = crate::phpmyadmin::nginx_integration::nginx_config_path(&site, &valet_paths);
+                        if let Ok(content) = tokio::fs::read_to_string(&nginx_path).await {
+                            let stripped = crate::phpmyadmin::nginx_integration::remove_block(&content);
+                            let _ = tokio::fs::write(&nginx_path, stripped).await;
+                        }
+                    }
+                    let _ = tx.send(AppEvent::PhpMyAdminRemoved(site_name)).await;
+                });
+            }
+            AppCommand::OpenPhpMyAdmin { site, scope } => {
+                let state_c = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let url = {
+                        let s = state_c.read().await;
+                        match scope {
+                            crate::site_config::models::PmaDbScope::AllDatabases => {
+                                crate::phpmyadmin::global_site::global_url(&s.tld)
+                            }
+                            crate::site_config::models::PmaDbScope::SiteOnly => s
+                                .pma_state.sites.get(&site)
+                                .map(|st| st.access_url.clone())
+                                .unwrap_or_else(|| crate::phpmyadmin::global_site::global_url(&s.tld)),
+                        }
+                    };
+                    let _ = tokio::process::Command::new("xdg-open").arg(&url).spawn();
+                });
+            }
+            AppCommand::SetupGlobalPhpMyAdminSite => {
+                let state_c = Arc::clone(&state);
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let tld = state_c.read().await.tld.clone();
+                    if let Ok(url) = crate::phpmyadmin::global_site::setup_global_site(&tld).await {
+                        let _ = tx.send(AppEvent::PhpMyAdminGlobalReady(url)).await;
+                    }
+                });
+            }
+            AppCommand::SetPmaAccessMode { site, mode } => {
+                let state_c = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let mut s = state_c.write().await;
+                    if let Some(draft) = s.site_config_draft.as_mut() {
+                        draft.phpmyadmin.access_mode = mode;
+                    } else if let Some(cfg) = s.site_configs.get_mut(&site) {
+                        cfg.phpmyadmin.access_mode = mode;
+                    }
+                });
+            }
+            AppCommand::SetPmaDbScope { site, scope } => {
+                let state_c = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let mut s = state_c.write().await;
+                    if let Some(draft) = s.site_config_draft.as_mut() {
+                        draft.phpmyadmin.db_scope = scope;
+                    } else if let Some(cfg) = s.site_configs.get_mut(&site) {
+                        cfg.phpmyadmin.db_scope = scope;
                     }
                 });
             }

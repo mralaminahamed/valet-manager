@@ -147,6 +147,26 @@ pub enum AppCommand {
     },
     RemoveBasicAuth { site: String, username: String },
     DetectLaravelPackages(String),
+    // Phase 12 — phpMyAdmin
+    CheckPhpMyAdminInstalled,
+    InstallPhpMyAdmin,
+    UninstallPhpMyAdmin,
+    ConfigurePhpMyAdminForSite(String),
+    RemovePhpMyAdminFromSite(String),
+    OpenPhpMyAdmin {
+        site: String,
+        scope: crate::site_config::models::PmaDbScope,
+    },
+    SetupGlobalPhpMyAdminSite,
+    SetPmaAccessMode {
+        site: String,
+        mode: crate::site_config::models::PmaAccessMode,
+    },
+    SetPmaDbScope {
+        site: String,
+        scope: crate::site_config::models::PmaDbScope,
+    },
+    RefreshPhpMyAdminStatus,
 }
 
 #[derive(Debug, Clone)]
