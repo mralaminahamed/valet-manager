@@ -456,7 +456,7 @@ impl eframe::App for ValetManagerApp {
 
                     // ── CENTER: title painted via LayoutJob for multi-color ──
                     let title_rect = ui.max_rect();
-                    let panel_name = panel_display_name(&self.state.ui.active_panel);
+                    let panel_name = screen_display_name(&self.state.ui.active_screen);
                     let font_id = egui::FontId::proportional(13.0);
 
                     let mut job = egui::text::LayoutJob::default();
@@ -569,94 +569,77 @@ impl eframe::App for ValetManagerApp {
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE.fill(theme::Colors::SURFACE))
             .show_inside(ui, |ui| {
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.add_space(4.0);
+                use crate::state::app_state::Screen;
+                egui::ScrollArea::vertical()
+                    .id_salt(egui::Id::new("main_scroll"))
+                    .show(ui, |ui| {
+                        ui.add_space(4.0);
 
-                    if onboarding_gate {
-                        onboarding::render(ui, &mut self.state, &self.cmd_tx);
-                        return;
-                    }
+                        if onboarding_gate {
+                            onboarding::render(ui, &mut self.state, &self.cmd_tx);
+                            return;
+                        }
 
-                    match self.state.ui.active_panel {
-                        Panel::Dashboard => {
-                            dashboard::render(ui, &self.state, &self.cmd_tx);
+                        match self.state.ui.active_screen {
+                            Screen::Sites => {
+                                sites::render(ui, &self.state, &self.cmd_tx);
+                            }
+                            Screen::Services => {
+                                crate::ui::screens::services::render(ui, &self.state, &self.cmd_tx);
+                            }
+                            Screen::Logs => {
+                                logs::render(ui, &self.state, &self.cmd_tx);
+                            }
+                            Screen::Dns => {
+                                crate::ui::screens::dns::render(ui, &self.state, &self.cmd_tx);
+                            }
+                            Screen::Settings => {
+                                settings::render(ui, &mut self.state, &self.cmd_tx);
+                            }
                         }
-                        Panel::PhpVersions => {
-                            php_versions::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::PhpExtensions => {
-                            php_extensions::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::PhpIni => {
-                            php_ini::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::Sites => {
-                            sites::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::Parks => {
-                            parks::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::Nginx => {
-                            nginx::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::AppCreator => {
-                            app_creator::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::Proxies => {
-                            proxies::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::Dnsmasq => {
-                            dnsmasq::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::Sharing => {
-                            sharing::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::Logs => {
-                            logs::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::Diagnostics => {
-                            diagnostics::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::Settings => {
-                            settings::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::PhpInfo => {
-                            phpinfo::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::PhpCompat => {
-                            compat::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::History => {
-                            history::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::EnvEditor => {
-                            env_editor::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::Artisan => {
-                            artisan_panel::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::Database => {
-                            database_panel::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::SslCerts => {
-                            ssl_certs::render(ui, &self.state, &self.cmd_tx);
-                        }
-                        Panel::Xdebug => {
-                            xdebug_panel::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::MailCatcher => {
-                            mail_catcher::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::QueueWorkers => {
-                            queue_panel::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        Panel::SiteConfig => {
-                            site_config_panel::render(ui, &mut self.state, &self.cmd_tx);
-                        }
-                        _ => stub_panel(ui, &self.state.ui.active_panel),
+                    });
+            });
+
+        // ── Floating windows ────────────────────────────────────────────────
+        if self.state.ui.shell_open {
+            egui::Window::new("Shell")
+                .id(egui::Id::new("shell_window"))
+                .resizable(true)
+                .collapsible(false)
+                .default_size([700.0, 460.0])
+                .show(&ctx, |ui| {
+                    ui.label("Shell window — coming in M8");
+                    if ui.button("Close").clicked() {
+                        let _ = self.cmd_tx.try_send(AppCommand::CloseShellWindow);
                     }
                 });
-            });
+        }
+        if self.state.ui.mailpit_open {
+            egui::Window::new("Mailpit Inbox")
+                .id(egui::Id::new("mailpit_window"))
+                .resizable(true)
+                .collapsible(false)
+                .default_size([680.0, 480.0])
+                .show(&ctx, |ui| {
+                    ui.label("Mailpit window — coming in M8");
+                    if ui.button("Close").clicked() {
+                        let _ = self.cmd_tx.try_send(AppCommand::CloseMailpitWindow);
+                    }
+                });
+        }
+        if self.state.ui.pma_open {
+            egui::Window::new("phpMyAdmin")
+                .id(egui::Id::new("pma_window"))
+                .resizable(true)
+                .collapsible(false)
+                .default_size([680.0, 480.0])
+                .show(&ctx, |ui| {
+                    ui.label("phpMyAdmin window — coming in M8");
+                    if ui.button("Close").clicked() {
+                        let _ = self.cmd_tx.try_send(AppCommand::ClosePmaWindow);
+                    }
+                });
+        }
 
         // ── Mobile hamburger overlay ─────────────────────────────────────
         if hide_sidebar {
@@ -761,6 +744,17 @@ fn panel_display_name(panel: &Panel) -> &'static str {
         Panel::Diagnostics   => "Diagnostics",
         Panel::AppCreator    => "App Creator",
         Panel::SiteConfig    => "Site Config",
+    }
+}
+
+fn screen_display_name(screen: &crate::state::app_state::Screen) -> &'static str {
+    use crate::state::app_state::Screen;
+    match screen {
+        Screen::Sites    => "Sites",
+        Screen::Services => "Services",
+        Screen::Logs     => "Logs",
+        Screen::Dns      => "DNS & Routing",
+        Screen::Settings => "Settings",
     }
 }
 

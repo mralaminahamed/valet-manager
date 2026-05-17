@@ -1,5 +1,6 @@
 pub mod theme;
 pub mod sidebar;
+pub mod screens;
 pub mod panels;
 pub mod components;
 pub mod command_palette;
