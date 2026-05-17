@@ -2486,6 +2486,16 @@ pub async fn run_dispatcher(
                     }
                 });
             }
+            // M6 — Per-site nginx / db actions
+            AppCommand::OpenNginxConfig(_site) => {
+                // stub: open editor with nginx config file
+            }
+            AppCommand::ExportDbSchema(_site) => {
+                // stub: export database schema
+            }
+            AppCommand::ResetDatabase(_site) => {
+                // stub: reset database
+            }
             // Phase 14 — Version registry
             AppCommand::RefreshVersionRegistry => {
                 {

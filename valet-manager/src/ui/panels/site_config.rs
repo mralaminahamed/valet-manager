@@ -11,8 +11,8 @@ use crate::site_config::models::{
 };
 use crate::state::app_state::AppState;
 use crate::ui::theme::{
-    accent_button, card_frame, divider, framework_badge, ghost_button, section_label, with_alpha,
-    Colors,
+    accent_button, card_frame, danger_button, divider, framework_badge, ghost_button, section_label,
+    with_alpha, Colors,
 };
 use crate::ui::DetectedFramework;
 
@@ -128,7 +128,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                         1 => render_wp_tab(ui, state, &selected, &mut draft, &mut to_send),
                         2 => render_laravel_tab(ui, state, &selected, &mut draft, &mut to_send),
                         3 => render_server_tab(ui, state, &selected, &mut draft, &mut to_send),
-                        4 => render_db_tab(ui, &mut draft),
+                        4 => render_db_tab(ui, state, &selected, &mut draft, &mut to_send),
                         5 => render_dev_tab(ui, &mut draft),
                         6 => render_pma_tab(ui, state, &selected, &mut draft, &mut to_send),
                         _ => {}
@@ -627,15 +627,62 @@ fn render_server_tab(
             let _ = std::mem::size_of::<BasicAuthUser>();
         }
     });
+    ui.add_space(8.0);
+
+    section_label(ui, "Custom Nginx config");
+    card_frame().show(ui, |ui| {
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                ui.label(RichText::new("Custom config").size(12.0).color(Colors::TEXT_SECONDARY));
+                ui.label(RichText::new("Edit the raw Nginx site block").size(10.5).color(Colors::TEXT_TERTIARY));
+            });
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ghost_button(ui, "↗ Edit").clicked() {
+                    to_send.push(AppCommand::OpenNginxConfig(selected.to_string()));
+                }
+            });
+        });
+    });
 }
 
 // ── DATABASE TAB ──────────────────────────────────────────────────────
-fn render_db_tab(ui: &mut egui::Ui, draft: &mut SiteConfig) {
+fn render_db_tab(ui: &mut egui::Ui, _state: &AppState, site_name: &str, draft: &mut SiteConfig, to_send: &mut Vec<AppCommand>) {
+    // DB info grid
+    section_label(ui, "Database info");
+    card_frame().show(ui, |ui| {
+        let db_name = db_name_for_site(site_name);
+        egui::Grid::new("db_grid").num_columns(2).spacing([16.0, 4.0]).show(ui, |ui| {
+            db_field(ui, "Database", &db_name);
+            db_field(ui, "User", "root");
+            ui.end_row();
+            db_field(ui, "Charset", "utf8mb4");
+            db_field(ui, "Engine", "MySQL 8.0");
+            ui.end_row();
+        });
+    });
+    ui.add_space(8.0);
+
+    // Existing settings
     section_label(ui, "Database");
     card_frame().show(ui, |ui| {
         labeled_opt_text(ui, "Engine override", &mut draft.database.engine);
         ui.checkbox(&mut draft.database.backup_before_destroy, "Take a backup before destructive migrations");
         labeled_opt_text(ui, "Backup path", &mut draft.database.backup_path);
+    });
+    ui.add_space(8.0);
+
+    // Action buttons
+    section_label(ui, "Actions");
+    card_frame().show(ui, |ui| {
+        ui.horizontal(|ui| {
+            if ghost_button(ui, "Export schema").clicked() {
+                to_send.push(AppCommand::ExportDbSchema(site_name.to_string()));
+            }
+            ui.add_space(4.0);
+            if danger_button(ui, "✕ Reset DB").clicked() {
+                to_send.push(AppCommand::ResetDatabase(site_name.to_string()));
+            }
+        });
     });
 }
 
@@ -792,4 +839,30 @@ fn render_pma_tab(
 #[allow(dead_code)]
 fn _unused_imports_keeper(_: &DetectedFramework) {
     let _ = framework_badge;
+}
+
+fn db_field(ui: &mut egui::Ui, label: &str, value: &str) {
+    ui.vertical(|ui| {
+        ui.label(RichText::new(label).size(10.0).color(Colors::TEXT_TERTIARY));
+        ui.label(
+            RichText::new(value)
+                .size(12.0)
+                .color(Colors::TEXT_SECONDARY)
+                .text_style(egui::TextStyle::Monospace),
+        );
+    });
+}
+
+pub(super) fn db_name_for_site(name: &str) -> String {
+    name.replace('-', "_")
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn db_name_from_site_name() {
+        assert_eq!(super::db_name_for_site("my-site"), "my_site");
+        assert_eq!(super::db_name_for_site("no-hyphens-here"), "no_hyphens_here");
+        assert_eq!(super::db_name_for_site("clean"), "clean");
+    }
 }

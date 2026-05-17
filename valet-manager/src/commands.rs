@@ -204,6 +204,10 @@ pub enum AppCommand {
     RefreshMailpit,
     // M5 — TLS
     TrustCa,
+    // M6 — Per-site nginx / db actions
+    OpenNginxConfig(String),
+    ExportDbSchema(String),
+    ResetDatabase(String),
 }
 
 #[derive(Debug, Clone)]
