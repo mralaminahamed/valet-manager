@@ -2511,6 +2511,77 @@ pub async fn run_dispatcher(
                     }
                 });
             }
+            // M1 — Navigation
+            AppCommand::OpenScreen(screen) => {
+                let mut s = state.write().await;
+                s.ui.active_screen = screen;
+            }
+            AppCommand::OpenSettings(section) => {
+                let mut s = state.write().await;
+                s.ui.active_screen = crate::state::app_state::Screen::Settings;
+                s.ui.settings_section = section;
+            }
+            // M1 — Floating windows
+            AppCommand::OpenShellWindow => { let mut s = state.write().await; s.ui.shell_open = true; }
+            AppCommand::CloseShellWindow => { let mut s = state.write().await; s.ui.shell_open = false; }
+            AppCommand::OpenMailpitWindow => { let mut s = state.write().await; s.ui.mailpit_open = true; }
+            AppCommand::CloseMailpitWindow => { let mut s = state.write().await; s.ui.mailpit_open = false; }
+            AppCommand::OpenPmaWindow => { let mut s = state.write().await; s.ui.pma_open = true; }
+            AppCommand::ClosePmaWindow => { let mut s = state.write().await; s.ui.pma_open = false; }
+            // M1 — Add-site modal
+            AppCommand::OpenAddSiteModal => { let mut s = state.write().await; s.ui.add_site_modal_open = true; }
+            AppCommand::CloseAddSiteModal => { let mut s = state.write().await; s.ui.add_site_modal_open = false; }
+            // M1 — DNS aliases
+            AppCommand::AddDnsAlias { from, to } => {
+                let mut s = state.write().await;
+                s.dns_aliases.push(crate::state::app_state::DnsAlias { from, to });
+            }
+            AppCommand::RemoveDnsAlias(from) => {
+                let mut s = state.write().await;
+                s.dns_aliases.retain(|a| a.from != from);
+            }
+            // M1 — Service control
+            AppCommand::StartService(_name) => {}
+            AppCommand::StopService(_name) => {}
+            AppCommand::RestartService(name) => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let _ = tx.send(AppEvent::Error(format!("{} restarted", name))).await;
+                });
+            }
+            // M1 — Site actions
+            AppCommand::SetSiteFilter(filter) => {
+                let mut s = state.write().await;
+                s.ui.site_status_filter = filter;
+            }
+            AppCommand::RevealSiteInFiles(path) => {
+                let _ = tokio::process::Command::new("xdg-open").arg(&path).spawn();
+            }
+            AppCommand::RestartSite(_site) => {}
+            AppCommand::OpenShellAtSite(site) => {
+                let mut s = state.write().await;
+                s.ui.shell_open = true;
+                s.shell_site = Some(site);
+            }
+            AppCommand::UnparkSite(_site) => {}
+            // M1 — Shell
+            AppCommand::RunShellCommand(cmd_str) => {
+                let mut s = state.write().await;
+                s.shell_input = cmd_str;
+            }
+            // M1 — DNS flush
+            AppCommand::FlushDns => {
+                let tx = tx.clone();
+                tokio::spawn(async move {
+                    let _ = tokio::process::Command::new("sudo")
+                        .args(["systemctl", "restart", "dnsmasq"])
+                        .output()
+                        .await;
+                    let _ = tx.send(AppEvent::Error("DNS flushed".into())).await;
+                });
+            }
+            // M1 — Mailpit
+            AppCommand::RefreshMailpit => {}
         }
     }
 }

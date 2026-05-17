@@ -2,6 +2,33 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AppearanceConfig {
+    pub accent_index: usize,
+    pub density: String,
+    pub sidebar_width: f32,
+    pub window_radius: f32,
+    pub show_stats: bool,
+    pub show_badges: bool,
+    pub dot_glow: bool,
+    pub mono_numerals: bool,
+}
+
+impl Default for AppearanceConfig {
+    fn default() -> Self {
+        Self {
+            accent_index: 0,
+            density: "compact".to_string(),
+            sidebar_width: 220.0,
+            window_radius: 12.0,
+            show_stats: true,
+            show_badges: true,
+            dot_glow: true,
+            mono_numerals: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[allow(dead_code)]
 pub struct AppConfig {
     pub editor_command: String,
@@ -29,6 +56,8 @@ pub struct AppConfig {
     /// Default MySQL password used when site .env/wp-config does not provide one.
     #[serde(default)]
     pub mysql_pass: String,
+    #[serde(default)]
+    pub appearance: AppearanceConfig,
 }
 
 impl Default for AppConfig {
@@ -50,6 +79,7 @@ impl Default for AppConfig {
             blowfish_secret: None,
             mysql_user: String::new(),
             mysql_pass: String::new(),
+            appearance: AppearanceConfig::default(),
         }
     }
 }
@@ -173,5 +203,31 @@ mod tests {
     fn onboarded_path_ends_with_sentinel() {
         let p = onboarded_path();
         assert!(p.to_string_lossy().ends_with(".onboarded"));
+    }
+
+    #[test]
+    fn appearance_config_defaults() {
+        let a = AppearanceConfig::default();
+        assert_eq!(a.density, "compact");
+        assert!((a.sidebar_width - 220.0).abs() < f32::EPSILON);
+        assert!(a.show_stats);
+        assert!(a.dot_glow);
+        assert_eq!(a.accent_index, 0);
+    }
+
+    #[test]
+    fn app_config_has_appearance() {
+        let c = AppConfig::default();
+        assert_eq!(c.appearance.accent_index, 0);
+        assert_eq!(c.appearance.density, "compact");
+    }
+
+    #[test]
+    fn appearance_config_toml_roundtrip() {
+        let cfg = AppConfig::default();
+        let s = toml::to_string_pretty(&cfg).unwrap();
+        let r: AppConfig = toml::from_str(&s).unwrap();
+        assert_eq!(cfg.appearance.accent_index, r.appearance.accent_index);
+        assert!((cfg.appearance.sidebar_width - r.appearance.sidebar_width).abs() < f32::EPSILON);
     }
 }

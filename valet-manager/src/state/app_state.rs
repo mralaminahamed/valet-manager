@@ -199,6 +199,9 @@ pub struct AppState {
     // Phase 14 — Version registry
     pub version_registry: crate::version_registry::models::VersionRegistry,
     pub version_registry_loading: bool,
+    // M1 — Shell
+    pub shell_site: Option<String>,
+    pub shell_input: String,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -351,6 +354,9 @@ impl Default for AppState {
             // Phase 14 — Version registry
             version_registry: crate::version_registry::models::VersionRegistry::default(),
             version_registry_loading: false,
+            // M1 — Shell
+            shell_site: None,
+            shell_input: String::new(),
         }
     }
 }

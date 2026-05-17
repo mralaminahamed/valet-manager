@@ -169,6 +169,38 @@ pub enum AppCommand {
     RefreshPhpMyAdminStatus,
     // Phase 14 — Version registry
     RefreshVersionRegistry,
+    // M1 — Navigation
+    OpenScreen(crate::state::app_state::Screen),
+    OpenSettings(crate::state::app_state::SettingsSection),
+    // M1 — Floating windows
+    OpenShellWindow,
+    CloseShellWindow,
+    OpenMailpitWindow,
+    CloseMailpitWindow,
+    OpenPmaWindow,
+    ClosePmaWindow,
+    // M1 — Add-site modal
+    OpenAddSiteModal,
+    CloseAddSiteModal,
+    // M1 — DNS aliases
+    AddDnsAlias { from: String, to: String },
+    RemoveDnsAlias(String),
+    // M1 — Service control (StartService/StopService/RestartService)
+    StartService(String),
+    StopService(String),
+    RestartService(String),
+    // M1 — Site actions
+    SetSiteFilter(crate::state::app_state::SiteStatusFilter),
+    RevealSiteInFiles(String),
+    RestartSite(String),
+    OpenShellAtSite(String),
+    UnparkSite(String),
+    // M1 — Shell
+    RunShellCommand(String),
+    // M1 — DNS flush
+    FlushDns,
+    // M1 — Mailpit
+    RefreshMailpit,
 }
 
 #[derive(Debug, Clone)]
