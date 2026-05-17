@@ -12,6 +12,7 @@ pub fn render(ctx: &egui::Context, state: &mut AppState, cmd_tx: &Sender<AppComm
 
     // Dim background overlay
     let screen = ctx.input(|i| i.screen_rect());
+    let screen = ctx.screen_rect();
     ctx.layer_painter(egui::LayerId::new(egui::Order::Background, egui::Id::new("modal_dim")))
         .rect_filled(screen, egui::CornerRadius::ZERO, egui::Color32::from_black_alpha(120));
 
@@ -91,6 +92,7 @@ fn modal_tab(ui: &mut egui::Ui, label: &str, tab: AddSiteTab, state: &mut AppSta
     let color = if is_active { Colors::ACCENT } else { Colors::TEXT_SECONDARY };
     let (rect, resp) = ui.allocate_exact_size(
         egui::vec2(label.chars().count() as f32 * 7.0 + 20.0, 30.0),
+        egui::vec2(label.len() as f32 * 7.0 + 20.0, 30.0),
         egui::Sense::click(),
     );
     if ui.is_rect_visible(rect) {
@@ -445,7 +447,6 @@ fn submit_modal(state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
             let _ = cmd_tx.try_send(AppCommand::ParkDirectory(path));
         }
         AddSiteTab::Create => {
-            // TODO: dispatch actual scaffold command (CreateApp) once creator flow is wired
             let _ = cmd_tx.try_send(AppCommand::OpenScreen(crate::state::app_state::Screen::Sites));
         }
         AddSiteTab::Proxy => {
