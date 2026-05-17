@@ -167,6 +167,79 @@ fn merge_dev(base: DevSiteConfig, overlay: DevSiteConfig) -> DevSiteConfig {
     }
 }
 
+// ── Phase 13 — framework-specific sub-config mergers ─────────────────
+
+fn merge_craft(base: CraftConfig, overlay: CraftConfig) -> CraftConfig {
+    CraftConfig {
+        environment: merge_opt(base.environment, overlay.environment),
+        license_key: merge_opt(base.license_key, overlay.license_key),
+        db_driver: merge_opt(base.db_driver, overlay.db_driver),
+        use_project_config: merge_bool(base.use_project_config, overlay.use_project_config),
+    }
+}
+
+fn merge_concretecms(base: ConcreteCmsConfig, overlay: ConcreteCmsConfig) -> ConcreteCmsConfig {
+    ConcreteCmsConfig {
+        environment: merge_opt(base.environment, overlay.environment),
+        cache_enabled: merge_bool(base.cache_enabled, overlay.cache_enabled),
+        // pretty_urls default = true; AND-style merge keeps "false" sticky.
+        pretty_urls: base.pretty_urls && overlay.pretty_urls,
+    }
+}
+
+fn merge_drupal(base: DrupalConfig, overlay: DrupalConfig) -> DrupalConfig {
+    DrupalConfig {
+        environment: merge_opt(base.environment, overlay.environment),
+        trusted_host_patterns: merge_vec(base.trusted_host_patterns, overlay.trusted_host_patterns),
+        cache_bins: merge_vec(base.cache_bins, overlay.cache_bins),
+    }
+}
+
+fn merge_joomla(base: JoomlaConfig, overlay: JoomlaConfig) -> JoomlaConfig {
+    JoomlaConfig {
+        error_reporting: merge_opt(base.error_reporting, overlay.error_reporting),
+        sef_urls: merge_bool(base.sef_urls, overlay.sef_urls),
+        debug: merge_bool(base.debug, overlay.debug),
+        cache_enabled: merge_bool(base.cache_enabled, overlay.cache_enabled),
+    }
+}
+
+fn merge_magento(base: MagentoConfig, overlay: MagentoConfig) -> MagentoConfig {
+    MagentoConfig {
+        mode: merge_opt(base.mode, overlay.mode),
+        indexer_mode: merge_opt(base.indexer_mode, overlay.indexer_mode),
+    }
+}
+
+fn merge_octobercms(base: OctoberCmsConfig, overlay: OctoberCmsConfig) -> OctoberCmsConfig {
+    OctoberCmsConfig {
+        debug_mode: merge_bool(base.debug_mode, overlay.debug_mode),
+        backend_path: merge_opt(base.backend_path, overlay.backend_path),
+    }
+}
+
+fn merge_statamic(base: StatamicConfig, overlay: StatamicConfig) -> StatamicConfig {
+    StatamicConfig {
+        // flat_file default = true; both must be true to stay true.
+        flat_file: base.flat_file && overlay.flat_file,
+        git_integration: merge_bool(base.git_integration, overlay.git_integration),
+        api_enabled: merge_bool(base.api_enabled, overlay.api_enabled),
+    }
+}
+
+fn merge_optional<T>(
+    base: Option<T>,
+    overlay: Option<T>,
+    merger: impl FnOnce(T, T) -> T,
+) -> Option<T> {
+    match (base, overlay) {
+        (Some(b), Some(o)) => Some(merger(b, o)),
+        (None, Some(o)) => Some(o),
+        (Some(b), None) => Some(b),
+        (None, None) => None,
+    }
+}
+
 /// Merge two configs. `overlay` wins on conflicts (typically the site-root file
 /// overlays the centralized file).
 pub fn merge(base: SiteConfig, overlay: SiteConfig) -> SiteConfig {
@@ -189,6 +262,14 @@ pub fn merge(base: SiteConfig, overlay: SiteConfig) -> SiteConfig {
         database: merge_database(base.database, overlay.database),
         development: merge_dev(base.development, overlay.development),
         phpmyadmin: merge_phpmyadmin(base.phpmyadmin, overlay.phpmyadmin),
+        // Phase 13 — overlay-wins-if-Some for each framework sub-config.
+        craft:       merge_optional(base.craft,       overlay.craft,       merge_craft),
+        concretecms: merge_optional(base.concretecms, overlay.concretecms, merge_concretecms),
+        drupal:      merge_optional(base.drupal,      overlay.drupal,      merge_drupal),
+        joomla:      merge_optional(base.joomla,      overlay.joomla,      merge_joomla),
+        magento:     merge_optional(base.magento,     overlay.magento,     merge_magento),
+        octobercms:  merge_optional(base.octobercms,  overlay.octobercms,  merge_octobercms),
+        statamic:    merge_optional(base.statamic,    overlay.statamic,    merge_statamic),
     }
 }
 
@@ -287,5 +368,110 @@ mod tests {
         let overlay = SiteConfig::default();
         let m = merge(base, overlay);
         assert_eq!(m.server.custom_directives, "add_header X-A 1;");
+    }
+
+    // ── Phase 13 — framework sub-config merge ─────────────────────────
+
+    #[test]
+    fn craft_some_overrides_none() {
+        let base = SiteConfig::default();
+        let mut overlay = SiteConfig::default();
+        overlay.craft = Some(CraftConfig {
+            environment: Some("dev".into()),
+            ..Default::default()
+        });
+        let m = merge(base, overlay);
+        assert_eq!(m.craft.unwrap().environment, Some("dev".into()));
+    }
+
+    #[test]
+    fn magento_overlay_mode_wins() {
+        let mut base = SiteConfig::default();
+        base.magento = Some(MagentoConfig {
+            mode: Some("default".into()),
+            ..Default::default()
+        });
+        let mut overlay = SiteConfig::default();
+        overlay.magento = Some(MagentoConfig {
+            mode: Some("developer".into()),
+            ..Default::default()
+        });
+        let m = merge(base, overlay);
+        assert_eq!(m.magento.unwrap().mode, Some("developer".into()));
+    }
+
+    #[test]
+    fn drupal_vec_overlay_appended() {
+        let mut base = SiteConfig::default();
+        base.drupal = Some(DrupalConfig {
+            trusted_host_patterns: vec!["^a$".into()],
+            ..Default::default()
+        });
+        let mut overlay = SiteConfig::default();
+        overlay.drupal = Some(DrupalConfig {
+            trusted_host_patterns: vec!["^b$".into()],
+            ..Default::default()
+        });
+        let m = merge(base, overlay);
+        let v = m.drupal.unwrap().trusted_host_patterns;
+        assert_eq!(v.len(), 2);
+        assert!(v.contains(&"^a$".to_string()));
+        assert!(v.contains(&"^b$".to_string()));
+    }
+
+    #[test]
+    fn octobercms_debug_overlay_true_wins() {
+        let mut base = SiteConfig::default();
+        base.octobercms = Some(OctoberCmsConfig::default());
+        let mut overlay = SiteConfig::default();
+        overlay.octobercms = Some(OctoberCmsConfig {
+            debug_mode: true,
+            ..Default::default()
+        });
+        let m = merge(base, overlay);
+        assert!(m.octobercms.unwrap().debug_mode);
+    }
+
+    #[test]
+    fn statamic_base_kept_when_overlay_missing() {
+        let mut base = SiteConfig::default();
+        base.statamic = Some(StatamicConfig {
+            flat_file: true,
+            git_integration: true,
+            api_enabled: true,
+        });
+        let overlay = SiteConfig::default();
+        let m = merge(base, overlay);
+        let s = m.statamic.unwrap();
+        assert!(s.flat_file);
+        assert!(s.git_integration);
+        assert!(s.api_enabled);
+    }
+
+    #[test]
+    fn joomla_bool_overlay_true_wins() {
+        let mut base = SiteConfig::default();
+        base.joomla = Some(JoomlaConfig::default());
+        let mut overlay = SiteConfig::default();
+        overlay.joomla = Some(JoomlaConfig {
+            debug: true,
+            sef_urls: true,
+            ..Default::default()
+        });
+        let m = merge(base, overlay);
+        let j = m.joomla.unwrap();
+        assert!(j.debug);
+        assert!(j.sef_urls);
+    }
+
+    #[test]
+    fn concretecms_pretty_urls_false_is_sticky() {
+        let mut base = SiteConfig::default();
+        base.concretecms = Some(ConcreteCmsConfig { pretty_urls: false, ..Default::default() });
+        let mut overlay = SiteConfig::default();
+        overlay.concretecms = Some(ConcreteCmsConfig { pretty_urls: true, ..Default::default() });
+        let m = merge(base, overlay);
+        // AND-merge: false in either should keep false.
+        assert!(!m.concretecms.unwrap().pretty_urls);
     }
 }

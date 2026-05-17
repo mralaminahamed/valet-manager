@@ -42,12 +42,26 @@ const KNOWN_TIMEZONES: &[&str] = &[
 /// Return the absolute path where .user.ini should be written for this site,
 /// based on the framework's document root.
 pub fn user_ini_path(site: &ValetSite) -> PathBuf {
-    match site.framework {
-        DetectedFramework::Laravel
-        | DetectedFramework::Symfony
-        | DetectedFramework::Slim => site.path.join("public/.user.ini"),
-        DetectedFramework::WordPress | DetectedFramework::Bedrock => site.path.join(".user.ini"),
-        _ => site.path.join("public/.user.ini"),
+    use DetectedFramework as F;
+    match &site.framework {
+        // public/ docroot
+        F::Laravel | F::Statamic | F::Slim | F::Symfony | F::Zend
+            => site.path.join("public/.user.ini"),
+        // web/ docroot
+        F::Bedrock | F::Craft | F::Drupal | F::Contao
+            => site.path.join("web/.user.ini"),
+        // webroot/ (CakePHP)
+        F::CakePHP
+            => site.path.join("webroot/.user.ini"),
+        // root docroot
+        F::WordPress | F::Joomla | F::Kirby | F::ConcreteCms
+        | F::Magento | F::OctoberCms | F::ExpressionEngine
+        | F::StaticHtml | F::Unknown
+            => site.path.join(".user.ini"),
+        // static site generator output dirs
+        F::Jigsaw  => site.path.join("build_local/.user.ini"),
+        F::Sculpin => site.path.join("output_dev/.user.ini"),
+        F::Katana  => site.path.join("_output/.user.ini"),
     }
 }
 
@@ -153,15 +167,104 @@ mod tests {
     }
 
     #[test]
-    fn user_ini_path_for_bedrock_is_site_root() {
+    fn user_ini_path_for_bedrock_is_web() {
+        // Spec § Phase 13: Bedrock docroot is web/.
         let s = fixture_site(DetectedFramework::Bedrock, PathBuf::from("/srv/blog"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/blog/.user.ini"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/blog/web/.user.ini"));
     }
 
     #[test]
-    fn user_ini_path_for_unknown_is_public() {
+    fn user_ini_path_for_unknown_is_site_root() {
         let s = fixture_site(DetectedFramework::Unknown, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_symfony_is_public() {
+        let s = fixture_site(DetectedFramework::Symfony, PathBuf::from("/srv/app"));
         assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_statamic_is_public() {
+        let s = fixture_site(DetectedFramework::Statamic, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_slim_is_public() {
+        let s = fixture_site(DetectedFramework::Slim, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_zend_is_public() {
+        let s = fixture_site(DetectedFramework::Zend, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_craft_is_web() {
+        let s = fixture_site(DetectedFramework::Craft, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/web/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_drupal_is_web() {
+        let s = fixture_site(DetectedFramework::Drupal, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/web/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_contao_is_web() {
+        let s = fixture_site(DetectedFramework::Contao, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/web/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_cakephp_is_webroot() {
+        let s = fixture_site(DetectedFramework::CakePHP, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/webroot/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_joomla_is_root() {
+        let s = fixture_site(DetectedFramework::Joomla, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_magento_is_root() {
+        let s = fixture_site(DetectedFramework::Magento, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_jigsaw_is_build_local() {
+        let s = fixture_site(DetectedFramework::Jigsaw, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/build_local/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_sculpin_is_output_dev() {
+        let s = fixture_site(DetectedFramework::Sculpin, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/output_dev/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_for_katana_is_output() {
+        let s = fixture_site(DetectedFramework::Katana, PathBuf::from("/srv/app"));
+        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/_output/.user.ini"));
+    }
+
+    #[test]
+    fn user_ini_path_returns_some_path_for_all_22_variants() {
+        for fw in DetectedFramework::all_variants() {
+            let s = fixture_site(fw.clone(), PathBuf::from("/srv/app"));
+            let p = user_ini_path(&s);
+            assert!(p.to_string_lossy().ends_with(".user.ini"),
+                    "{:?} produced {:?}", fw, p);
+        }
     }
 
     #[test]

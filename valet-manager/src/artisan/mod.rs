@@ -1,3 +1,5 @@
+pub mod framework_cli;
+
 use std::path::Path;
 use serde::Deserialize;
 

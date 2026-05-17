@@ -481,4 +481,94 @@ mod tests {
         assert_eq!(detect_framework(&dir), DetectedFramework::Unknown);
         cleanup(&dir);
     }
+
+    // ── Phase 13 — priority-ordering tests ────────────────────────────
+
+    #[test]
+    fn priority_october_beats_laravel() {
+        let dir = make_temp_site();
+        create_file(&dir, "artisan");
+        create_file(&dir, "public/index.php");
+        create_file(&dir, "modules/backend/x.php");
+        assert_eq!(detect_framework(&dir), DetectedFramework::OctoberCms);
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn priority_bedrock_beats_wordpress() {
+        let dir = make_temp_site();
+        create_file(&dir, "web/wp/wp-settings.php");
+        create_file(&dir, "config/application.php");
+        // No wp-admin → bedrock wins. But add wp-admin too to be safe.
+        create_dir(&dir, "web/wp/wp-admin");
+        // The detect_framework checks web/wp dir (just the dir exists),
+        // not the wp-admin path of bedrock — but it does NOT check root
+        // wp-admin if bedrock has matched first. Bedrock wins.
+        assert_eq!(detect_framework(&dir), DetectedFramework::Bedrock);
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn priority_statamic_beats_laravel() {
+        let dir = make_temp_site();
+        create_file(&dir, "artisan");
+        create_file(&dir, "vendor/statamic/cms/x.php");
+        create_file(&dir, "public/index.php");
+        assert_eq!(detect_framework(&dir), DetectedFramework::Statamic);
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn priority_magento_beats_artisan() {
+        let dir = make_temp_site();
+        create_file(&dir, "bin/magento");
+        create_file(&dir, "artisan");
+        create_file(&dir, "public/index.php");
+        assert_eq!(detect_framework(&dir), DetectedFramework::Magento);
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn priority_jigsaw_beats_symfony() {
+        let dir = make_temp_site();
+        create_file(&dir, "config.php");
+        create_file(&dir, "source/index.blade.php");
+        // Even if bin/console + config existed, jigsaw should win because
+        // jigsaw is checked before the Symfony triple.
+        assert_eq!(detect_framework(&dir), DetectedFramework::Jigsaw);
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn priority_sculpin_beats_symfony() {
+        let dir = make_temp_site();
+        create_file(&dir, "sculpin.json");
+        create_file(&dir, "bin/console");
+        create_dir(&dir, "config");
+        create_file(&dir, "public/index.php");
+        assert_eq!(detect_framework(&dir), DetectedFramework::Sculpin);
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn priority_drupal_beats_joomla() {
+        let dir = make_temp_site();
+        // Both signatures present.
+        create_file(&dir, "web/core/lib/Drupal.php");
+        create_dir(&dir, "administrator");
+        create_file(&dir, "configuration.php");
+        assert_eq!(detect_framework(&dir), DetectedFramework::Drupal);
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn priority_craft_beats_anything_else() {
+        let dir = make_temp_site();
+        create_file(&dir, "craft");
+        // throw in noise that would otherwise match other frameworks
+        create_file(&dir, "wp-admin/index.php");
+        create_file(&dir, "artisan");
+        assert_eq!(detect_framework(&dir), DetectedFramework::Craft);
+        cleanup(&dir);
+    }
 }

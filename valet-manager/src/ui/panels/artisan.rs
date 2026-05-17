@@ -35,7 +35,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             .width(280.0)
             .show_ui(ui, |ui| {
                 for site in &state.sites {
-                    if artisan::detect_tool(&site.path).is_some() {
+                    if artisan::framework_cli::detect_cli(site).is_some() {
                         if ui
                             .selectable_label(
                                 state.artisan_site.as_deref() == Some(site.domain.as_str()),
@@ -56,15 +56,27 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             }
         }
 
-        if let Some(tool) = state.artisan_tool {
+        // CLI kind badge — switches based on detect_cli result of the
+        // currently-selected site.
+        let cli_label_opt: Option<&'static str> = state
+            .artisan_site
+            .as_ref()
+            .and_then(|dom| {
+                state
+                    .sites
+                    .iter()
+                    .find(|s| s.domain == *dom)
+                    .and_then(|s| artisan::framework_cli::detect_cli(s).map(|c| c.label()))
+            })
+            .or_else(|| state.artisan_tool.map(|tool| match tool {
+                artisan::ArtisanTool::Artisan    => "Artisan",
+                artisan::ArtisanTool::BinConsole => "bin/console",
+                artisan::ArtisanTool::BinMagento => "bin/magento",
+                artisan::ArtisanTool::Drush      => "drush",
+            }));
+        if let Some(label) = cli_label_opt {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 ui.add_space(8.0);
-                let label = match tool {
-                    artisan::ArtisanTool::Artisan => "Laravel",
-                    artisan::ArtisanTool::BinConsole => "Symfony",
-                    artisan::ArtisanTool::BinMagento => "Magento",
-                    artisan::ArtisanTool::Drush => "Drupal",
-                };
                 Frame::NONE
                     .fill(with_alpha(Colors::PURPLE, 30))
                     .corner_radius(CornerRadius::same(10))

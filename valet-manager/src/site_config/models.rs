@@ -22,6 +22,87 @@ pub struct SiteConfig {
     pub development: DevSiteConfig,
     #[serde(default)]
     pub phpmyadmin: PhpMyAdminSiteConfig,
+    // Phase 13 — framework-specific sub-configs (state-only this phase; no
+    // dedicated panel rendering yet).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub craft: Option<CraftConfig>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub concretecms: Option<ConcreteCmsConfig>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drupal: Option<DrupalConfig>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub joomla: Option<JoomlaConfig>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub magento: Option<MagentoConfig>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub octobercms: Option<OctoberCmsConfig>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub statamic: Option<StatamicConfig>,
+}
+
+// ── FRAMEWORK-SPECIFIC SITE CONFIG (Phase 13) ─────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct CraftConfig {
+    pub environment: Option<String>,
+    pub license_key: Option<String>,
+    pub db_driver: Option<String>,
+    #[serde(default)]
+    pub use_project_config: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct ConcreteCmsConfig {
+    pub environment: Option<String>,
+    #[serde(default)]
+    pub cache_enabled: bool,
+    #[serde(default = "default_true")]
+    pub pretty_urls: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct DrupalConfig {
+    pub environment: Option<String>,
+    #[serde(default)]
+    pub trusted_host_patterns: Vec<String>,
+    #[serde(default)]
+    pub cache_bins: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct JoomlaConfig {
+    pub error_reporting: Option<String>,
+    #[serde(default)]
+    pub sef_urls: bool,
+    #[serde(default)]
+    pub debug: bool,
+    #[serde(default)]
+    pub cache_enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct MagentoConfig {
+    /// "developer" | "production" | "default"
+    pub mode: Option<String>,
+    /// "realtime" | "schedule"
+    pub indexer_mode: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct OctoberCmsConfig {
+    #[serde(default)]
+    pub debug_mode: bool,
+    pub backend_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct StatamicConfig {
+    #[serde(default = "default_true")]
+    pub flat_file: bool,
+    #[serde(default)]
+    pub git_integration: bool,
+    #[serde(default)]
+    pub api_enabled: bool,
 }
 
 // ── PHPMYADMIN ────────────────────────────────────────────────────────
@@ -560,5 +641,124 @@ mod tests {
     #[test]
     fn xdebug_mode_default_is_off() {
         assert_eq!(XdebugMode::default(), XdebugMode::Off);
+    }
+
+    // ── Phase 13 — framework-specific config round-trips ──────────────
+
+    #[test]
+    fn craft_config_round_trips() {
+        let cfg = CraftConfig {
+            environment: Some("dev".into()),
+            license_key: Some("abc".into()),
+            db_driver: Some("mysql".into()),
+            use_project_config: true,
+        };
+        let s = toml::to_string(&cfg).unwrap();
+        let parsed: CraftConfig = toml::from_str(&s).unwrap();
+        assert_eq!(parsed, cfg);
+    }
+
+    #[test]
+    fn concretecms_config_round_trips() {
+        let cfg = ConcreteCmsConfig {
+            environment: Some("production".into()),
+            cache_enabled: true,
+            pretty_urls: false,
+        };
+        let s = toml::to_string(&cfg).unwrap();
+        let parsed: ConcreteCmsConfig = toml::from_str(&s).unwrap();
+        assert_eq!(parsed, cfg);
+    }
+
+    #[test]
+    fn drupal_config_round_trips() {
+        let cfg = DrupalConfig {
+            environment: Some("local".into()),
+            trusted_host_patterns: vec!["^example\\.test$".into()],
+            cache_bins: vec!["null".into()],
+        };
+        let s = toml::to_string(&cfg).unwrap();
+        let parsed: DrupalConfig = toml::from_str(&s).unwrap();
+        assert_eq!(parsed, cfg);
+    }
+
+    #[test]
+    fn joomla_config_round_trips() {
+        let cfg = JoomlaConfig {
+            error_reporting: Some("maximum".into()),
+            sef_urls: true,
+            debug: true,
+            cache_enabled: false,
+        };
+        let s = toml::to_string(&cfg).unwrap();
+        let parsed: JoomlaConfig = toml::from_str(&s).unwrap();
+        assert_eq!(parsed, cfg);
+    }
+
+    #[test]
+    fn magento_config_round_trips() {
+        let cfg = MagentoConfig {
+            mode: Some("developer".into()),
+            indexer_mode: Some("realtime".into()),
+        };
+        let s = toml::to_string(&cfg).unwrap();
+        let parsed: MagentoConfig = toml::from_str(&s).unwrap();
+        assert_eq!(parsed, cfg);
+    }
+
+    #[test]
+    fn octobercms_config_round_trips() {
+        let cfg = OctoberCmsConfig {
+            debug_mode: true,
+            backend_path: Some("backend".into()),
+        };
+        let s = toml::to_string(&cfg).unwrap();
+        let parsed: OctoberCmsConfig = toml::from_str(&s).unwrap();
+        assert_eq!(parsed, cfg);
+    }
+
+    #[test]
+    fn statamic_config_round_trips() {
+        let cfg = StatamicConfig {
+            flat_file: true,
+            git_integration: true,
+            api_enabled: false,
+        };
+        let s = toml::to_string(&cfg).unwrap();
+        let parsed: StatamicConfig = toml::from_str(&s).unwrap();
+        assert_eq!(parsed, cfg);
+    }
+
+    #[test]
+    fn statamic_default_flat_file_is_true() {
+        // The serde default for flat_file is true via `default_true`.
+        let toml_no_flat = "git_integration = true\napi_enabled = false\n";
+        let parsed: StatamicConfig = toml::from_str(toml_no_flat).unwrap();
+        assert!(parsed.flat_file);
+        assert!(parsed.git_integration);
+    }
+
+    #[test]
+    fn concretecms_default_pretty_urls_is_true() {
+        let parsed: ConcreteCmsConfig = toml::from_str("").unwrap();
+        assert!(parsed.pretty_urls);
+        assert!(!parsed.cache_enabled);
+    }
+
+    #[test]
+    fn site_config_includes_framework_subconfigs() {
+        let mut cfg = SiteConfig::default();
+        cfg.craft = Some(CraftConfig {
+            environment: Some("dev".into()),
+            ..Default::default()
+        });
+        cfg.magento = Some(MagentoConfig {
+            mode: Some("developer".into()),
+            ..Default::default()
+        });
+        let s = toml::to_string(&cfg).unwrap();
+        let parsed: SiteConfig = toml::from_str(&s).unwrap();
+        assert_eq!(parsed.craft, cfg.craft);
+        assert_eq!(parsed.magento, cfg.magento);
     }
 }

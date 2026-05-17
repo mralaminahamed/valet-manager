@@ -30,3 +30,16 @@ pub enum DetectedFramework {
     Zend,
     Unknown,
 }
+
+impl DetectedFramework {
+    /// Returns all 22 variants (21 frameworks + Unknown).
+    #[allow(dead_code)]
+    pub fn all_variants() -> [DetectedFramework; 22] {
+        use DetectedFramework::*;
+        [
+            Laravel, WordPress, Bedrock, CakePHP, ConcreteCms, Contao, Craft, Drupal,
+            ExpressionEngine, Jigsaw, Joomla, Katana, Kirby, Magento, OctoberCms,
+            Sculpin, Slim, Statamic, StaticHtml, Symfony, Zend, Unknown,
+        ]
+    }
+}

@@ -1,6 +1,30 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use crate::services::monitor::ServiceStatus;
+use crate::ui::DetectedFramework;
+
+/// Recommended default PHP version for a given framework.
+/// Used by the App Creator wizard and the compatibility checker.
+#[allow(dead_code)]
+pub fn recommended_php_version(fw: &DetectedFramework) -> &'static str {
+    use DetectedFramework as F;
+    match fw {
+        F::Laravel | F::Statamic                       => "8.3",
+        F::Symfony                                      => "8.2",
+        F::WordPress | F::Bedrock                       => "8.2",
+        F::Drupal                                       => "8.3",
+        F::Magento                                      => "8.2",
+        F::CakePHP                                      => "8.1",
+        F::Craft | F::ConcreteCms                       => "8.2",
+        F::Joomla | F::Kirby                            => "8.1",
+        F::OctoberCms                                   => "8.1",
+        F::Contao                                       => "8.1",
+        F::Slim | F::Zend                               => "8.2",
+        F::Jigsaw | F::Sculpin                          => "8.1",
+        F::ExpressionEngine                             => "8.1",
+        F::Katana | F::StaticHtml | F::Unknown          => "8.3",
+    }
+}
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -170,5 +194,31 @@ mod tests {
         assert_eq!(php.fpm_ini_path, PathBuf::from("/etc/php/8.2/fpm/php.ini"));
         assert_eq!(php.fpm_service, "php8.2-fpm");
         assert_eq!(php.fpm_status, ServiceStatus::Unknown);
+    }
+
+    #[test]
+    fn recommended_php_version_for_laravel_is_83() {
+        assert_eq!(recommended_php_version(&DetectedFramework::Laravel), "8.3");
+    }
+
+    #[test]
+    fn recommended_php_version_for_drupal_is_83() {
+        assert_eq!(recommended_php_version(&DetectedFramework::Drupal), "8.3");
+    }
+
+    #[test]
+    fn recommended_php_version_for_wordpress_is_82() {
+        assert_eq!(recommended_php_version(&DetectedFramework::WordPress), "8.2");
+    }
+
+    #[test]
+    fn recommended_php_version_covers_all_22_variants() {
+        // Every variant must return a non-empty string.
+        for fw in DetectedFramework::all_variants() {
+            let v = recommended_php_version(&fw);
+            assert!(!v.is_empty(), "{:?} returned empty", fw);
+            // Must look like "8.x"
+            assert!(v.starts_with("8."), "{:?} returned {:?}", fw, v);
+        }
     }
 }

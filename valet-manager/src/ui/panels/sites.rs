@@ -2,11 +2,42 @@ use egui::{Color32, CornerRadius, Frame, Margin, RichText, Stroke};
 use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
+use crate::php::detector::recommended_php_version;
 use crate::state::app_state::AppState;
+use crate::ui::DetectedFramework;
 use crate::ui::theme::{
-    Colors, accent_button, divider, framework_badge, ghost_button, with_alpha,
+    Colors, accent_button, divider, framework_badge, framework_display_name, ghost_button,
+    with_alpha,
 };
 use crate::valet::site_scanner::{SiteType, ValetSite};
+
+/// Doc URL for each framework — used by the "Open framework docs" context menu.
+#[allow(dead_code)]
+fn framework_docs_url(fw: &DetectedFramework) -> &'static str {
+    use DetectedFramework::*;
+    match fw {
+        Laravel              => "https://laravel.com/docs",
+        WordPress | Bedrock  => "https://developer.wordpress.org",
+        Symfony              => "https://symfony.com/doc/current",
+        CakePHP              => "https://book.cakephp.org",
+        Drupal               => "https://drupal.org/docs",
+        Magento              => "https://developer.adobe.com/commerce/php/development/",
+        Joomla               => "https://docs.joomla.org",
+        Craft                => "https://craftcms.com/docs",
+        Statamic             => "https://statamic.dev",
+        OctoberCms           => "https://docs.octobercms.com",
+        Contao               => "https://docs.contao.org",
+        Kirby                => "https://getkirby.com/docs",
+        ConcreteCms          => "https://documentation.concretecms.org",
+        ExpressionEngine     => "https://docs.expressionengine.com",
+        Jigsaw               => "https://jigsaw.tighten.com/docs/",
+        Sculpin              => "https://sculpin.io/documentation/",
+        Slim                 => "https://www.slimframework.com/docs/",
+        Zend                 => "https://docs.laminas.dev/",
+        Katana               => "https://github.com/themsaid/katana",
+        StaticHtml | Unknown => "https://developer.mozilla.org/en-US/docs/Web/HTML",
+    }
+}
 
 // ── Column widths ────────────────────────────────────────────────────────────
 const COL_DOT:       f32 = 28.0;
@@ -240,8 +271,18 @@ fn render_site_row(
     });
 
     // ── Col 3: Framework badge (110px) ───────────────────────────────────
+    let fw_label = framework_display_name(&site.framework);
+    let fw_rec   = recommended_php_version(&site.framework);
+    let fw_tooltip = match &site.php_version {
+        Some(v) if v != fw_rec
+            => format!("{fw_label} · PHP {fw_rec} (using {v}, consider {fw_rec})"),
+        _   => format!("{fw_label} · PHP {fw_rec}"),
+    };
     row_cell(&mut child, COL_FRAMEWORK, ROW_HEIGHT, |ui| {
-        framework_badge(ui, &site.framework);
+        let resp = ui.scope(|ui| {
+            framework_badge(ui, &site.framework);
+        }).response;
+        resp.on_hover_text(fw_tooltip);
     });
 
     // ── Col 4: PHP version (70px) ────────────────────────────────────────
@@ -298,9 +339,10 @@ fn render_site_row(
         let site_name   = site.name.clone();
         let site_domain = site.domain.clone();
         let is_secured  = site.is_secured;
+        let docs_url    = framework_docs_url(&site.framework);
 
         egui::Popup::menu(&btn_resp).show(|ui| {
-            ui.set_min_width(160.0);
+            ui.set_min_width(180.0);
 
             if ui.button("Open in browser").clicked() {
                 let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(site_domain.clone()));
@@ -314,6 +356,16 @@ fn render_site_row(
                     site: site_name.clone(),
                     scope: crate::site_config::models::PmaDbScope::SiteOnly,
                 });
+            }
+
+            ui.separator();
+
+            if ui.button("Open framework docs").clicked() {
+                // Direct spawn — no AppCommand round-trip needed for an
+                // external doc URL.
+                let _ = std::process::Command::new("xdg-open")
+                    .arg(docs_url)
+                    .spawn();
             }
 
             ui.separator();
@@ -341,6 +393,32 @@ fn render_site_row(
             }
         });
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn docs_url_for_laravel() {
+        assert_eq!(framework_docs_url(&DetectedFramework::Laravel), "https://laravel.com/docs");
+    }
+
+    #[test]
+    fn docs_url_for_wordpress_and_bedrock_share() {
+        assert_eq!(
+            framework_docs_url(&DetectedFramework::WordPress),
+            framework_docs_url(&DetectedFramework::Bedrock),
+        );
+    }
+
+    #[test]
+    fn docs_url_covers_all_22_variants() {
+        for fw in DetectedFramework::all_variants() {
+            let u = framework_docs_url(&fw);
+            assert!(u.starts_with("http"), "{:?} = {:?}", fw, u);
+        }
+    }
 }
 
 // ── Public entry point ───────────────────────────────────────────────────────

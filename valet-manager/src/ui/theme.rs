@@ -252,4 +252,26 @@ mod tests {
         assert_eq!(opaque.g(), Colors::ACCENT.g());
         assert_eq!(opaque.b(), Colors::ACCENT.b());
     }
+
+    #[test]
+    fn all_22_variants_have_badge_color() {
+        for fw in DetectedFramework::all_variants() {
+            let (bg, fg) = framework_badge_colors(&fw);
+            assert!(bg.a() > 0, "{:?} bg alpha = 0", fw);
+            assert!(fg.a() == 255, "{:?} fg not opaque", fw);
+        }
+    }
+
+    #[test]
+    fn all_22_variants_have_display_name() {
+        for fw in DetectedFramework::all_variants() {
+            let name = framework_display_name(&fw);
+            assert!(!name.is_empty(), "{:?} display name is empty", fw);
+        }
+    }
+
+    #[test]
+    fn all_variants_count_is_22() {
+        assert_eq!(DetectedFramework::all_variants().len(), 22);
+    }
 }

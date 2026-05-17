@@ -179,6 +179,95 @@ pub fn build_index(state: &AppState) -> Vec<PaletteResult> {
         shortcut: None,
     });
 
+    // Phase 13 — framework-specific quick actions per site.
+    //
+    // NOTE: RunArtisan today dispatches `php artisan ...`. Magento/Drupal
+    // calls below will need a Framework-CLI-aware dispatcher in a later
+    // phase to invoke bin/magento / drush correctly. Until then, the
+    // palette entry shows up but execution will only succeed for sites
+    // whose runner actually understands the command.
+    // TODO Phase 13+: switch on FrameworkCli in the dispatcher.
+    use crate::ui::DetectedFramework;
+    for site in state.sites.iter().take(20) {
+        match site.framework {
+            DetectedFramework::Magento => {
+                idx.push(PaletteResult {
+                    label: format!("Flush Magento cache @ {}", site.domain),
+                    subtitle: Some("bin/magento cache:flush".into()),
+                    category: PaletteCategory::Artisan,
+                    action: AppCommand::RunArtisan {
+                        site: site.name.clone(),
+                        command: "cache:flush".into(),
+                        args: String::new(),
+                    },
+                    shortcut: None,
+                });
+                idx.push(PaletteResult {
+                    label: format!("Reindex Magento @ {}", site.domain),
+                    subtitle: Some("bin/magento indexer:reindex".into()),
+                    category: PaletteCategory::Artisan,
+                    action: AppCommand::RunArtisan {
+                        site: site.name.clone(),
+                        command: "indexer:reindex".into(),
+                        args: String::new(),
+                    },
+                    shortcut: None,
+                });
+            }
+            DetectedFramework::Drupal => {
+                idx.push(PaletteResult {
+                    label: format!("Drupal cache rebuild @ {}", site.domain),
+                    subtitle: Some("drush cr".into()),
+                    category: PaletteCategory::Artisan,
+                    action: AppCommand::RunArtisan {
+                        site: site.name.clone(),
+                        command: "cr".into(),
+                        args: String::new(),
+                    },
+                    shortcut: None,
+                });
+                idx.push(PaletteResult {
+                    label: format!("Drupal update DB @ {}", site.domain),
+                    subtitle: Some("drush updb -y".into()),
+                    category: PaletteCategory::Artisan,
+                    action: AppCommand::RunArtisan {
+                        site: site.name.clone(),
+                        command: "updb".into(),
+                        args: "-y".into(),
+                    },
+                    shortcut: None,
+                });
+            }
+            DetectedFramework::Symfony => {
+                idx.push(PaletteResult {
+                    label: format!("Clear Symfony cache @ {}", site.domain),
+                    subtitle: Some("bin/console cache:clear".into()),
+                    category: PaletteCategory::Artisan,
+                    action: AppCommand::RunArtisan {
+                        site: site.name.clone(),
+                        command: "cache:clear".into(),
+                        args: String::new(),
+                    },
+                    shortcut: None,
+                });
+            }
+            DetectedFramework::OctoberCms => {
+                idx.push(PaletteResult {
+                    label: format!("OctoberCMS migrate @ {}", site.domain),
+                    subtitle: Some("artisan october:migrate".into()),
+                    category: PaletteCategory::Artisan,
+                    action: AppCommand::RunArtisan {
+                        site: site.name.clone(),
+                        command: "october:migrate".into(),
+                        args: String::new(),
+                    },
+                    shortcut: None,
+                });
+            }
+            _ => {}
+        }
+    }
+
     idx
 }
 
@@ -425,5 +514,65 @@ mod tests {
         let state = AppState::default();
         let idx = build_index(&state);
         assert!(idx.iter().any(|r| r.label == "Refresh SSL certs"));
+    }
+
+    // ── Phase 13 — framework quick actions ────────────────────────────
+
+    fn make_site(name: &str, fw: crate::ui::DetectedFramework) -> crate::valet::site_scanner::ValetSite {
+        crate::valet::site_scanner::ValetSite {
+            name: name.to_string(),
+            domain: format!("{}.test", name),
+            path: std::path::PathBuf::from(format!("/srv/{}", name)),
+            site_type: crate::valet::site_scanner::SiteType::Linked,
+            framework: fw,
+            php_version: None,
+            is_secured: false,
+            ssl_expiry: None,
+            is_favorite: false,
+        }
+    }
+
+    #[test]
+    fn build_index_emits_magento_quick_actions() {
+        let mut state = AppState::default();
+        state.sites.push(make_site("shop", crate::ui::DetectedFramework::Magento));
+        let idx = build_index(&state);
+        assert!(idx.iter().any(|r| r.label.starts_with("Flush Magento cache @ shop.test")));
+        assert!(idx.iter().any(|r| r.label.starts_with("Reindex Magento @ shop.test")));
+    }
+
+    #[test]
+    fn build_index_emits_drupal_quick_actions() {
+        let mut state = AppState::default();
+        state.sites.push(make_site("intra", crate::ui::DetectedFramework::Drupal));
+        let idx = build_index(&state);
+        assert!(idx.iter().any(|r| r.label.starts_with("Drupal cache rebuild @ intra.test")));
+        assert!(idx.iter().any(|r| r.label.starts_with("Drupal update DB @ intra.test")));
+    }
+
+    #[test]
+    fn build_index_emits_symfony_cache_clear() {
+        let mut state = AppState::default();
+        state.sites.push(make_site("api", crate::ui::DetectedFramework::Symfony));
+        let idx = build_index(&state);
+        assert!(idx.iter().any(|r| r.label.starts_with("Clear Symfony cache @ api.test")));
+    }
+
+    #[test]
+    fn build_index_emits_octobercms_migrate() {
+        let mut state = AppState::default();
+        state.sites.push(make_site("blog", crate::ui::DetectedFramework::OctoberCms));
+        let idx = build_index(&state);
+        assert!(idx.iter().any(|r| r.label.starts_with("OctoberCMS migrate @ blog.test")));
+    }
+
+    #[test]
+    fn build_index_does_not_emit_for_wordpress_in_phase_13() {
+        // WordPress is not in the Phase 13 quick-action list.
+        let mut state = AppState::default();
+        state.sites.push(make_site("blog", crate::ui::DetectedFramework::WordPress));
+        let idx = build_index(&state);
+        assert!(!idx.iter().any(|r| r.label.contains("Magento")));
+        assert!(!idx.iter().any(|r| r.label.contains("Symfony cache")));
     }
 }
