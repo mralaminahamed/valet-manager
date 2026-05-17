@@ -4,6 +4,7 @@ pub mod screens;
 pub mod panels;
 pub mod components;
 pub mod command_palette;
+pub mod modals;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
