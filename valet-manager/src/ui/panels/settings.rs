@@ -59,15 +59,29 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         egui::ScrollArea::vertical().show(ui, |ui| {
             match state.ui.settings_section {
                 SettingsSection::Appearance => render_appearance(ui, state, cmd_tx),
-                SettingsSection::Behavior   => render_behavior(ui),
-                SettingsSection::Php        => render_php(ui),
+                SettingsSection::Behavior   => render_behavior(ui, state),
+                SettingsSection::Php        => render_php(ui, state),
                 SettingsSection::Tls        => render_tls(ui, state, cmd_tx),
-                SettingsSection::Paths      => render_paths(ui),
+                SettingsSection::Paths      => render_paths(ui, state),
                 SettingsSection::Updates    => render_updates(ui, state, cmd_tx),
                 SettingsSection::About      => render_about(ui, cmd_tx),
             }
         });
     });
+
+    let dirty = state.config != state.config_draft;
+    if dirty {
+        ui.add_space(8.0);
+        ui.horizontal(|ui| {
+            if accent_button(ui, "Save").clicked() {
+                let _ = cmd_tx.try_send(AppCommand::SaveSettings(state.config_draft.clone()));
+            }
+            ui.add_space(6.0);
+            if ghost_button(ui, "Discard").clicked() {
+                state.config_draft = state.config.clone();
+            }
+        });
+    }
 }
 
 fn settings_nav_item(
@@ -101,9 +115,7 @@ fn settings_nav_item(
     }
 }
 
-fn render_appearance(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
-    let dirty = state.config != state.config_draft;
-
+fn render_appearance(ui: &mut egui::Ui, state: &mut AppState, _cmd_tx: &Sender<AppCommand>) {
     setting_group(ui, "Theme", |ui| {
         setting_row(ui, "Mode", "Dark is default; light mode planned.", |ui| {
             ui.label(RichText::new("Dark").size(11.5).color(Colors::TEXT_TERTIARY));
@@ -177,35 +189,42 @@ fn render_appearance(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<Ap
             }
         });
     });
+}
 
-    if dirty {
-        ui.add_space(8.0);
-        ui.horizontal(|ui| {
-            if accent_button(ui, "Save").clicked() {
-                let _ = cmd_tx.try_send(AppCommand::SaveSettings(state.config_draft.clone()));
-            }
-            ui.add_space(6.0);
-            if ghost_button(ui, "Discard").clicked() {
-                state.config_draft = state.config.clone();
-            }
+fn render_behavior(ui: &mut egui::Ui, state: &mut AppState) {
+    setting_group(ui, "Behavior", |ui| {
+        setting_toggle_row(ui, "Launch at login",              "Start Valet Manager when you log in.",           &mut state.config_draft.launch_at_login);
+        setting_toggle_row(ui, "Show in system tray",          "Keep a tray icon for quick service controls.",   &mut state.config_draft.show_tray_icon);
+        setting_toggle_row(ui, "Confirm destructive actions",  "Ask before unparking or deleting sites.",        &mut state.config_draft.confirm_destructive);
+        setting_toggle_row(ui, "Auto-restart failed services", "Retry up to 3 times before marking failed.",     &mut state.config_draft.auto_restart_services);
+    });
+}
+
+fn render_php(ui: &mut egui::Ui, state: &mut AppState) {
+    setting_group(ui, "PHP versions", |ui| {
+        setting_row(ui, "Default version", "Used for newly parked sites.", |ui| {
+            egui::ComboBox::from_id_salt("php_default_ver")
+                .selected_text(&state.config_draft.default_php_version)
+                .show_ui(ui, |ui| {
+                    for v in &["8.3", "8.2", "8.1", "8.0", "7.4"] {
+                        ui.selectable_value(&mut state.config_draft.default_php_version, v.to_string(), *v);
+                    }
+                });
         });
-    }
+        setting_row(ui, "memory_limit", "Per request, e.g. 512M.", |ui| {
+            ui.add(egui::TextEdit::singleline(&mut state.config_draft.default_memory_limit).desired_width(100.0));
+        });
+        setting_toggle_row(ui, "Xdebug", "Attach automatically when DBGp client is listening.", &mut state.config_draft.xdebug_enabled);
+    });
 }
 
-fn render_behavior(ui: &mut egui::Ui) {
-    ui.label(RichText::new("Behavior settings — coming soon.").size(12.0).color(Colors::TEXT_TERTIARY));
-}
-
-fn render_php(ui: &mut egui::Ui) {
-    ui.label(RichText::new("PHP settings — coming soon.").size(12.0).color(Colors::TEXT_TERTIARY));
-}
-
-fn render_tls(ui: &mut egui::Ui, _state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
+fn render_tls(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     setting_group(ui, "Local certificate authority", |ui| {
         setting_row(ui, "Root CA", "Trusted by the system & browsers.", |ui| {
             ui.label(RichText::new("valet-manager-CA").size(11.5).color(Colors::TEXT_TERTIARY)
                 .text_style(egui::TextStyle::Monospace));
         });
+        setting_toggle_row(ui, "Auto-renew leaf certs", "Renew certificates 14 days before expiry.", &mut state.config_draft.auto_renew_certs);
         setting_row(ui, "Trust on this machine", "Re-install the root CA into the system trust store.", |ui| {
             if ghost_button(ui, "↺ Reinstall").clicked() {
                 let _ = cmd_tx.try_send(AppCommand::TrustCa);
@@ -214,16 +233,27 @@ fn render_tls(ui: &mut egui::Ui, _state: &mut AppState, cmd_tx: &Sender<AppComma
     });
 }
 
-fn render_paths(ui: &mut egui::Ui) {
-    ui.label(RichText::new("Path settings — coming soon.").size(12.0).color(Colors::TEXT_TERTIARY));
+fn render_paths(ui: &mut egui::Ui, state: &mut AppState) {
+    setting_group(ui, "Filesystem paths", |ui| {
+        setting_row(ui, "Config directory", "Where parked dirs, certs and proxies live.", |ui| {
+            ui.add(egui::TextEdit::singleline(&mut state.config_draft.config_directory).desired_width(240.0));
+        });
+        setting_row(ui, "Log directory", "Combined and per-site logs.", |ui| {
+            ui.add(egui::TextEdit::singleline(&mut state.config_draft.log_directory).desired_width(240.0));
+        });
+        setting_row(ui, "Composer binary", "Used by site templates & framework detection.", |ui| {
+            ui.add(egui::TextEdit::singleline(&mut state.config_draft.composer_binary).desired_width(240.0));
+        });
+    });
 }
 
-fn render_updates(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
+fn render_updates(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     setting_group(ui, "Updates", |ui| {
         setting_row(ui, "Current version", "Stable channel.", |ui| {
             ui.label(RichText::new("v0.1 · dev").size(11.5).color(Colors::TEXT_TERTIARY)
                 .text_style(egui::TextStyle::Monospace));
         });
+        setting_toggle_row(ui, "Automatic updates", "Download and install in the background.", &mut state.config_draft.auto_update);
         setting_row(ui, "Check for updates", "Manually trigger an update check.", |ui| {
             if accent_button(ui, "↺ Check now").clicked() {
                 let _ = cmd_tx.try_send(AppCommand::CheckForUpdates);

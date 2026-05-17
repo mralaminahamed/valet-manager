@@ -31,16 +31,27 @@ impl Default for AppearanceConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[allow(dead_code)]
 pub struct AppConfig {
+    #[serde(default = "default_editor")]
     pub editor_command: String,
+    #[serde(default = "default_terminal")]
     pub terminal: String,
+    #[serde(default = "default_file_manager")]
     pub file_manager: String,
+    #[serde(default = "default_theme")]
     pub theme: String,
+    #[serde(default = "default_font_size")]
     pub font_size: f32,
+    #[serde(default = "default_poll_interval")]
     pub service_poll_interval_secs: u64,
+    #[serde(default = "default_debounce")]
     pub site_scan_debounce_ms: u64,
+    #[serde(default = "default_parent_dir")]
     pub default_parent_directory: String,
+    #[serde(default)]
     pub favorites: Vec<String>,
+    #[serde(default = "default_ttl")]
     pub version_registry_ttl_hours: u64,
+    #[serde(default = "default_true")]
     pub version_registry_auto_refresh: bool,
     #[serde(default)]
     pub notifications: crate::notifications::NotificationPrefs,
@@ -58,21 +69,62 @@ pub struct AppConfig {
     pub mysql_pass: String,
     #[serde(default)]
     pub appearance: AppearanceConfig,
+    // M5 — Behavior / PHP / TLS / Paths / Updates
+    #[serde(default)]
+    pub launch_at_login: bool,
+    #[serde(default = "default_true")]
+    pub show_tray_icon: bool,
+    #[serde(default = "default_true")]
+    pub confirm_destructive: bool,
+    #[serde(default = "default_true")]
+    pub auto_restart_services: bool,
+    #[serde(default = "default_php")]
+    pub default_php_version: String,
+    #[serde(default = "default_memory")]
+    pub default_memory_limit: String,
+    #[serde(default)]
+    pub xdebug_enabled: bool,
+    #[serde(default = "default_true")]
+    pub auto_renew_certs: bool,
+    #[serde(default = "default_true")]
+    pub auto_update: bool,
+    #[serde(default = "default_config_dir")]
+    pub config_directory: String,
+    #[serde(default = "default_log_dir")]
+    pub log_directory: String,
+    #[serde(default = "default_composer")]
+    pub composer_binary: String,
 }
+
+fn default_editor() -> String { "code".to_string() }
+fn default_terminal() -> String { "gnome-terminal".to_string() }
+fn default_file_manager() -> String { "nautilus".to_string() }
+fn default_theme() -> String { "dark".to_string() }
+fn default_font_size() -> f32 { 14.0 }
+fn default_poll_interval() -> u64 { 5 }
+fn default_debounce() -> u64 { 500 }
+fn default_parent_dir() -> String { "~/Sites".to_string() }
+fn default_ttl() -> u64 { 24 }
+fn default_true() -> bool { true }
+fn default_php() -> String { "8.3".to_string() }
+fn default_memory() -> String { "512M".to_string() }
+fn default_config_dir() -> String { "~/.config/valet-manager".to_string() }
+fn default_log_dir() -> String { "~/.local/share/valet-manager/logs".to_string() }
+fn default_composer() -> String { "/usr/local/bin/composer".to_string() }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            editor_command: "code".to_string(),
-            terminal: "gnome-terminal".to_string(),
-            file_manager: "nautilus".to_string(),
-            theme: "dark".to_string(),
-            font_size: 14.0,
-            service_poll_interval_secs: 5,
-            site_scan_debounce_ms: 500,
-            default_parent_directory: "~/Sites".to_string(),
+            editor_command: default_editor(),
+            terminal: default_terminal(),
+            file_manager: default_file_manager(),
+            theme: default_theme(),
+            font_size: default_font_size(),
+            service_poll_interval_secs: default_poll_interval(),
+            site_scan_debounce_ms: default_debounce(),
+            default_parent_directory: default_parent_dir(),
             favorites: Vec::new(),
-            version_registry_ttl_hours: 24,
+            version_registry_ttl_hours: default_ttl(),
             version_registry_auto_refresh: true,
             notifications: crate::notifications::NotificationPrefs::default(),
             skip_version: None,
@@ -80,6 +132,18 @@ impl Default for AppConfig {
             mysql_user: String::new(),
             mysql_pass: String::new(),
             appearance: AppearanceConfig::default(),
+            launch_at_login: false,
+            show_tray_icon: true,
+            confirm_destructive: true,
+            auto_restart_services: true,
+            default_php_version: default_php(),
+            default_memory_limit: default_memory(),
+            xdebug_enabled: false,
+            auto_renew_certs: true,
+            auto_update: true,
+            config_directory: default_config_dir(),
+            log_directory: default_log_dir(),
+            composer_binary: default_composer(),
         }
     }
 }
@@ -229,5 +293,39 @@ mod tests {
         let r: AppConfig = toml::from_str(&s).unwrap();
         assert_eq!(cfg.appearance.accent_index, r.appearance.accent_index);
         assert!((cfg.appearance.sidebar_width - r.appearance.sidebar_width).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn new_appconfig_fields_have_correct_defaults() {
+        let cfg = AppConfig::default();
+        assert!(!cfg.launch_at_login);
+        assert!(cfg.show_tray_icon);
+        assert!(cfg.confirm_destructive);
+        assert!(cfg.auto_restart_services);
+        assert_eq!(cfg.default_php_version, "8.3");
+        assert_eq!(cfg.default_memory_limit, "512M");
+        assert!(!cfg.xdebug_enabled);
+        assert!(cfg.auto_renew_certs);
+        assert!(cfg.auto_update);
+        assert_eq!(cfg.config_directory, "~/.config/valet-manager");
+        assert_eq!(cfg.log_directory, "~/.local/share/valet-manager/logs");
+        assert_eq!(cfg.composer_binary, "/usr/local/bin/composer");
+    }
+
+    #[test]
+    fn appconfig_new_fields_toml_roundtrip() {
+        let cfg = AppConfig::default();
+        let s = toml::to_string(&cfg).unwrap();
+        let back: AppConfig = toml::from_str(&s).unwrap();
+        assert_eq!(cfg.default_php_version, back.default_php_version);
+        assert_eq!(cfg.composer_binary, back.composer_binary);
+    }
+
+    #[test]
+    fn appconfig_omitted_new_fields_deserialize_to_defaults() {
+        let toml = r#"tld = "test""#;
+        let cfg: AppConfig = toml::from_str(toml).unwrap();
+        assert!(cfg.show_tray_icon);
+        assert_eq!(cfg.default_php_version, "8.3");
     }
 }
