@@ -257,8 +257,9 @@ pub struct AppState {
     pub version_registry: crate::version_registry::models::VersionRegistry,
     pub version_registry_loading: bool,
     // M1 — Shell
-    pub shell_site: Option<String>,
+    pub shell_output: Vec<String>,
     pub shell_input: String,
+    pub shell_site: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -413,8 +414,9 @@ impl Default for AppState {
             version_registry: crate::version_registry::models::VersionRegistry::default(),
             version_registry_loading: false,
             // M1 — Shell
-            shell_site: None,
+            shell_output: Vec::new(),
             shell_input: String::new(),
+            shell_site: None,
         }
     }
 }

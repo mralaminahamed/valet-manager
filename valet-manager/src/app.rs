@@ -356,6 +356,13 @@ impl ValetManagerApp {
                     self.state.version_registry = registry;
                     self.state.version_registry_loading = false;
                 }
+                // M8 — Shell
+                AppEvent::ShellOutput(line) => {
+                    self.state.shell_output.push(line);
+                    if self.state.shell_output.len() > 500 {
+                        self.state.shell_output.remove(0);
+                    }
+                }
             }
         }
     }
@@ -602,17 +609,7 @@ impl eframe::App for ValetManagerApp {
 
         // ── Floating windows ────────────────────────────────────────────────
         if self.state.ui.shell_open {
-            egui::Window::new("Shell")
-                .id(egui::Id::new("shell_window"))
-                .resizable(true)
-                .collapsible(false)
-                .default_size([700.0, 460.0])
-                .show(&ctx, |ui| {
-                    ui.label("Shell window — coming in M8");
-                    if ui.button("Close").clicked() {
-                        let _ = self.cmd_tx.try_send(AppCommand::CloseShellWindow);
-                    }
-                });
+            crate::ui::windows::shell::render(&ctx, &mut self.state, &self.cmd_tx);
         }
         if self.state.ui.mailpit_open {
             egui::Window::new("Mailpit Inbox")
@@ -2670,8 +2667,33 @@ pub async fn run_dispatcher(
             }
             // M1 — Shell
             AppCommand::RunShellCommand(cmd_str) => {
-                let mut s = state.write().await;
-                s.shell_input = cmd_str;
+                let event_tx_sh = tx.clone();
+                let state_r = state.read().await;
+                let cwd = state_r.shell_site
+                    .as_ref()
+                    .and_then(|name| state_r.sites.iter().find(|s| s.name == *name).map(|s| s.path.clone()))
+                    .unwrap_or_else(|| std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default()));
+                drop(state_r);
+                tokio::spawn(async move {
+                    let output = tokio::process::Command::new("bash")
+                        .arg("-c")
+                        .arg(&cmd_str)
+                        .current_dir(cwd)
+                        .output()
+                        .await;
+                    match output {
+                        Ok(out) => {
+                            let stdout = String::from_utf8_lossy(&out.stdout);
+                            let stderr = String::from_utf8_lossy(&out.stderr);
+                            for line in stdout.lines().chain(stderr.lines()) {
+                                let _ = event_tx_sh.send(AppEvent::ShellOutput(line.to_string())).await;
+                            }
+                        }
+                        Err(e) => {
+                            let _ = event_tx_sh.send(AppEvent::ShellOutput(format!("error: {}", e))).await;
+                        }
+                    }
+                });
             }
             // M1 — DNS flush
             AppCommand::FlushDns => {

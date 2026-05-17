@@ -132,6 +132,8 @@ pub enum AppEvent {
     PhpMyAdminGlobalReady(String),
     // Phase 14 — Version registry
     VersionRegistryRefreshed(crate::version_registry::models::VersionRegistry),
+    // M8 — Shell
+    ShellOutput(String),
 }
 
 #[cfg(test)]
