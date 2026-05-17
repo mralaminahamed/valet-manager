@@ -26,7 +26,20 @@ pub struct ManagedService {
     pub display_name: String,
     pub status: ServiceStatus,
     pub pid: Option<u32>,
+    pub port: Option<String>,
+    pub uptime: Option<String>,
+    pub is_default: bool,
     pub unread_count: Option<u32>,
+}
+
+pub fn pid_for_service(name: &str) -> Option<u32> {
+    let out = std::process::Command::new("systemctl")
+        .args(["--user", "show", "--property=MainPID", "--value", name])
+        .output()
+        .ok()?;
+    let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    let pid: u32 = s.parse().ok()?;
+    if pid == 0 { None } else { Some(pid) }
 }
 
 pub async fn query_service_status(name: &str) -> ServiceStatus {
@@ -62,6 +75,9 @@ pub async fn poll_services(service_names: Vec<String>, tx: mpsc::Sender<Vec<Mana
                 display_name: friendly_name(name),
                 status,
                 pid: None,
+                port: None,
+                uptime: None,
+                is_default: false,
                 unread_count: None,
             });
         }
@@ -89,6 +105,24 @@ fn friendly_name(service: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn managed_service_has_port_and_uptime() {
+        let svc = ManagedService {
+            name: "nginx".to_string(),
+            display_name: "Nginx".to_string(),
+            status: ServiceStatus::Running,
+            pid: Some(1234),
+            port: Some("80, 443".to_string()),
+            uptime: Some("4d 12h".to_string()),
+            is_default: false,
+            unread_count: None,
+        };
+        assert_eq!(svc.pid, Some(1234));
+        assert_eq!(svc.port.as_deref(), Some("80, 443"));
+        assert_eq!(svc.uptime.as_deref(), Some("4d 12h"));
+        assert!(!svc.is_default);
+    }
 
     #[test]
     fn friendly_name_php_fpm() {
