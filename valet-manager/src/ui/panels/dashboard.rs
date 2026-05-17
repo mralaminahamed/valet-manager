@@ -103,6 +103,59 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         ui.add_space(6.0);
     }
 
+    // ── Phase 14 — PHP EOL banners for installed minors ─────────────────
+    for php_info in &state.version_registry.php {
+        let installed = state
+            .php_versions
+            .iter()
+            .any(|v| v.version == php_info.minor);
+        if !installed {
+            continue;
+        }
+        use crate::version_registry::models::EolStatus;
+        match php_info.eol_status() {
+            EolStatus::Eol => {
+                alert_banner(
+                    ui,
+                    BannerLevel::Danger,
+                    "⛔",
+                    &format!(
+                        "PHP {} is EOL since {}.",
+                        php_info.minor, php_info.security_support_until
+                    ),
+                );
+                ui.add_space(6.0);
+            }
+            EolStatus::Critical => {
+                alert_banner(
+                    ui,
+                    BannerLevel::Warning,
+                    "⚠",
+                    &format!(
+                        "PHP {} EOL in {} days ({}).",
+                        php_info.minor,
+                        php_info.days_until_eol(),
+                        php_info.security_support_until
+                    ),
+                );
+                ui.add_space(6.0);
+            }
+            EolStatus::Warning => {
+                alert_banner(
+                    ui,
+                    BannerLevel::Info,
+                    "ℹ",
+                    &format!(
+                        "PHP {} security support ends {}.",
+                        php_info.minor, php_info.security_support_until
+                    ),
+                );
+                ui.add_space(6.0);
+            }
+            EolStatus::Active => {}
+        }
+    }
+
     // ── SSL cert status banner ──────────────────────────────────────────
     let ssl_critical = state
         .ssl_certs

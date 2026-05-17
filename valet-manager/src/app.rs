@@ -351,6 +351,11 @@ impl ValetManagerApp {
                         .trim_end_matches('/')
                         .to_string();
                 }
+                // Phase 14 — Version registry
+                AppEvent::VersionRegistryRefreshed(registry) => {
+                    self.state.version_registry = registry;
+                    self.state.version_registry_loading = false;
+                }
             }
         }
     }
@@ -503,6 +508,34 @@ impl eframe::App for ValetManagerApp {
                     );
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.add_space(8.0);
+                        // Phase 14 — version registry: refresh button + last-refreshed label.
+                        if let Some(ts) = &self.state.version_registry.last_refreshed {
+                            let mins = (chrono::Utc::now() - *ts).num_minutes();
+                            let label = if mins < 60 {
+                                format!("{}m ago", mins.max(0))
+                            } else {
+                                format!("{}h ago", (mins / 60).max(0))
+                            };
+                            ui.label(
+                                egui::RichText::new(label)
+                                    .size(10.0)
+                                    .color(theme::Colors::TEXT_TERTIARY),
+                            );
+                            ui.add_space(4.0);
+                        }
+                        if theme::ghost_button(ui, "↺").clicked() {
+                            let _ = self.cmd_tx.try_send(AppCommand::RefreshVersionRegistry);
+                        }
+                        if self.state.version_registry_loading {
+                            ui.add_space(4.0);
+                            ui.label(
+                                egui::RichText::new("⟳")
+                                    .size(11.0)
+                                    .color(theme::Colors::WARNING),
+                            );
+                            ctx.request_repaint_after(Duration::from_millis(500));
+                        }
+                        ui.add_space(6.0);
                         ui.label(
                             egui::RichText::new(right_text)
                                 .size(11.0)
@@ -2456,6 +2489,25 @@ pub async fn run_dispatcher(
                         draft.phpmyadmin.db_scope = scope;
                     } else if let Some(cfg) = s.site_configs.get_mut(&site) {
                         cfg.phpmyadmin.db_scope = scope;
+                    }
+                });
+            }
+            // Phase 14 — Version registry
+            AppCommand::RefreshVersionRegistry => {
+                {
+                    let mut s = state.write().await;
+                    s.version_registry_loading = true;
+                }
+                let tx = tx.clone();
+                let state_c = Arc::clone(&state);
+                tokio::spawn(async move {
+                    let config = { state_c.read().await.config.clone() };
+                    if let Err(e) =
+                        crate::version_registry::refresh(&config, true, tx.clone()).await
+                    {
+                        let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        let mut s = state_c.write().await;
+                        s.version_registry_loading = false;
                     }
                 });
             }

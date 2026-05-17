@@ -150,6 +150,9 @@ pub struct AppState {
     pub octane_processes: std::collections::HashMap<String, crate::site_config::models::OctaneProcess>,
     // Phase 12 — phpMyAdmin
     pub pma_state: PhpMyAdminState,
+    // Phase 14 — Version registry
+    pub version_registry: crate::version_registry::models::VersionRegistry,
+    pub version_registry_loading: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -298,6 +301,9 @@ impl Default for AppState {
                 global_site_domain: "phpmyadmin.test".to_string(),
                 ..Default::default()
             },
+            // Phase 14 — Version registry
+            version_registry: crate::version_registry::models::VersionRegistry::default(),
+            version_registry_loading: false,
         }
     }
 }
@@ -443,5 +449,15 @@ mod tests {
         assert!(!s.queue_add_modal);
         assert_eq!(s.queue_add_connection, "redis");
         assert_eq!(s.queue_add_queue, "default");
+    }
+
+    // Phase 14 — Version registry defaults
+    #[test]
+    fn app_state_version_registry_defaults_populated() {
+        let s = AppState::default();
+        assert!(!s.version_registry.php.is_empty());
+        assert!(s.version_registry.frameworks.contains_key("laravel"));
+        assert!(s.version_registry.last_refreshed.is_none());
+        assert!(!s.version_registry_loading);
     }
 }

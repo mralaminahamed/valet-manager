@@ -103,6 +103,150 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 });
 
                 ui.add_space(10.0);
+                settings_section(ui, "Version Registry", |ui| {
+                    // Last refreshed.
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            RichText::new("Last refreshed")
+                                .size(12.5)
+                                .color(Colors::TEXT_SECONDARY),
+                        );
+                        ui.add_space(8.0);
+                        let stamp = match state.version_registry.last_refreshed {
+                            Some(ts) => ts.format("%Y-%m-%d %H:%M UTC").to_string(),
+                            None => "Never".to_string(),
+                        };
+                        ui.label(RichText::new(stamp).size(12.5).color(Colors::TEXT_PRIMARY));
+                    });
+                    ui.add_space(6.0);
+                    // Auto-refresh checkbox.
+                    ui.checkbox(
+                        &mut state.config_draft.version_registry_auto_refresh,
+                        "Refresh automatically",
+                    );
+                    ui.add_space(4.0);
+                    // TTL hours.
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            RichText::new("TTL (hours)")
+                                .size(12.5)
+                                .color(Colors::TEXT_SECONDARY),
+                        );
+                        ui.add_space(8.0);
+                        ui.add(
+                            egui::DragValue::new(
+                                &mut state.config_draft.version_registry_ttl_hours,
+                            )
+                            .range(1u64..=168u64)
+                            .speed(1.0),
+                        );
+                    });
+                    ui.add_space(6.0);
+                    // Refresh-now button (disabled while loading).
+                    ui.horizontal(|ui| {
+                        let enabled = !state.version_registry_loading;
+                        let resp = ui
+                            .add_enabled_ui(enabled, |ui| accent_button(ui, "Refresh now"))
+                            .inner;
+                        if resp.clicked() && enabled {
+                            let _ = cmd_tx.try_send(AppCommand::RefreshVersionRegistry);
+                        }
+                        ui.add_space(8.0);
+                        if state.version_registry_loading {
+                            ui.label(
+                                RichText::new("Loading…")
+                                    .size(11.5)
+                                    .color(Colors::WARNING),
+                            );
+                        }
+                    });
+                    ui.add_space(8.0);
+                    // Tracked sources — simple 2-column list.
+                    ui.label(
+                        RichText::new("Tracked sources")
+                            .size(11.5)
+                            .color(Colors::TEXT_TERTIARY),
+                    );
+                    ui.add_space(4.0);
+                    let mut rows: Vec<(String, String, bool)> = Vec::new();
+                    // PHP minors.
+                    for p in &state.version_registry.php {
+                        rows.push((format!("PHP {}", p.minor), p.latest_patch.clone(), true));
+                    }
+                    // Frameworks.
+                    let mut fws: Vec<&String> =
+                        state.version_registry.frameworks.keys().collect();
+                    fws.sort();
+                    for key in fws {
+                        if let Some(v) = state.version_registry.frameworks.get(key) {
+                            rows.push((
+                                v.name.clone(),
+                                v.latest_version.clone(),
+                                !v.latest_version.is_empty(),
+                            ));
+                        }
+                    }
+                    // Servers.
+                    let mut svs: Vec<&String> =
+                        state.version_registry.servers.keys().collect();
+                    svs.sort();
+                    for key in svs {
+                        if let Some(v) = state.version_registry.servers.get(key) {
+                            rows.push((
+                                v.name.clone(),
+                                v.latest_version.clone(),
+                                !v.latest_version.is_empty(),
+                            ));
+                        }
+                    }
+                    // Tools.
+                    let mut tls: Vec<&String> =
+                        state.version_registry.tools.keys().collect();
+                    tls.sort();
+                    for key in tls {
+                        if let Some(v) = state.version_registry.tools.get(key) {
+                            rows.push((
+                                v.name.clone(),
+                                v.latest_version.clone(),
+                                !v.latest_version.is_empty(),
+                            ));
+                        }
+                    }
+                    for row in rows.chunks(2) {
+                        ui.columns(row.len(), |cols| {
+                            for (col, (name, ver, present)) in cols.iter_mut().zip(row.iter()) {
+                                col.horizontal(|ui| {
+                                    let (rect, _) = ui.allocate_exact_size(
+                                        egui::vec2(7.0, 7.0),
+                                        egui::Sense::hover(),
+                                    );
+                                    if ui.is_rect_visible(rect) {
+                                        let c = if *present {
+                                            Colors::ACCENT
+                                        } else {
+                                            Colors::TEXT_TERTIARY
+                                        };
+                                        ui.painter().circle_filled(rect.center(), 3.5, c);
+                                    }
+                                    ui.add_space(6.0);
+                                    ui.label(
+                                        RichText::new(name)
+                                            .size(11.5)
+                                            .color(Colors::TEXT_SECONDARY),
+                                    );
+                                    ui.add_space(6.0);
+                                    ui.label(
+                                        RichText::new(ver)
+                                            .size(11.5)
+                                            .color(Colors::TEXT_PRIMARY),
+                                    );
+                                });
+                            }
+                        });
+                    }
+                });
+
+                ui.add_space(10.0);
                 settings_section(ui, "Danger zone", |ui| {
                     ui.horizontal(|ui| {
                         if danger_button(ui, "Reset to defaults").clicked() {

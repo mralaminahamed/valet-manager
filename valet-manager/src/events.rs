@@ -130,6 +130,8 @@ pub enum AppEvent {
     PhpMyAdminRemoved(String),
     PhpMyAdminOutputLine(crate::creator::output_streamer::OutputLine),
     PhpMyAdminGlobalReady(String),
+    // Phase 14 — Version registry
+    VersionRegistryRefreshed(crate::version_registry::models::VersionRegistry),
 }
 
 #[cfg(test)]

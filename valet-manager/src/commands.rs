@@ -167,6 +167,8 @@ pub enum AppCommand {
         scope: crate::site_config::models::PmaDbScope,
     },
     RefreshPhpMyAdminStatus,
+    // Phase 14 — Version registry
+    RefreshVersionRegistry,
 }
 
 #[derive(Debug, Clone)]

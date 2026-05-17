@@ -48,12 +48,31 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         for version in &state.php_versions {
             ui.allocate_ui(egui::vec2(col_width, 0.0), |ui| {
                 let response = card_frame().show(ui, |ui| {
-                    // Row 1: PHP version label
-                    ui.label(
-                        RichText::new(format!("PHP {}", version.version))
-                            .size(14.0)
-                            .color(Colors::TEXT_PRIMARY),
-                    );
+                    // Row 1: PHP version label + (Phase 14) patch-update badge.
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            RichText::new(format!("PHP {}", version.version))
+                                .size(14.0)
+                                .color(Colors::TEXT_PRIMARY),
+                        );
+                        if let Some(info) =
+                            state.version_registry.php.iter().find(|p| p.minor == version.version)
+                        {
+                            use semver::Version;
+                            let installed = Version::parse(&extend_three(&version.full_version)).ok();
+                            let latest = Version::parse(&extend_three(&info.latest_patch)).ok();
+                            if let (Some(inst), Some(lat)) = (installed, latest) {
+                                if lat > inst {
+                                    ui.add_space(6.0);
+                                    ui.label(
+                                        RichText::new(format!("↑ {} available", info.latest_patch))
+                                            .size(11.0)
+                                            .color(Colors::WARNING),
+                                    );
+                                }
+                            }
+                        }
+                    });
 
                     ui.add_space(4.0);
 
@@ -130,4 +149,61 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
             });
         }
     });
+}
+
+/// Extract `MAJOR.MINOR.PATCH` from arbitrary PHP version strings.
+/// Examples:
+///   "PHP 8.3.12 (cli) (built: ...)" → "8.3.12"
+///   "8.3"                            → "8.3.0"
+///   "8.3.12"                         → "8.3.12"
+fn extend_three(s: &str) -> String {
+    // Pull the first MAJOR.MINOR(.PATCH)? token out of any prefix/suffix noise.
+    let re = regex::Regex::new(r"(\d+)\.(\d+)(?:\.(\d+))?").ok();
+    if let Some(r) = re {
+        if let Some(cap) = r.captures(s) {
+            let maj = cap.get(1).map(|m| m.as_str()).unwrap_or("0");
+            let min = cap.get(2).map(|m| m.as_str()).unwrap_or("0");
+            let patch = cap.get(3).map(|m| m.as_str()).unwrap_or("0");
+            return format!("{}.{}.{}", maj, min, patch);
+        }
+    }
+    // Fallback: split on '.'
+    let parts: Vec<&str> = s.split('.').collect();
+    match parts.len() {
+        1 => format!("{}.0.0", parts[0]),
+        2 => format!("{}.{}.0", parts[0], parts[1]),
+        _ => s.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extend_three_extracts_from_php_banner() {
+        assert_eq!(extend_three("PHP 8.3.12 (cli) (built: ...)"), "8.3.12");
+    }
+
+    #[test]
+    fn extend_three_pads_short_versions() {
+        assert_eq!(extend_three("8.3"), "8.3.0");
+    }
+
+    #[test]
+    fn extend_three_keeps_full_version() {
+        assert_eq!(extend_three("8.3.21"), "8.3.21");
+    }
+
+    #[test]
+    fn extend_three_handles_pure_major() {
+        assert_eq!(extend_three("8"), "8.0.0");
+    }
+
+    #[test]
+    fn extend_three_semver_compatible() {
+        use semver::Version;
+        assert!(Version::parse(&extend_three("8.3.12")).is_ok());
+        assert!(Version::parse(&extend_three("PHP 8.4.1 (cli)")).is_ok());
+    }
 }

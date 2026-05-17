@@ -27,6 +27,7 @@ mod wordpress;
 mod laravel;
 mod http_servers;
 mod phpmyadmin;
+mod version_registry;
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
@@ -87,6 +88,22 @@ fn main() -> eframe::Result {
 
     // Phase 12 — probe for phpMyAdmin install at startup.
     let _ = cmd_tx.try_send(AppCommand::CheckPhpMyAdminInstalled);
+
+    // Phase 14 — preload cached version registry on startup; refresh if stale/missing.
+    let cmd_tx_vr = cmd_tx.clone();
+    let event_tx_vr = event_tx.clone();
+    rt.spawn(async move {
+        match version_registry::cache::load().await {
+            Ok(c) if !c.is_stale() => {
+                let _ = event_tx_vr
+                    .send(AppEvent::VersionRegistryRefreshed(c.registry))
+                    .await;
+            }
+            _ => {
+                let _ = cmd_tx_vr.try_send(AppCommand::RefreshVersionRegistry);
+            }
+        }
+    });
 
     // ── System tray (Linux: needs DISPLAY/WAYLAND_DISPLAY; gracefully no-op otherwise) ──
     let (tray_tx, mut tray_rx) = mpsc::channel::<tray::TrayEvent>(8);
