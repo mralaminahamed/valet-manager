@@ -11,10 +11,10 @@ pub enum ServiceStatus {
 impl ServiceStatus {
     pub fn label(&self) -> &str {
         match self {
-            ServiceStatus::Running => "running",
-            ServiceStatus::Stopped => "stopped",
-            ServiceStatus::Failed  => "failed",
-            ServiceStatus::Unknown => "unknown",
+            ServiceStatus::Running => "Running",
+            ServiceStatus::Stopped => "Stopped",
+            ServiceStatus::Failed  => "Failed",
+            ServiceStatus::Unknown => "Unknown",
         }
     }
 }
@@ -112,9 +112,9 @@ mod tests {
 
     #[test]
     fn service_status_labels() {
-        assert_eq!(ServiceStatus::Running.label(), "running");
-        assert_eq!(ServiceStatus::Stopped.label(), "stopped");
-        assert_eq!(ServiceStatus::Failed.label(),  "failed");
-        assert_eq!(ServiceStatus::Unknown.label(), "unknown");
+        assert_eq!(ServiceStatus::Running.label(), "Running");
+        assert_eq!(ServiceStatus::Stopped.label(), "Stopped");
+        assert_eq!(ServiceStatus::Failed.label(),  "Failed");
+        assert_eq!(ServiceStatus::Unknown.label(), "Unknown");
     }
 }

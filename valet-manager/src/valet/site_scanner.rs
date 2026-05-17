@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use chrono::NaiveDate;
 use crate::ui::DetectedFramework;
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum SiteStatus {
     Running,
     Stopped,
@@ -25,7 +25,7 @@ impl SiteStatus {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SiteType {
     Parked,
     Linked,
@@ -604,6 +604,7 @@ mod tests {
     #[test]
     fn site_status_label() {
         assert_eq!(SiteStatus::Running.label(), "Running");
+        assert_eq!(SiteStatus::Stopped.label(), "Stopped");
         assert_eq!(SiteStatus::Failed.label(),  "Failed");
         assert_eq!(SiteStatus::Unknown.label(), "Unknown");
     }
