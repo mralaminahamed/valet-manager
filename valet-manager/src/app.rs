@@ -2535,12 +2535,95 @@ pub async fn run_dispatcher(
                 s.dns_aliases.retain(|a| a.from != from);
             }
             // M1 — Service control
-            AppCommand::StartService(_name) => {}
-            AppCommand::StopService(_name) => {}
-            AppCommand::RestartService(name) => {
-                let tx = tx.clone();
+            AppCommand::StartService(name) => {
+                let state = Arc::clone(&state);
+                let name_clone = name.clone();
                 tokio::spawn(async move {
-                    let _ = tx.send(AppEvent::Error(format!("{} restarted", name))).await;
+                    let result = tokio::process::Command::new("systemctl")
+                        .args(["--user", "start", &name_clone])
+                        .output()
+                        .await;
+                    let mut s = state.write().await;
+                    match result {
+                        Ok(out) if out.status.success() => {
+                            crate::ui::components::toast::push_toast(
+                                &mut s.toasts,
+                                &format!("{} started", name_clone),
+                                crate::ui::components::toast::ToastType::Success,
+                            );
+                            let new_status = crate::services::monitor::ServiceStatus::Running;
+                            if let Some(svc) = s.services.iter_mut().find(|svc| svc.name == name_clone) {
+                                svc.status = new_status;
+                            }
+                        }
+                        _ => {
+                            crate::ui::components::toast::push_toast(
+                                &mut s.toasts,
+                                &format!("Failed to start {}", name_clone),
+                                crate::ui::components::toast::ToastType::Error,
+                            );
+                        }
+                    }
+                });
+            }
+            AppCommand::StopService(name) => {
+                let state = Arc::clone(&state);
+                let name_clone = name.clone();
+                tokio::spawn(async move {
+                    let result = tokio::process::Command::new("systemctl")
+                        .args(["--user", "stop", &name_clone])
+                        .output()
+                        .await;
+                    let mut s = state.write().await;
+                    match result {
+                        Ok(out) if out.status.success() => {
+                            crate::ui::components::toast::push_toast(
+                                &mut s.toasts,
+                                &format!("{} stopped", name_clone),
+                                crate::ui::components::toast::ToastType::Warning,
+                            );
+                            if let Some(svc) = s.services.iter_mut().find(|svc| svc.name == name_clone) {
+                                svc.status = crate::services::monitor::ServiceStatus::Stopped;
+                            }
+                        }
+                        _ => {
+                            crate::ui::components::toast::push_toast(
+                                &mut s.toasts,
+                                &format!("Failed to stop {}", name_clone),
+                                crate::ui::components::toast::ToastType::Error,
+                            );
+                        }
+                    }
+                });
+            }
+            AppCommand::RestartService(name) => {
+                let state = Arc::clone(&state);
+                let name_clone = name.clone();
+                tokio::spawn(async move {
+                    let result = tokio::process::Command::new("systemctl")
+                        .args(["--user", "restart", &name_clone])
+                        .output()
+                        .await;
+                    let mut s = state.write().await;
+                    match result {
+                        Ok(out) if out.status.success() => {
+                            crate::ui::components::toast::push_toast(
+                                &mut s.toasts,
+                                &format!("{} restarted", name_clone),
+                                crate::ui::components::toast::ToastType::Success,
+                            );
+                            if let Some(svc) = s.services.iter_mut().find(|svc| svc.name == name_clone) {
+                                svc.status = crate::services::monitor::ServiceStatus::Running;
+                            }
+                        }
+                        _ => {
+                            crate::ui::components::toast::push_toast(
+                                &mut s.toasts,
+                                &format!("Failed to restart {}", name_clone),
+                                crate::ui::components::toast::ToastType::Error,
+                            );
+                        }
+                    }
                 });
             }
             // M1 — Site actions
