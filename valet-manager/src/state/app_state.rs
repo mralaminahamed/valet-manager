@@ -67,10 +67,18 @@ pub enum SettingsSection {
     About,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DnsAlias {
     pub from: String,
     pub to: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub enum AddSiteTab {
+    #[default]
+    Park,
+    Create,
+    Proxy,
 }
 
 #[derive(Debug)]
@@ -358,7 +366,7 @@ pub struct UiState {
     pub pma_open: bool,
     // Add-site modal
     pub add_site_modal_open: bool,
-    pub add_site_modal_tab: u8,
+    pub add_site_modal_tab: AddSiteTab,
     // Site status filter
     pub site_status_filter: SiteStatusFilter,
     // Settings left-nav
@@ -396,7 +404,7 @@ impl Default for UiState {
             mailpit_open: false,
             pma_open: false,
             add_site_modal_open: false,
-            add_site_modal_tab: 0,
+            add_site_modal_tab: AddSiteTab::default(),
             site_status_filter: SiteStatusFilter::default(),
             settings_section: SettingsSection::default(),
             loading: false,
