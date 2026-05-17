@@ -9,7 +9,7 @@ use crate::ui::theme::{
     Colors, accent_button, divider, framework_badge, framework_display_name, ghost_button,
     with_alpha,
 };
-use crate::valet::site_scanner::{SiteType, ValetSite};
+use crate::valet::site_scanner::ValetSite;
 
 /// Doc URL for each framework — used by the "Open framework docs" context menu.
 #[allow(dead_code)]
@@ -104,18 +104,19 @@ fn stat_card(ui: &mut egui::Ui, icon: &str, value: &str, label: &str) {
 
 // ── Stat strip ───────────────────────────────────────────────────────────────
 fn stat_strip(ui: &mut egui::Ui, sites: &[&ValetSite]) {
-    let total    = sites.len();
-    let secured  = sites.iter().filter(|s| s.is_secured).count();
-    let parked   = sites.iter().filter(|s| matches!(s.site_type, SiteType::Parked)).count();
-    let linked   = sites.iter().filter(|s| matches!(s.site_type, SiteType::Linked)).count();
+    use crate::valet::site_scanner::SiteStatus;
+    let total   = sites.len();
+    let running = sites.iter().filter(|s| s.status == SiteStatus::Running).count();
+    let failed  = sites.iter().filter(|s| s.status == SiteStatus::Failed).count();
+    let secured = sites.iter().filter(|s| s.is_secured).count();
 
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 10.0;
-        stat_card(ui, "S", &total.to_string(),   "Total Sites");
-        stat_card(ui, "T", &secured.to_string(),  "Secured (TLS)");
-        stat_card(ui, "P", &parked.to_string(),   "Parked");
-        stat_card(ui, "L", &linked.to_string(),   "Linked");
+    ui.columns(4, |cols| {
+        stat_card(&mut cols[0], "◈", &total.to_string(),   "Total sites");
+        stat_card(&mut cols[1], "⚡", &running.to_string(), "Running");
+        stat_card(&mut cols[2], "⚠", &failed.to_string(),  "Failed");
+        stat_card(&mut cols[3], "🔒", &secured.to_string(), "TLS secured");
     });
+    ui.add_space(8.0);
 }
 
 // ── Table header ─────────────────────────────────────────────────────────────
@@ -419,6 +420,61 @@ mod tests {
             assert!(u.starts_with("http"), "{:?} = {:?}", fw, u);
         }
     }
+
+    fn make_site(name: &str, status: crate::valet::site_scanner::SiteStatus, secured: bool) -> crate::valet::site_scanner::ValetSite {
+        use crate::valet::site_scanner::SiteType;
+        ValetSite {
+            name: name.to_string(),
+            domain: format!("{}.test", name),
+            path: std::path::PathBuf::from(format!("/tmp/{}", name)),
+            site_type: SiteType::Parked,
+            framework: DetectedFramework::Unknown,
+            php_version: None,
+            is_secured: secured,
+            ssl_expiry: None,
+            is_favorite: false,
+            status,
+            last_hit: None,
+            proxy_target: None,
+        }
+    }
+
+    #[test]
+    fn filter_running_only() {
+        use crate::state::app_state::SiteStatusFilter;
+        use crate::valet::site_scanner::SiteStatus;
+        let sites = vec![
+            make_site("a", SiteStatus::Running, true),
+            make_site("b", SiteStatus::Stopped, false),
+            make_site("c", SiteStatus::Failed,  false),
+        ];
+        let filter = SiteStatusFilter::Running;
+        let filtered: Vec<_> = sites.iter().filter(|s| match filter {
+            SiteStatusFilter::All     => true,
+            SiteStatusFilter::Running => s.status == SiteStatus::Running,
+            SiteStatusFilter::Stopped => s.status == SiteStatus::Stopped,
+            SiteStatusFilter::Failed  => s.status == SiteStatus::Failed,
+        }).collect();
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].name, "a");
+    }
+
+    #[test]
+    fn stat_counts() {
+        use crate::valet::site_scanner::SiteStatus;
+        let sites = vec![
+            make_site("a", SiteStatus::Running, true),
+            make_site("b", SiteStatus::Running, false),
+            make_site("c", SiteStatus::Failed,  false),
+            make_site("d", SiteStatus::Stopped, false),
+        ];
+        let running  = sites.iter().filter(|s| s.status == SiteStatus::Running).count();
+        let failed   = sites.iter().filter(|s| s.status == SiteStatus::Failed).count();
+        let secured  = sites.iter().filter(|s| s.is_secured).count();
+        assert_eq!(running, 2);
+        assert_eq!(failed,  1);
+        assert_eq!(secured, 1);
+    }
 }
 
 // ── Public entry point ───────────────────────────────────────────────────────
@@ -449,15 +505,25 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
     ui.add_space(16.0);
 
     // ── Filter sites ─────────────────────────────────────────────────────
+    use crate::state::app_state::SiteStatusFilter;
+    use crate::valet::site_scanner::SiteStatus;
+
     let search_query  = state.site_search.clone();
     let search_lower  = search_query.to_lowercase();
     let mut filtered: Vec<&ValetSite> = state
         .sites
         .iter()
         .filter(|s| {
-            search_lower.is_empty()
+            let status_ok = match state.ui.site_status_filter {
+                SiteStatusFilter::All     => true,
+                SiteStatusFilter::Running => s.status == SiteStatus::Running,
+                SiteStatusFilter::Stopped => s.status == SiteStatus::Stopped,
+                SiteStatusFilter::Failed  => s.status == SiteStatus::Failed,
+            };
+            let search_ok = search_lower.is_empty()
                 || s.name.to_lowercase().contains(&search_lower)
-                || s.domain.to_lowercase().contains(&search_lower)
+                || s.domain.to_lowercase().contains(&search_lower);
+            status_ok && search_ok
         })
         .collect();
     filtered.sort_by(|a, b| a.name.cmp(&b.name));
@@ -468,6 +534,39 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         stat_strip(ui, &filtered);
     });
     ui.add_space(12.0);
+
+    // ── Filter chips ─────────────────────────────────────────────────────
+    ui.horizontal(|ui| {
+        ui.add_space(22.0);
+        for (label, filter) in &[
+            ("All",     SiteStatusFilter::All),
+            ("Running", SiteStatusFilter::Running),
+            ("Stopped", SiteStatusFilter::Stopped),
+            ("Failed",  SiteStatusFilter::Failed),
+        ] {
+            let is_active = &state.ui.site_status_filter == filter;
+            let bg    = if is_active { with_alpha(Colors::ACCENT, 20) } else { Colors::CARD };
+            let color = if is_active { Colors::ACCENT } else { Colors::TEXT_SECONDARY };
+            let (rect, resp) = ui.allocate_exact_size(
+                egui::vec2(label.len() as f32 * 7.0 + 16.0, 24.0),
+                egui::Sense::click(),
+            );
+            if ui.is_rect_visible(rect) {
+                ui.painter().rect_filled(rect, CornerRadius::same(5), bg);
+                if is_active {
+                    ui.painter().rect_stroke(rect, CornerRadius::same(5),
+                        Stroke::new(0.5, Colors::ACCENT), egui::StrokeKind::Inside);
+                }
+                ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, *label,
+                    egui::FontId::proportional(11.5), color);
+            }
+            if resp.clicked() {
+                let _ = cmd_tx.try_send(AppCommand::SetSiteFilter(filter.clone()));
+            }
+            ui.add_space(4.0);
+        }
+    });
+    ui.add_space(6.0);
 
     // ── Search bar ───────────────────────────────────────────────────────
     ui.horizontal(|ui| {
