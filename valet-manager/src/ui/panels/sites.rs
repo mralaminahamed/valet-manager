@@ -114,7 +114,7 @@ fn stat_card(ui: &mut egui::Ui, icon: &str, value: &str, label: &str) {
 }
 
 // ── Stat strip ───────────────────────────────────────────────────────────────
-fn stat_strip(ui: &mut egui::Ui, sites: &[&ValetSite]) {
+fn stat_strip(ui: &mut egui::Ui, sites: &[ValetSite]) {
     use crate::valet::site_scanner::SiteStatus;
     let total   = sites.len();
     let running = sites.iter().filter(|s| s.status == SiteStatus::Running).count();
@@ -210,6 +210,13 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
     child.allocate_ui(egui::vec2(COL_ACTION, HEADER_HEIGHT), |_| {});
 }
 
+// ── Site row action ──────────────────────────────────────────────────────────
+enum SiteRowAction {
+    None,
+    Select,
+    ToggleFavorite,
+}
+
 // ── Site row ─────────────────────────────────────────────────────────────────
 fn render_site_row(
     ui: &mut egui::Ui,
@@ -217,7 +224,7 @@ fn render_site_row(
     flex_width: f32,
     cmd_tx: &Sender<AppCommand>,
     pma_enabled: bool,
-) {
+) -> SiteRowAction {
     let avail_w = ui.available_width();
 
     let (row_rect, row_resp) = ui.allocate_exact_size(
@@ -230,8 +237,10 @@ fn render_site_row(
         ui.painter().rect_filled(row_rect, CornerRadius::ZERO, Colors::CARD_HOVER);
     }
 
+    let mut action = SiteRowAction::None;
+
     if row_resp.clicked() {
-        let _ = cmd_tx.try_send(AppCommand::SelectSite(site.name.clone()));
+        action = SiteRowAction::Select;
     }
 
     // Border-bottom
@@ -256,7 +265,7 @@ fn render_site_row(
                 .sense(egui::Sense::click()),
         );
         if resp.clicked() {
-            let _ = cmd_tx.try_send(AppCommand::ToggleFavoriteSite(site.name.clone()));
+            action = SiteRowAction::ToggleFavorite;
         }
     });
 
@@ -432,6 +441,8 @@ fn render_site_row(
             }
         });
     });
+
+    action
 }
 
 #[cfg(test)]
@@ -596,7 +607,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
     use crate::valet::site_scanner::SiteStatus;
 
     let search_lower  = state.site_search.to_lowercase();
-    let mut filtered: Vec<&ValetSite> = state
+    let mut filtered: Vec<ValetSite> = state
         .sites
         .iter()
         .filter(|s| {
@@ -611,6 +622,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 || s.domain.to_lowercase().contains(&search_lower);
             status_ok && search_ok
         })
+        .cloned()
         .collect();
     filtered.sort_by(|a, b| {
         b.is_favorite.cmp(&a.is_favorite).then(a.name.cmp(&b.name))
@@ -649,7 +661,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                     egui::FontId::proportional(11.5), color);
             }
             if resp.clicked() {
-                let _ = cmd_tx.try_send(AppCommand::SetSiteFilter(filter.clone()));
+                state.ui.site_status_filter = filter.clone();
             }
             ui.add_space(4.0);
         }
@@ -708,54 +720,76 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 table_header(ui, flex_width);
 
                 // Rows (scrollable)
+                let mut toggle_name: Option<String> = None;
+                let mut select_name: Option<String> = None;
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for site in &filtered {
                         let pma_enabled = state.pma_state.sites.get(&site.name).map(|s| s.enabled).unwrap_or(false);
-                        render_site_row(ui, site, flex_width, cmd_tx, pma_enabled);
+                        match render_site_row(ui, site, flex_width, cmd_tx, pma_enabled) {
+                            SiteRowAction::Select => select_name = Some(site.name.clone()),
+                            SiteRowAction::ToggleFavorite => toggle_name = Some(site.name.clone()),
+                            SiteRowAction::None => {}
+                        }
                     }
                 });
+                if let Some(name) = select_name {
+                    state.site_config_selected = Some(name);
+                }
+                if let Some(name) = toggle_name {
+                    if let Some(s) = state.sites.iter_mut().find(|s| s.name == name) {
+                        s.is_favorite = !s.is_favorite;
+                    }
+                }
             });
     });
 
     // ── Detail footer ─────────────────────────────────────────────────────
     if let Some(site_name) = state.site_config_selected.clone() {
-        if let Some(site) = state.sites.iter().find(|s| s.name == site_name) {
+        let detail = state.sites.iter().find(|s| s.name == site_name).map(|s| {
+            (s.domain.clone(), s.path.clone(), s.name.clone())
+        });
+        if let Some((site_domain, site_path, site_name_clone)) = detail {
             ui.add_space(8.0);
             divider(ui);
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.add_space(22.0);
                 ui.vertical(|ui| {
-                    ui.label(RichText::new(&site.domain).size(12.0).color(Colors::TEXT_PRIMARY).strong());
-                    ui.label(RichText::new(site.path.display().to_string()).size(10.5).color(Colors::TEXT_TERTIARY)
+                    ui.label(RichText::new(&site_domain).size(12.0).color(Colors::TEXT_PRIMARY).strong());
+                    ui.label(RichText::new(site_path.display().to_string()).size(10.5).color(Colors::TEXT_TERTIARY)
                         .text_style(egui::TextStyle::Monospace));
                 });
             });
             ui.add_space(6.0);
+            let mut open_shell = false;
             ui.horizontal(|ui| {
                 ui.add_space(22.0);
                 if accent_button(ui, "↗ Open").clicked() {
-                    let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(site.domain.clone()));
+                    let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(site_domain.clone()));
                 }
                 ui.add_space(4.0);
                 if ghost_button(ui, "⌂ Reveal").clicked() {
-                    let _ = cmd_tx.try_send(AppCommand::RevealSiteInFiles(site.name.clone()));
+                    let _ = cmd_tx.try_send(AppCommand::RevealSiteInFiles(site_name_clone.clone()));
                 }
                 ui.add_space(4.0);
                 if ghost_button(ui, "↺ Restart").clicked() {
-                    let _ = cmd_tx.try_send(AppCommand::RestartSite(site.name.clone()));
+                    let _ = cmd_tx.try_send(AppCommand::RestartSite(site_name_clone.clone()));
                 }
                 ui.add_space(4.0);
                 if ghost_button(ui, "⌨ Shell").clicked() {
-                    let _ = cmd_tx.try_send(AppCommand::OpenShellAtSite(site.name.clone()));
+                    open_shell = true;
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.add_space(22.0);
                     if danger_button(ui, "✕ Unpark").clicked() {
-                        let _ = cmd_tx.try_send(AppCommand::UnparkSite(site.name.clone()));
+                        let _ = cmd_tx.try_send(AppCommand::UnparkSite(site_name_clone.clone()));
                     }
                 });
             });
+            if open_shell {
+                state.shell_site = Some(site_name_clone);
+                state.ui.shell_open = true;
+            }
         }
     }
 }

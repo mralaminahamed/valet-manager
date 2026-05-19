@@ -582,13 +582,13 @@ impl eframe::App for ValetManagerApp {
                                 sites::render(ui, &mut self.state, &self.cmd_tx);
                             }
                             Screen::Services => {
-                                crate::ui::screens::services::render(ui, &self.state, &self.cmd_tx);
+                                crate::ui::screens::services::render(ui, &mut self.state, &self.cmd_tx);
                             }
                             Screen::Logs => {
-                                logs::render(ui, &self.state, &self.cmd_tx);
+                                logs::render(ui, &mut self.state, &self.cmd_tx);
                             }
                             Screen::Dns => {
-                                crate::ui::screens::dns::render(ui, &self.state, &self.cmd_tx);
+                                crate::ui::screens::dns::render(ui, &mut self.state, &self.cmd_tx);
                             }
                             Screen::Settings => {
                                 settings::render(ui, &mut self.state, &self.cmd_tx);

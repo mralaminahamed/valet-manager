@@ -23,7 +23,7 @@ fn severity_color(sev: LineSeverity) -> egui::Color32 {
 }
 
 #[allow(dead_code)]
-pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
+pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     // ── Panel header ─────────────────────────────────────────────────────
     ui.horizontal(|ui| {
         ui.set_min_height(44.0);
@@ -66,7 +66,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         let tail_label = if state.logs_tail { "Tailing live" } else { "Paused" };
         ui.label(RichText::new(tail_label).size(11.5).color(Colors::TEXT_SECONDARY));
         if ui.small_button(if state.logs_tail { "⏸" } else { "▶" }).clicked() {
-            let _ = cmd_tx.try_send(AppCommand::ToggleLogsTail);
+            state.logs_tail = !state.logs_tail;
         }
         ui.add_space(8.0);
         // Thin vertical separator
