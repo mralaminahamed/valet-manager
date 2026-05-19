@@ -2674,7 +2674,22 @@ pub async fn run_dispatcher(
 async fn initial_detection(tx: mpsc::Sender<AppEvent>, _state: Arc<RwLock<AppState>>) {
     if let Ok(v) = variant::detect_valet_variant().await {
         let paths = variant::for_variant(&v);
-        let _ = tx.send(AppEvent::ValetDetected(v, paths)).await;
+        let _ = tx.send(AppEvent::ValetDetected(v, paths.clone())).await;
+
+        // Auto-load config, sites, and proxies immediately after detection.
+        let config = config_reader::load(&paths).await.unwrap_or_default();
+        let tld = config.tld.clone();
+        let parks: Vec<std::path::PathBuf> =
+            config.paths.iter().map(std::path::PathBuf::from).collect();
+        let _ = tx.send(AppEvent::TldChanged(tld)).await;
+        let _ = tx.send(AppEvent::ParksUpdated(parks)).await;
+
+        let sites = site_scanner::scan_all(&paths, &config).await;
+        let _ = tx.send(AppEvent::SitesRefreshed(sites)).await;
+
+        if let Ok(proxies) = crate::nginx::proxy_manager::list_proxies(&paths).await {
+            let _ = tx.send(AppEvent::ProxiesRefreshed(proxies)).await;
+        }
     }
     if let Ok(versions) = detector::detect_installed_versions().await {
         let _ = tx.send(AppEvent::PhpVersionsRefreshed(versions)).await;
