@@ -214,7 +214,8 @@ fn status_badge(ui: &mut egui::Ui, status: &ServiceStatus) {
     let (text, color) = match status {
         ServiceStatus::Running => ("Running", Colors::ACCENT),
         ServiceStatus::Stopped => ("Stopped", Colors::TEXT_TERTIARY),
-        _                      => ("Unknown", Colors::WARNING),
+        ServiceStatus::Failed  => ("Failed",  Colors::DANGER),
+        ServiceStatus::Unknown => ("Unknown", Colors::WARNING),
     };
     ui.label(RichText::new(text).size(10.5).color(color));
 }
@@ -267,5 +268,16 @@ mod tests {
         };
         let pid_str = svc.pid.map(|p| p.to_string()).unwrap_or("—".to_string());
         assert_eq!(pid_str, "—");
+    }
+
+    #[test]
+    fn failed_status_badge_shows_failed_not_unknown() {
+        let text = match ServiceStatus::Failed {
+            ServiceStatus::Running => "Running",
+            ServiceStatus::Stopped => "Stopped",
+            ServiceStatus::Failed  => "Failed",
+            ServiceStatus::Unknown => "Unknown",
+        };
+        assert_eq!(text, "Failed");
     }
 }

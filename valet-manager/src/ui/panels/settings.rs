@@ -64,7 +64,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 SettingsSection::Tls        => render_tls(ui, state, cmd_tx),
                 SettingsSection::Paths      => render_paths(ui, state),
                 SettingsSection::Updates    => render_updates(ui, state, cmd_tx),
-                SettingsSection::About      => render_about(ui, cmd_tx),
+                SettingsSection::About      => render_about(ui, state, cmd_tx),
             }
         });
     });
@@ -269,10 +269,14 @@ fn render_updates(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCo
     });
 }
 
-fn render_about(ui: &mut egui::Ui, cmd_tx: &Sender<AppCommand>) {
+fn render_about(ui: &mut egui::Ui, _state: &AppState, cmd_tx: &Sender<AppCommand>) {
     setting_group(ui, "About Valet Manager", |ui| {
         setting_row(ui, "Version", "Built on trunk.", |ui| {
             ui.label(RichText::new("v0.1 · egui 0.34").size(11.5).color(Colors::TEXT_TERTIARY)
+                .text_style(egui::TextStyle::Monospace));
+        });
+        setting_row(ui, "License", "Open source · MIT.", |ui| {
+            ui.label(RichText::new("Open source · MIT").size(11.5).color(Colors::TEXT_TERTIARY)
                 .text_style(egui::TextStyle::Monospace));
         });
         setting_row(ui, "Diagnostics", "Bundle logs and config for a bug report.", |ui| {
