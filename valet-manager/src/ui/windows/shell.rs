@@ -53,7 +53,7 @@ fn render_shell_body(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<Ap
         .show(ui, |ui| {
             for line in &state.shell_output {
                 let (display, color) = if let Some(rest) = line.strip_prefix("[err] ") {
-                    (rest, Colors::WARNING)
+                    (rest, Colors::DANGER)
                 } else {
                     (line.as_str(), Colors::TEXT_SECONDARY)
                 };

@@ -28,7 +28,9 @@ impl Colors {
     pub const PURPLE:         Color32 = Color32::from_rgb(0x9B, 0x5F, 0xF5);
     // Close button danger tint: rgba(226,75,74,0.18) = premultiplied ~(41,14,13,46)
     #[allow(dead_code)]
-    pub const CLOSE_BTN_BG:   Color32 = Color32::from_rgba_premultiplied(41, 14, 13, 46);
+    pub const CLOSE_BTN_BG:    Color32 = Color32::from_rgba_premultiplied(41, 14, 13, 46);
+    // Close button icon: #f3a5a5
+    pub const CLOSE_BTN_ICON:  Color32 = Color32::from_rgb(0xf3, 0xa5, 0xa5);
 }
 
 pub fn apply_dark(ctx: &egui::Context) {
@@ -192,6 +194,14 @@ pub fn divider(ui: &mut egui::Ui) {
 
 pub fn with_alpha(color: Color32, alpha: u8) -> Color32 {
     Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), alpha)
+}
+
+pub fn hex_to_color32(hex: &str) -> Color32 {
+    let hex = hex.trim_start_matches('#');
+    let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
+    let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
+    let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
+    Color32::from_rgb(r, g, b)
 }
 
 pub fn card_frame() -> Frame {

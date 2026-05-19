@@ -49,14 +49,15 @@ fn framework_docs_url(fw: &DetectedFramework) -> &'static str {
     }
 }
 
-// ── Column widths ────────────────────────────────────────────────────────────
-const COL_FAV:       f32 = 26.0;
+// ── Column widths (canonical CSS: 28px | minmax(220px,2fr) | 110px | 70px | 60px | 130px | 28px)
 const COL_DOT:       f32 = 28.0;
+// COL_SITE is flex (available - fixed cols)
 const COL_FRAMEWORK: f32 = 110.0;
 const COL_PHP:       f32 = 70.0;
 const COL_TLS:       f32 = 60.0;
 const COL_LASTHIT:   f32 = 130.0;
 const COL_ACTION:    f32 = 28.0;
+const COL_FIXED:     f32 = COL_DOT + COL_FRAMEWORK + COL_PHP + COL_TLS + COL_LASTHIT + COL_ACTION;
 const ROW_HEIGHT:    f32 = 40.0;
 const HEADER_HEIGHT: f32 = 32.0;
 
@@ -130,83 +131,61 @@ fn stat_strip(ui: &mut egui::Ui, sites: &[ValetSite]) {
     ui.add_space(8.0);
 }
 
+const ROW_PAD: f32 = 14.0;
+
 // ── Table header ─────────────────────────────────────────────────────────────
-fn table_header(ui: &mut egui::Ui, flex_width: f32) {
+fn table_header(ui: &mut egui::Ui) {
     let header_bg = with_alpha(Color32::BLACK, 38);
     let border    = Stroke::new(0.5, Colors::BORDER);
 
-    let avail_w = ui.available_width();
+    let avail_w  = ui.available_width();
+    let inner_w  = avail_w - 2.0 * ROW_PAD;
+    let site_col = (inner_w - COL_FIXED).max(220.0);
     let (header_rect, _) = ui.allocate_exact_size(
         egui::vec2(avail_w, HEADER_HEIGHT),
         egui::Sense::hover(),
     );
     ui.painter().rect_filled(header_rect, CornerRadius::ZERO, header_bg);
-    // Border-bottom
-    ui.painter().hline(
-        header_rect.x_range(),
-        header_rect.bottom(),
-        border,
-    );
+    ui.painter().hline(header_rect.x_range(), header_rect.bottom(), border);
 
+    let inner_rect = header_rect.shrink2(egui::vec2(ROW_PAD, 0.0));
     let mut child = ui.new_child(
         egui::UiBuilder::new()
-            .max_rect(header_rect)
+            .max_rect(inner_rect)
             .layout(egui::Layout::left_to_right(egui::Align::Center)),
     );
 
     let hdr_label = |text: &str| {
-        RichText::new(text)
-            .size(10.5)
-            .strong()
-            .color(Colors::TEXT_TERTIARY)
+        RichText::new(text).size(10.5).strong().color(Colors::TEXT_TERTIARY)
     };
 
-    // ★ header (first column)
-    child.allocate_ui(egui::vec2(COL_FAV, HEADER_HEIGHT), |ui| {
-        ui.centered_and_justified(|ui| {
-            ui.label(RichText::new("★").size(10.0).color(Colors::TEXT_TERTIARY));
-        });
-    });
-
-    // dot column — empty
+    // • | SITE | FRAMEWORK | PHP | TLS | LAST HIT | ⋮
     child.allocate_ui(egui::vec2(COL_DOT, HEADER_HEIGHT), |_| {});
-
-    // SITE column
-    child.allocate_ui(egui::vec2(flex_width, HEADER_HEIGHT), |ui| {
+    child.allocate_ui(egui::vec2(site_col, HEADER_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.label(hdr_label("SITE"));
         });
     });
-
-    // FRAMEWORK
     child.allocate_ui(egui::vec2(COL_FRAMEWORK, HEADER_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.label(hdr_label("FRAMEWORK"));
         });
     });
-
-    // PHP
     child.allocate_ui(egui::vec2(COL_PHP, HEADER_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.label(hdr_label("PHP"));
         });
     });
-
-    // TLS
     child.allocate_ui(egui::vec2(COL_TLS, HEADER_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.label(hdr_label("TLS"));
         });
     });
-
-    // LAST HIT
     child.allocate_ui(egui::vec2(COL_LASTHIT, HEADER_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.label(hdr_label("LAST HIT"));
         });
     });
-
-    // action — empty
     child.allocate_ui(egui::vec2(COL_ACTION, HEADER_HEIGHT), |_| {});
 }
 
@@ -214,26 +193,29 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
 enum SiteRowAction {
     None,
     Select,
-    ToggleFavorite,
 }
 
 // ── Site row ─────────────────────────────────────────────────────────────────
 fn render_site_row(
     ui: &mut egui::Ui,
     site: &ValetSite,
-    flex_width: f32,
+    selected: bool,
     cmd_tx: &Sender<AppCommand>,
     pma_enabled: bool,
 ) -> SiteRowAction {
-    let avail_w = ui.available_width();
+    let avail_w  = ui.available_width();
+    let inner_w  = avail_w - 2.0 * ROW_PAD;
+    let site_col = (inner_w - COL_FIXED).max(220.0);
 
     let (row_rect, row_resp) = ui.allocate_exact_size(
         egui::vec2(avail_w, ROW_HEIGHT),
         egui::Sense::click(),
     );
 
-    // Hover highlight
-    if row_resp.hovered() {
+    // Row background
+    if selected {
+        ui.painter().rect_filled(row_rect, CornerRadius::ZERO, with_alpha(Colors::ACCENT, 20));
+    } else if row_resp.hovered() {
         ui.painter().rect_filled(row_rect, CornerRadius::ZERO, Colors::CARD_HOVER);
     }
 
@@ -250,84 +232,66 @@ fn render_site_row(
         Stroke::new(0.5, Colors::BORDER),
     );
 
+    let inner_rect = row_rect.shrink2(egui::vec2(ROW_PAD, 0.0));
     let mut child = ui.new_child(
         egui::UiBuilder::new()
-            .max_rect(row_rect)
+            .max_rect(inner_rect)
             .layout(egui::Layout::left_to_right(egui::Align::Center)),
     );
 
-    // ── Col 0: Favorite star (26px) ─────────────────────────────────────
-    row_cell(&mut child, COL_FAV, ROW_HEIGHT, |ui| {
-        let star  = if site.is_favorite { "★" } else { "☆" };
-        let color = if site.is_favorite { Colors::WARNING } else { Colors::TEXT_TERTIARY };
-        let resp  = ui.add(
-            egui::Label::new(RichText::new(star).size(13.0).color(color))
-                .sense(egui::Sense::click()),
-        );
-        if resp.clicked() {
-            action = SiteRowAction::ToggleFavorite;
-        }
-    });
-
-    // ── Col 1: Status dot (28px) ─────────────────────────────────────────
+    // ── Col 0: Status dot (28px) ─────────────────────────────────────────
     row_cell(&mut child, COL_DOT, ROW_HEIGHT, |ui| {
-        ui.add_space(10.0);
+        use crate::valet::site_scanner::SiteStatus;
         let dot_color = status_color(&site.status);
         let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
+        // Glow ring (box-shadow: 0 0 0 3px ...)
+        let glow_color = match site.status {
+            SiteStatus::Running => with_alpha(Colors::ACCENT, 31),
+            SiteStatus::Failed  => with_alpha(Colors::DANGER, 38),
+            _                   => Color32::TRANSPARENT,
+        };
+        ui.painter().circle_filled(dot_rect.center(), 7.0, glow_color);
         ui.painter().circle_filled(dot_rect.center(), 4.0, dot_color);
     });
 
-    // ── Col 2: Site + Path (flex) ────────────────────────────────────────
-    child.allocate_ui(egui::vec2(flex_width, ROW_HEIGHT), |ui| {
-        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-            ui.vertical(|ui| {
-                // Domain line
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 4.0;
-                    let domain_resp = ui.add(
-                        egui::Label::new(
-                            RichText::new(&site.domain)
-                                .size(12.5)
-                                .strong()
-                                .color(Colors::ACCENT),
-                        )
-                        .sense(egui::Sense::click()),
-                    );
-                    if domain_resp.clicked() {
-                        let url = format!("https://{}", site.domain);
-                        let _ = std::process::Command::new("xdg-open").arg(&url).spawn();
-                    }
-                    if domain_resp.hovered() {
-                        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-                    }
-                    if site.is_secured {
-                        ui.label(
-                            RichText::new("🔒")
-                                .size(11.0)
-                                .color(Colors::ACCENT),
-                        );
-                    }
-                });
-                // Path line
-                let path_str = site.path.to_string_lossy();
-                let truncated = if path_str.len() > 40 {
-                    format!("{}…", &path_str[..40])
-                } else {
-                    path_str.to_string()
-                };
+    // ── Col 1: Site (domain + path, flex) ───────────────────────────────
+    let domain_color = if selected { Colors::ACCENT } else { Colors::TEXT_PRIMARY };
+    row_cell(&mut child, site_col, ROW_HEIGHT, |ui| {
+        ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = 1.0;
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 6.0;
+                // Domain text (TEXT_PRIMARY by default, ACCENT when selected)
                 ui.label(
-                    RichText::new(truncated)
-                        .size(10.5)
-                        .color(Colors::TEXT_TERTIARY)
-                        .monospace(),
+                    RichText::new(&site.domain)
+                        .size(12.5)
+                        .strong()
+                        .color(domain_color),
                 );
+                // Lock icon if secured (inline with domain name)
+                if site.is_secured {
+                    let tls_color = match site.tls_expiry_days {
+                        Some(d) if d < 7  => Colors::DANGER,
+                        Some(d) if d < 30 => Colors::WARNING,
+                        _                 => Colors::ACCENT,
+                    };
+                    ui.label(RichText::new("🔒").size(10.0).color(tls_color));
+                }
             });
+            // Path — monospace, tertiary
+            let path_str = site.path.to_string_lossy();
+            let truncated = if path_str.len() > 40 {
+                format!("{}…", &path_str[..40])
+            } else {
+                path_str.to_string()
+            };
+            ui.label(RichText::new(truncated).size(10.5).color(Colors::TEXT_TERTIARY).monospace());
         });
     });
 
-    // ── Col 3: Framework badge (110px) ───────────────────────────────────
-    let fw_label = framework_display_name(&site.framework);
-    let fw_rec   = recommended_php_version(&site.framework);
+    // ── Col 2: Framework badge (110px) ───────────────────────────────────
+    let fw_label   = framework_display_name(&site.framework);
+    let fw_rec     = recommended_php_version(&site.framework);
     let fw_tooltip = match &site.php_version {
         Some(v) if v != fw_rec
             => format!("{fw_label} · PHP {fw_rec} (using {v}, consider {fw_rec})"),
@@ -340,38 +304,37 @@ fn render_site_row(
         resp.on_hover_text(fw_tooltip);
     });
 
-    // ── Col 4: PHP version (70px) ────────────────────────────────────────
+    // ── Col 3: PHP version (70px) ────────────────────────────────────────
     row_cell(&mut child, COL_PHP, ROW_HEIGHT, |ui| {
-        let php_text = site.php_version.as_deref().unwrap_or("Global");
-        ui.label(
-            RichText::new(php_text)
-                .size(11.0)
-                .monospace()
-                .color(Colors::TEXT_SECONDARY),
-        );
+        let (php_text, php_color) = match &site.php_version {
+            Some(v) => (v.clone(), Colors::TEXT_SECONDARY),
+            None    => (String::from("—"), Colors::TEXT_TERTIARY),
+        };
+        ui.label(RichText::new(php_text).size(11.0).monospace().color(php_color));
     });
 
-    // ── Col 5: TLS (60px) ────────────────────────────────────────────────
+    // ── Col 4: TLS (60px) ────────────────────────────────────────────────
     row_cell(&mut child, COL_TLS, ROW_HEIGHT, |ui| {
-        if site.is_secured {
-            let tls_color = match site.tls_expiry_days {
-                Some(d) if d < 7   => Colors::DANGER,
-                Some(d) if d < 30  => Colors::WARNING,
-                _                  => Colors::ACCENT,
+        let (tls_text, tls_color) = if site.is_secured {
+            let color = match site.tls_expiry_days {
+                Some(d) if d < 7  => Colors::DANGER,
+                Some(d) if d < 30 => Colors::WARNING,
+                _                 => Colors::ACCENT,
             };
-            ui.label(RichText::new("🔒").size(12.0).color(tls_color));
+            ("on", color)
         } else {
-            ui.label(RichText::new("—").size(11.0).color(Colors::TEXT_TERTIARY));
-        }
+            ("—", Colors::TEXT_TERTIARY)
+        };
+        ui.label(RichText::new(tls_text).size(11.0).monospace().color(tls_color));
     });
 
-    // ── Col 6: Last hit (130px) ──────────────────────────────────────────
+    // ── Col 5: Last hit (130px) ──────────────────────────────────────────
     row_cell(&mut child, COL_LASTHIT, ROW_HEIGHT, |ui| {
-        let text = site.last_hit.as_deref().unwrap_or("—");
-        ui.label(RichText::new(text).size(11.5).color(Colors::TEXT_TERTIARY));
+        let hit_text = site.last_hit.as_deref().unwrap_or("—");
+        ui.label(RichText::new(hit_text).size(11.5).color(Colors::TEXT_TERTIARY));
     });
 
-    // ── Col 7: Action menu (28px) ────────────────────────────────────────
+    // ── Col 6: Action menu (36px) ────────────────────────────────────────
     row_cell(&mut child, COL_ACTION, ROW_HEIGHT, |ui| {
         let btn_resp = ui.add(
             egui::Button::new(
@@ -761,10 +724,6 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
 
         let table_width = ui.available_width() - 22.0;
 
-        // flex_width = total - fixed columns
-        let fixed = COL_FAV + COL_DOT + COL_FRAMEWORK + COL_PHP + COL_TLS + COL_LASTHIT + COL_ACTION;
-        let flex_width = (table_width - fixed).max(120.0);
-
         Frame::NONE
             .fill(Colors::CARD)
             .corner_radius(CornerRadius::same(6))
@@ -774,28 +733,22 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 ui.set_width(table_width);
 
                 // Header
-                table_header(ui, flex_width);
+                table_header(ui);
 
                 // Rows (scrollable)
-                let mut toggle_name: Option<String> = None;
                 let mut select_name: Option<String> = None;
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for site in &filtered {
+                        let is_sel = state.site_config_selected.as_deref() == Some(site.name.as_str());
                         let pma_enabled = state.pma_state.sites.get(&site.name).map(|s| s.enabled).unwrap_or(false);
-                        match render_site_row(ui, site, flex_width, cmd_tx, pma_enabled) {
+                        match render_site_row(ui, site, is_sel, cmd_tx, pma_enabled) {
                             SiteRowAction::Select => select_name = Some(site.name.clone()),
-                            SiteRowAction::ToggleFavorite => toggle_name = Some(site.name.clone()),
                             SiteRowAction::None => {}
                         }
                     }
                 });
                 if let Some(name) = select_name {
                     state.site_config_selected = Some(name);
-                }
-                if let Some(name) = toggle_name {
-                    if let Some(s) = state.sites.iter_mut().find(|s| s.name == name) {
-                        s.is_favorite = !s.is_favorite;
-                    }
                 }
             });
     });

@@ -1,5 +1,5 @@
 use egui::{Color32, CornerRadius, Frame, Margin, RichText, ScrollArea, Stroke};
-use crate::ui::theme::{Colors, accent_button, ghost_button, danger_button};
+use crate::ui::theme::{Colors, with_alpha, accent_button, ghost_button, danger_button};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -45,7 +45,7 @@ pub fn render(ctx: &egui::Context, dialog: &mut ConfirmDialog) -> DialogResult {
         .fixed_pos(egui::pos2(0.0, 0.0))
         .show(ctx, |ui| {
             let screen = ctx.input(|i| i.viewport().outer_rect.unwrap_or(i.content_rect()));
-            ui.painter().rect_filled(screen, CornerRadius::ZERO, Color32::from_rgba_unmultiplied(0, 0, 0, 140));
+            ui.painter().rect_filled(screen, CornerRadius::ZERO, with_alpha(Color32::BLACK, 140));
         });
 
     // Card

@@ -350,7 +350,7 @@ pub fn render(ctx: &egui::Context, state: &mut PaletteState) -> Option<AppComman
         .fixed_pos(egui::pos2(0.0, 0.0))
         .show(ctx, |ui| {
             let r = ctx.input(|i| i.viewport().outer_rect.unwrap_or(i.content_rect()));
-            ui.painter().rect_filled(r, CornerRadius::ZERO, Color32::from_rgba_unmultiplied(0, 0, 0, 100));
+            ui.painter().rect_filled(r, CornerRadius::ZERO, with_alpha(Color32::BLACK, 100));
         });
 
     // Card

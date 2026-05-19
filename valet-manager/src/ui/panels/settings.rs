@@ -2,7 +2,7 @@ use egui::{RichText, CornerRadius};
 use tokio::sync::mpsc::Sender;
 use crate::commands::AppCommand;
 use crate::state::app_state::{AppState, SettingsSection};
-use crate::ui::theme::{Colors, accent_button, ghost_button, divider, with_alpha};
+use crate::ui::theme::{Colors, accent_button, ghost_button, divider, with_alpha, hex_to_color32};
 
 const PALETTES: [([&str; 3], &str); 5] = [
     (["#5DCAA5", "#0F6E56", "#04342C"], "Mint"),
@@ -12,13 +12,6 @@ const PALETTES: [([&str; 3], &str); 5] = [
     (["#E24B4A", "#962525", "#3B0E0E"], "Ember"),
 ];
 
-fn hex_to_color32(hex: &str) -> egui::Color32 {
-    let hex = hex.trim_start_matches('#');
-    let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
-    let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
-    let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
-    egui::Color32::from_rgb(r, g, b)
-}
 
 pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     // Header

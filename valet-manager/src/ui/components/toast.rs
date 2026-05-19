@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 use egui::{Align2, Color32, CornerRadius, Frame, Margin, RichText, Stroke};
-use crate::ui::theme::Colors;
+use crate::ui::theme::{Colors, with_alpha};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
@@ -56,7 +56,7 @@ pub fn render_toasts(ctx: &egui::Context, toasts: &mut Vec<Toast>) {
 
                     // 3px left border via inner Frame on the left of the body.
                     Frame::NONE
-                        .fill(Color32::from_rgba_unmultiplied(0x1C, 0x2A, 0x26, alpha)) // CARD with alpha
+                        .fill(with_alpha(Colors::CARD, alpha))
                         .corner_radius(CornerRadius::same(6))
                         .stroke(Stroke::new(0.5, Colors::BORDER_MED))
                         .inner_margin(Margin { left: 0, right: 12, top: 0, bottom: 0 })
@@ -70,12 +70,7 @@ pub fn render_toasts(ctx: &egui::Context, toasts: &mut Vec<Toast>) {
                                 ui.label(
                                     RichText::new(&toast.message)
                                         .size(12.5)
-                                        .color(Color32::from_rgba_unmultiplied(
-                                            Colors::TEXT_PRIMARY.r(),
-                                            Colors::TEXT_PRIMARY.g(),
-                                            Colors::TEXT_PRIMARY.b(),
-                                            alpha,
-                                        )),
+                                        .color(with_alpha(Colors::TEXT_PRIMARY, alpha)),
                                 );
                             });
                         });

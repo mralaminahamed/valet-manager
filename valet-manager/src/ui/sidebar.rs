@@ -167,14 +167,21 @@ fn screen_nav_item(
 ) -> bool {
     let is_active = active == &screen;
     let text_color = if is_active { egui::Color32::WHITE } else { Colors::TEXT_SECONDARY };
-    let bg = if is_active { Colors::ACCENT_DARK } else { egui::Color32::TRANSPARENT };
 
     let desired_size = egui::vec2(ui.available_width(), 28.0);
     let (rect, resp) = ui.allocate_exact_size(desired_size, egui::Sense::click());
 
     if ui.is_rect_visible(rect) {
-        if resp.hovered() || is_active {
-            ui.painter().rect_filled(rect, egui::CornerRadius::same(6), bg);
+        if is_active {
+            ui.painter().rect_filled(rect, egui::CornerRadius::same(4), Colors::ACCENT_DARK);
+            ui.painter().rect_stroke(
+                rect,
+                egui::CornerRadius::same(4),
+                Stroke::new(1.0, with_alpha(Colors::ACCENT, 51)),
+                egui::StrokeKind::Inside,
+            );
+        } else if resp.hovered() {
+            ui.painter().rect_filled(rect, egui::CornerRadius::same(4), with_alpha(egui::Color32::WHITE, 6));
         }
         let inner_rect = rect.shrink2(egui::vec2(10.0, 0.0));
         if icon_only {

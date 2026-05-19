@@ -13,7 +13,7 @@ pub fn render(ctx: &egui::Context, state: &mut AppState, cmd_tx: &Sender<AppComm
     // Dim background overlay
     let screen = ctx.input(|i| i.viewport().outer_rect.unwrap_or(i.content_rect()));
     ctx.layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("modal_dim")))
-        .rect_filled(screen, egui::CornerRadius::ZERO, egui::Color32::from_black_alpha(120));
+        .rect_filled(screen, egui::CornerRadius::ZERO, with_alpha(Color32::BLACK, 120));
 
     // Modal window
     egui::Window::new("add_site_modal")
