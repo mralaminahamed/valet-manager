@@ -543,14 +543,71 @@ mod tests {
 
     #[test]
     fn favorites_sort_before_non_favorites() {
-        // favorites must appear before non-favorites after sort
-        let fav = true;
-        let non_fav = false;
-        // b.is_favorite.cmp(&a.is_favorite) sorts true before false
-        use std::cmp::Ordering;
-        assert_eq!(fav.cmp(&non_fav), Ordering::Greater);
-        // reversed (b vs a) puts favorites first
-        assert_eq!(non_fav.cmp(&fav), Ordering::Less);
+        use crate::valet::site_scanner::SiteStatus;
+        let mut sites = vec![
+            make_site("alpha",   SiteStatus::Running, false),
+            make_site("beta",    SiteStatus::Running, false),
+            make_site("charlie", SiteStatus::Running, false),
+        ];
+        sites[2].is_favorite = true; // charlie is favorite
+        sites.sort_by(|a, b| b.is_favorite.cmp(&a.is_favorite).then(a.name.cmp(&b.name)));
+        assert_eq!(sites[0].name, "charlie"); // favorite first
+        assert_eq!(sites[1].name, "alpha");   // then alphabetical
+        assert_eq!(sites[2].name, "beta");
+    }
+
+    #[test]
+    fn toggle_favorite_flips_flag() {
+        use crate::valet::site_scanner::SiteStatus;
+        let mut sites = vec![make_site("mysite", SiteStatus::Running, false)];
+        assert!(!sites[0].is_favorite);
+        if let Some(s) = sites.iter_mut().find(|s| s.name == "mysite") {
+            s.is_favorite = !s.is_favorite;
+        }
+        assert!(sites[0].is_favorite);
+        // toggle back
+        if let Some(s) = sites.iter_mut().find(|s| s.name == "mysite") {
+            s.is_favorite = !s.is_favorite;
+        }
+        assert!(!sites[0].is_favorite);
+    }
+
+    #[test]
+    fn filter_chips_all_variants_covered() {
+        use crate::state::app_state::SiteStatusFilter;
+        use crate::valet::site_scanner::SiteStatus;
+        let sites = vec![
+            make_site("a", SiteStatus::Running, false),
+            make_site("b", SiteStatus::Stopped, false),
+            make_site("c", SiteStatus::Failed,  false),
+        ];
+        let apply = |f: SiteStatusFilter| -> Vec<&str> {
+            sites.iter().filter(|s| match f {
+                SiteStatusFilter::All     => true,
+                SiteStatusFilter::Running => s.status == SiteStatus::Running,
+                SiteStatusFilter::Stopped => s.status == SiteStatus::Stopped,
+                SiteStatusFilter::Failed  => s.status == SiteStatus::Failed,
+            }).map(|s| s.name.as_str()).collect()
+        };
+        assert_eq!(apply(SiteStatusFilter::All),     vec!["a","b","c"]);
+        assert_eq!(apply(SiteStatusFilter::Running), vec!["a"]);
+        assert_eq!(apply(SiteStatusFilter::Stopped), vec!["b"]);
+        assert_eq!(apply(SiteStatusFilter::Failed),  vec!["c"]);
+    }
+
+    #[test]
+    fn search_filters_by_name_and_domain() {
+        use crate::valet::site_scanner::SiteStatus;
+        let sites = vec![
+            make_site("easycommerce", SiteStatus::Running, false),
+            make_site("laravel-app",  SiteStatus::Running, false),
+        ];
+        let query = "easy";
+        let matched: Vec<&str> = sites.iter()
+            .filter(|s| s.name.contains(query) || s.domain.contains(query))
+            .map(|s| s.name.as_str())
+            .collect();
+        assert_eq!(matched, vec!["easycommerce"]);
     }
 
     #[test]
