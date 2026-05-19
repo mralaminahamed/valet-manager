@@ -5,6 +5,7 @@ use crate::commands::AppCommand;
 use crate::state::app_state::{AppState, Screen};
 use crate::ui::theme::{Colors, divider, section_label, with_alpha};
 
+
 /// Viewport ≥ 1000 px → full 220 px sidebar with labels.
 #[allow(dead_code)]
 pub fn should_show_full(viewport_width: f32) -> bool {
@@ -21,7 +22,7 @@ pub fn should_hide(viewport_width: f32) -> bool {
     viewport_width < 800.0
 }
 
-pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>, icon_only: bool) {
+pub fn render(ui: &mut egui::Ui, state: &mut AppState, _cmd_tx: &Sender<AppCommand>, icon_only: bool) {
     ui.spacing_mut().item_spacing.y = 2.0;
 
     // ── Brand ──────────────────────────────────────────────────────────
@@ -82,12 +83,23 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>, 
 
     let site_count = state.sites.len();
     let svc_count  = state.services.len();
+    let active     = state.ui.active_screen.clone();
 
-    screen_nav_item(ui, "◈", "Sites",    Screen::Sites,    &state.ui.active_screen, Some(site_count), cmd_tx, icon_only);
-    screen_nav_item(ui, "◻", "Services", Screen::Services, &state.ui.active_screen, Some(svc_count),  cmd_tx, icon_only);
-    screen_nav_item(ui, "≡", "Logs",     Screen::Logs,     &state.ui.active_screen, None,             cmd_tx, icon_only);
-    screen_nav_item(ui, "⬡", "DNS",      Screen::Dns,      &state.ui.active_screen, None,             cmd_tx, icon_only);
-    screen_nav_item(ui, "⚙", "Settings", Screen::Settings, &state.ui.active_screen, None,             cmd_tx, icon_only);
+    if screen_nav_item(ui, "◈", "Sites",    Screen::Sites,    &active, Some(site_count), icon_only) {
+        state.ui.active_screen = Screen::Sites;
+    }
+    if screen_nav_item(ui, "◻", "Services", Screen::Services, &active, Some(svc_count),  icon_only) {
+        state.ui.active_screen = Screen::Services;
+    }
+    if screen_nav_item(ui, "≡", "Logs",     Screen::Logs,     &active, None,             icon_only) {
+        state.ui.active_screen = Screen::Logs;
+    }
+    if screen_nav_item(ui, "⬡", "DNS",      Screen::Dns,      &active, None,             icon_only) {
+        state.ui.active_screen = Screen::Dns;
+    }
+    if screen_nav_item(ui, "⚙", "Settings", Screen::Settings, &active, None,             icon_only) {
+        state.ui.active_screen = Screen::Settings;
+    }
 
     ui.add_space(8.0);
 
@@ -96,10 +108,18 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>, 
         section_label(ui, "quick actions");
         ui.add_space(2.0);
 
-        quick_action(ui, "✚", "Park directory", cmd_tx, AppCommand::OpenAddSiteModal);
-        quick_action(ui, "⌨", "Open shell",     cmd_tx, AppCommand::OpenShellWindow);
-        quick_action_label(ui, "⊟", "phpMyAdmin", ":8082", cmd_tx, AppCommand::OpenPmaWindow);
-        quick_action(ui, "✉", "Mailpit inbox",  cmd_tx, AppCommand::OpenMailpitWindow);
+        if quick_action_render(ui, "✚", "Park directory", "") {
+            state.ui.add_site_modal_open = true;
+        }
+        if quick_action_render(ui, "⌨", "Open shell", "") {
+            state.ui.shell_open = true;
+        }
+        if quick_action_render(ui, "⊟", "phpMyAdmin", ":8082") {
+            state.ui.pma_open = true;
+        }
+        if quick_action_render(ui, "✉", "Mailpit inbox", "") {
+            state.ui.mailpit_open = true;
+        }
     }
 
     ui.add_space(8.0);
@@ -143,9 +163,8 @@ fn screen_nav_item(
     screen: Screen,
     active: &Screen,
     count: Option<usize>,
-    cmd_tx: &Sender<AppCommand>,
     icon_only: bool,
-) {
+) -> bool {
     let is_active = active == &screen;
     let text_color = if is_active { egui::Color32::WHITE } else { Colors::TEXT_SECONDARY };
     let bg = if is_active { Colors::ACCENT_DARK } else { egui::Color32::TRANSPARENT };
@@ -201,29 +220,10 @@ fn screen_nav_item(
         }
     }
 
-    if resp.clicked() {
-        let _ = cmd_tx.try_send(AppCommand::OpenScreen(screen));
-    }
+    resp.clicked()
 }
 
-fn quick_action(
-    ui: &mut egui::Ui,
-    icon: &str,
-    label: &str,
-    cmd_tx: &Sender<AppCommand>,
-    cmd: AppCommand,
-) {
-    quick_action_label(ui, icon, label, "", cmd_tx, cmd);
-}
-
-fn quick_action_label(
-    ui: &mut egui::Ui,
-    icon: &str,
-    label: &str,
-    badge: &str,
-    cmd_tx: &Sender<AppCommand>,
-    cmd: AppCommand,
-) {
+fn quick_action_render(ui: &mut egui::Ui, icon: &str, label: &str, badge: &str) -> bool {
     let desired_size = egui::vec2(ui.available_width(), 30.0);
     let (rect, resp) = ui.allocate_exact_size(desired_size, egui::Sense::click());
 
@@ -257,9 +257,7 @@ fn quick_action_label(
         }
     }
 
-    if resp.clicked() {
-        let _ = cmd_tx.try_send(cmd);
-    }
+    resp.clicked()
 }
 
 fn paint_v_mark(painter: &egui::Painter, rect: egui::Rect) {

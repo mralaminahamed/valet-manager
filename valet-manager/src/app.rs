@@ -380,6 +380,7 @@ impl eframe::App for ValetManagerApp {
 
         // Keyboard shortcuts
         let mut toggle_palette = false;
+        let mut open_settings = false;
         ui.input(|i| {
             if i.key_pressed(egui::Key::K) && i.modifiers.ctrl {
                 toggle_palette = true;
@@ -388,9 +389,12 @@ impl eframe::App for ValetManagerApp {
                 let _ = self.cmd_tx.try_send(AppCommand::RefreshAll);
             }
             if i.key_pressed(egui::Key::Comma) && i.modifiers.ctrl {
-                let _ = self.cmd_tx.try_send(AppCommand::OpenScreen(crate::state::app_state::Screen::Settings));
+                open_settings = true;
             }
         });
+        if open_settings {
+            self.state.ui.active_screen = crate::state::app_state::Screen::Settings;
+        }
         if toggle_palette {
             let now_open = !self.state.ui.palette.open;
             self.state.ui.palette.open = now_open;
@@ -550,7 +554,7 @@ impl eframe::App for ValetManagerApp {
                 .resizable(false)
                 .frame(egui::Frame::NONE.fill(theme::Colors::DEEP_BG))
                 .show_inside(ui, |ui| {
-                    sidebar::render(ui, &self.state, &self.cmd_tx, icon_only);
+                    sidebar::render(ui, &mut self.state, &self.cmd_tx, icon_only);
                 });
         }
 
@@ -613,7 +617,19 @@ impl eframe::App for ValetManagerApp {
 
         // ── Command palette overlay ──────────────────────────────────────
         if let Some(cmd) = command_palette::render(&ctx, &mut self.state.ui.palette) {
-            let _ = self.cmd_tx.try_send(cmd);
+            use crate::state::app_state::Screen;
+            match cmd {
+                AppCommand::OpenScreen(screen) => { self.state.ui.active_screen = screen; }
+                AppCommand::OpenSettings(section) => {
+                    self.state.ui.active_screen = Screen::Settings;
+                    self.state.ui.settings_section = section;
+                }
+                AppCommand::OpenShellWindow    => { self.state.ui.shell_open = true; }
+                AppCommand::OpenMailpitWindow  => { self.state.ui.mailpit_open = true; }
+                AppCommand::OpenPmaWindow      => { self.state.ui.pma_open = true; }
+                AppCommand::OpenAddSiteModal   => { self.state.ui.add_site_modal_open = true; }
+                other => { let _ = self.cmd_tx.try_send(other); }
+            }
         }
 
         // ── Floating toasts ──────────────────────────────────────────────
