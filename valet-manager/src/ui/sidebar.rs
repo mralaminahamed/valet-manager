@@ -1,4 +1,4 @@
-use egui::{Color32, RichText, Stroke};
+use egui::{RichText, Stroke};
 use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
@@ -123,7 +123,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>, 
                 let health = if all_running { "All services healthy" } else { "Some services stopped" };
                 ui.label(RichText::new(health).size(11.5).color(Colors::TEXT_PRIMARY).strong());
                 ui.label(
-                    RichText::new(format!("valet · {} sites", state.site_count))
+                    RichText::new(format!("valet · {} sites", state.sites.len()))
                         .size(10.5)
                         .color(Colors::TEXT_TERTIARY),
                 );
@@ -144,23 +144,15 @@ fn screen_nav_item(
     icon_only: bool,
 ) {
     let is_active = active == &screen;
-    let text_color = if is_active { Colors::ACCENT } else { Colors::TEXT_SECONDARY };
-    let bg = if is_active { with_alpha(Colors::ACCENT, 18) } else { Color32::TRANSPARENT };
+    let text_color = if is_active { egui::Color32::WHITE } else { Colors::TEXT_SECONDARY };
+    let bg = if is_active { Colors::ACCENT_DARK } else { egui::Color32::TRANSPARENT };
 
-    let desired_size = egui::vec2(ui.available_width(), 32.0);
+    let desired_size = egui::vec2(ui.available_width(), 28.0);
     let (rect, resp) = ui.allocate_exact_size(desired_size, egui::Sense::click());
 
     if ui.is_rect_visible(rect) {
         if resp.hovered() || is_active {
             ui.painter().rect_filled(rect, egui::CornerRadius::same(6), bg);
-        }
-        if is_active {
-            ui.painter().rect_stroke(
-                rect,
-                egui::CornerRadius::same(6),
-                egui::Stroke::new(0.5, with_alpha(Colors::ACCENT, 38)),
-                egui::StrokeKind::Inside,
-            );
         }
         let inner_rect = rect.shrink2(egui::vec2(10.0, 0.0));
         if icon_only {

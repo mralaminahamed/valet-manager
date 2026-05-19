@@ -8,7 +8,7 @@ use crate::php::detector;
 use crate::php::{fpm_manager, extension_manager, ini_manager, switcher};
 use crate::php::types::IniType;
 use crate::services::monitor::ServiceStatus;
-use crate::state::app_state::{AppState, Panel};
+use crate::state::app_state::AppState;
 use crate::ui::{sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
@@ -80,7 +80,6 @@ impl ValetManagerApp {
                 }
                 // Phase 3
                 AppEvent::SitesRefreshed(sites) => {
-                    self.state.site_count = sites.len();
                     self.state.sites = sites;
                 }
                 AppEvent::NginxConfigLoaded { site, content } => {
@@ -389,7 +388,7 @@ impl eframe::App for ValetManagerApp {
                 let _ = self.cmd_tx.try_send(AppCommand::RefreshAll);
             }
             if i.key_pressed(egui::Key::Comma) && i.modifiers.ctrl {
-                let _ = self.cmd_tx.try_send(AppCommand::OpenPanel(Panel::Settings));
+                let _ = self.cmd_tx.try_send(AppCommand::OpenScreen(crate::state::app_state::Screen::Settings));
             }
         });
         if toggle_palette {
@@ -545,7 +544,7 @@ impl eframe::App for ValetManagerApp {
 
         // ── Sidebar (skip entirely if hidden / mobile mode) ─────────────────
         if !hide_sidebar {
-            let sidebar_w = if icon_only { 44.0 } else { 220.0 };
+            let sidebar_w = if icon_only { 44.0 } else { 196.0 };
             egui::Panel::left("sidebar")
                 .exact_size(sidebar_w)
                 .resizable(false)
@@ -656,7 +655,7 @@ fn render_mobile_hamburger(
                     .fill(theme::Colors::DEEP_BG)
                     .stroke(egui::Stroke::new(0.5, theme::Colors::BORDER_MED))
                     .show(ui, |ui| {
-                        ui.set_min_width(220.0);
+                        ui.set_min_width(196.0);
                         let total_h = ctx.input(|i| i.viewport().outer_rect.map(|r| r.height()).unwrap_or_else(|| i.content_rect().height()));
                         ui.set_min_height(total_h - 36.0);
                         sidebar::render(ui, state, cmd_tx, false);

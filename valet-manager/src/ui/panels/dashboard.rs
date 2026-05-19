@@ -27,7 +27,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                 "PHP {} · {} · {} sites",
                 state.active_php,
                 state.valet_variant.as_ref().map(|v| v.display_name()).unwrap_or("Valet"),
-                state.site_count,
+                state.sites.len(),
             );
             ui.label(RichText::new(sub).size(12.0).color(Colors::TEXT_SECONDARY));
         });
@@ -199,7 +199,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
 
     ui.columns(4, |cols| {
         stat_card(&mut cols[0], "Active PHP",  &state.active_php, Colors::ACCENT);
-        stat_card(&mut cols[1], "Sites",        &state.site_count.to_string(), Colors::TEXT_PRIMARY);
+        stat_card(&mut cols[1], "Sites",        &state.sites.len().to_string(), Colors::TEXT_PRIMARY);
         stat_card(&mut cols[2], "Services",     &format!("{}/{}", running, total), svc_color);
         stat_card(&mut cols[3], "TLD",          &format!(".{}", state.tld), Colors::TEXT_PRIMARY);
     });

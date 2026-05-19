@@ -158,7 +158,6 @@ pub struct AppState {
     pub services: Vec<ManagedService>,
     pub cli_tools: Vec<String>,
     pub tld: String,
-    pub site_count: usize,
     // Phase 2
     pub extensions: Vec<PhpExtension>,
     pub ini_sections: Vec<IniSection>,
@@ -321,7 +320,6 @@ impl Default for AppState {
             services: Vec::new(),
             cli_tools: Vec::new(),
             tld: "test".to_string(),
-            site_count: 0,
             extensions: Vec::new(),
             ini_sections: Vec::new(),
             ini_raw: String::new(),
@@ -530,11 +528,6 @@ mod tests {
     #[test]
     fn default_tld_is_test() {
         assert_eq!(AppState::default().tld, "test");
-    }
-
-    #[test]
-    fn default_site_count_is_zero() {
-        assert_eq!(AppState::default().site_count, 0);
     }
 
     #[test]
