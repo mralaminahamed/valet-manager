@@ -134,6 +134,8 @@ pub enum AppEvent {
     VersionRegistryRefreshed(crate::version_registry::models::VersionRegistry),
     // M8 — Shell
     ShellOutput(String),
+    // M8 — Mailpit inbox
+    MailpitMessagesLoaded(Vec<crate::state::app_state::MailpitMessage>),
 }
 
 #[cfg(test)]

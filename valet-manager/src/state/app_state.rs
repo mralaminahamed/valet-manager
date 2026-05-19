@@ -5,6 +5,15 @@ use crate::services::monitor::ManagedService;
 use crate::valet::variant::{ValetPaths, ValetVariant};
 use crate::state::creator_state::CreatorState;
 
+#[derive(Debug, Clone, Default)]
+pub struct MailpitMessage {
+    pub id: String,
+    pub from: String,
+    pub subject: String,
+    pub received: String,
+    pub read: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum Screen {
     #[default]
@@ -260,6 +269,8 @@ pub struct AppState {
     pub shell_output: Vec<String>,
     pub shell_input: String,
     pub shell_site: Option<String>,
+    // M8 — Mailpit inbox
+    pub mailpit_messages: Vec<MailpitMessage>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -417,6 +428,8 @@ impl Default for AppState {
             shell_output: Vec::new(),
             shell_input: String::new(),
             shell_site: None,
+            // M8 — Mailpit inbox
+            mailpit_messages: Vec::new(),
         }
     }
 }

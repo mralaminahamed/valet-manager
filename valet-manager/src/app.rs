@@ -363,6 +363,10 @@ impl ValetManagerApp {
                         self.state.shell_output.remove(0);
                     }
                 }
+                // M8 — Mailpit inbox
+                AppEvent::MailpitMessagesLoaded(msgs) => {
+                    self.state.mailpit_messages = msgs;
+                }
             }
         }
     }
@@ -612,17 +616,7 @@ impl eframe::App for ValetManagerApp {
             crate::ui::windows::shell::render(&ctx, &mut self.state, &self.cmd_tx);
         }
         if self.state.ui.mailpit_open {
-            egui::Window::new("Mailpit Inbox")
-                .id(egui::Id::new("mailpit_window"))
-                .resizable(true)
-                .collapsible(false)
-                .default_size([680.0, 480.0])
-                .show(&ctx, |ui| {
-                    ui.label("Mailpit window — coming in M8");
-                    if ui.button("Close").clicked() {
-                        let _ = self.cmd_tx.try_send(AppCommand::CloseMailpitWindow);
-                    }
-                });
+            crate::ui::windows::mailpit::render(&ctx, &mut self.state, &self.cmd_tx);
         }
         if self.state.ui.pma_open {
             egui::Window::new("phpMyAdmin")
@@ -2707,7 +2701,29 @@ pub async fn run_dispatcher(
                 });
             }
             // M1 — Mailpit
-            AppCommand::RefreshMailpit => {}
+            AppCommand::RefreshMailpit => {
+                let event_tx_mp = tx.clone();
+                tokio::spawn(async move {
+                    if let Ok(resp) = reqwest::get("http://localhost:8025/api/v1/messages").await {
+                        if let Ok(json) = resp.json::<serde_json::Value>().await {
+                            let empty = vec![];
+                            let msgs: Vec<crate::state::app_state::MailpitMessage> = json["messages"]
+                                .as_array()
+                                .unwrap_or(&empty)
+                                .iter()
+                                .map(|m| crate::state::app_state::MailpitMessage {
+                                    id: m["ID"].as_str().unwrap_or("").to_string(),
+                                    from: m["From"]["Address"].as_str().unwrap_or("").to_string(),
+                                    subject: m["Subject"].as_str().unwrap_or("(no subject)").to_string(),
+                                    received: m["Created"].as_str().unwrap_or("").to_string(),
+                                    read: m["Read"].as_bool().unwrap_or(false),
+                                })
+                                .collect();
+                            let _ = event_tx_mp.send(AppEvent::MailpitMessagesLoaded(msgs)).await;
+                        }
+                    }
+                });
+            }
             // M5 — TLS
             AppCommand::TrustCa => {
                 let tx = tx.clone();
