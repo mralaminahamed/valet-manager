@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use egui::{Color32, Frame, Margin, RichText, Stroke};
 use tokio::sync::mpsc::Sender;
 

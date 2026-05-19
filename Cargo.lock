@@ -5460,6 +5460,7 @@ dependencies = [
  "flate2",
  "futures",
  "fuzzy-matcher",
+ "gtk",
  "handlebars",
  "nix",
  "notify",

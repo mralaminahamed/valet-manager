@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use egui::RichText;
 use tokio::sync::mpsc::Sender;
 

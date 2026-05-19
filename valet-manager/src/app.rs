@@ -9,10 +9,10 @@ use crate::php::{fpm_manager, extension_manager, ini_manager, switcher};
 use crate::php::types::IniType;
 use crate::services::monitor::ServiceStatus;
 use crate::state::app_state::{AppState, Panel};
-use crate::ui::{panels::{dashboard, php_versions, php_extensions, php_ini}, sidebar, theme};
+use crate::ui::{sidebar, theme};
 use crate::valet::{config_reader, site_scanner, watcher, variant};
 use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, parks, nginx, app_creator, proxies, dnsmasq, sharing, logs, diagnostics, settings, onboarding, phpinfo, compat, history, env_editor, artisan as artisan_panel, database as database_panel, ssl_certs, xdebug as xdebug_panel, mail_catcher, queue as queue_panel, site_config as site_config_panel};
+use crate::ui::panels::{sites, logs, settings, onboarding};
 use crate::ui::command_palette;
 use crate::ui::components::toast::{self, ToastType};
 
@@ -683,53 +683,6 @@ fn render_mobile_hamburger(
     }
 }
 
-fn stub_panel(ui: &mut egui::Ui, panel: &Panel) {
-    ui.add_space(40.0);
-    ui.vertical_centered(|ui| {
-        ui.label(
-            egui::RichText::new(format!("{:?}", panel))
-                .size(14.0)
-                .color(theme::Colors::TEXT_SECONDARY),
-        );
-        ui.add_space(8.0);
-        ui.label(
-            egui::RichText::new("Coming in a future phase")
-                .size(12.0)
-                .color(theme::Colors::TEXT_TERTIARY),
-        );
-    });
-}
-
-fn panel_display_name(panel: &Panel) -> &'static str {
-    match panel {
-        Panel::Dashboard     => "Dashboard",
-        Panel::PhpVersions   => "PHP Versions",
-        Panel::PhpExtensions => "PHP Extensions",
-        Panel::PhpIni        => "PHP INI",
-        Panel::Sites         => "Sites",
-        Panel::Parks         => "Parks",
-        Panel::Nginx         => "Nginx",
-        Panel::Settings      => "Settings",
-        Panel::PhpInfo       => "phpinfo()",
-        Panel::PhpCompat     => "PHP Compat",
-        Panel::Proxies       => "Proxies",
-        Panel::Dnsmasq       => "DNS",
-        Panel::SslCerts      => "SSL Certs",
-        Panel::Database      => "Database",
-        Panel::EnvEditor     => ".env Editor",
-        Panel::Artisan       => "Artisan",
-        Panel::QueueWorkers  => "Queue Workers",
-        Panel::Xdebug        => "Xdebug",
-        Panel::MailCatcher   => "Mailpit",
-        Panel::Sharing       => "Sharing",
-        Panel::Drivers       => "Drivers",
-        Panel::Logs          => "Logs",
-        Panel::History       => "History",
-        Panel::Diagnostics   => "Diagnostics",
-        Panel::AppCreator    => "App Creator",
-        Panel::SiteConfig    => "Site Config",
-    }
-}
 
 fn screen_display_name(screen: &crate::state::app_state::Screen) -> &'static str {
     use crate::state::app_state::Screen;

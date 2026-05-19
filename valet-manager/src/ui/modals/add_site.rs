@@ -2,7 +2,7 @@ use egui::{Color32, CornerRadius, Frame, Margin, RichText, Stroke};
 use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
-use crate::state::app_state::{AddSiteFormState, AddSiteTab, AppState};
+use crate::state::app_state::{AddSiteTab, AppState};
 use crate::ui::theme::{Colors, accent_button, ghost_button, with_alpha};
 
 pub fn render(ctx: &egui::Context, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
@@ -11,8 +11,7 @@ pub fn render(ctx: &egui::Context, state: &mut AppState, cmd_tx: &Sender<AppComm
     }
 
     // Dim background overlay
-    let screen = ctx.input(|i| i.screen_rect());
-    let screen = ctx.screen_rect();
+    let screen = ctx.input(|i| i.viewport().outer_rect.unwrap_or(i.content_rect()));
     ctx.layer_painter(egui::LayerId::new(egui::Order::Background, egui::Id::new("modal_dim")))
         .rect_filled(screen, egui::CornerRadius::ZERO, egui::Color32::from_black_alpha(120));
 
@@ -92,7 +91,6 @@ fn modal_tab(ui: &mut egui::Ui, label: &str, tab: AddSiteTab, state: &mut AppSta
     let color = if is_active { Colors::ACCENT } else { Colors::TEXT_SECONDARY };
     let (rect, resp) = ui.allocate_exact_size(
         egui::vec2(label.chars().count() as f32 * 7.0 + 20.0, 30.0),
-        egui::vec2(label.len() as f32 * 7.0 + 20.0, 30.0),
         egui::Sense::click(),
     );
     if ui.is_rect_visible(rect) {
@@ -464,6 +462,7 @@ fn submit_modal(state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state::app_state::AddSiteFormState;
 
     #[test]
     fn db_name_from_domain() {

@@ -9,6 +9,7 @@ pub enum ServiceStatus {
 }
 
 impl ServiceStatus {
+    #[allow(dead_code)]
     pub fn label(&self) -> &str {
         match self {
             ServiceStatus::Running => "Running",
@@ -32,6 +33,7 @@ pub struct ManagedService {
     pub unread_count: Option<u32>,
 }
 
+#[allow(dead_code)]
 pub fn pid_for_service(name: &str) -> Option<u32> {
     let out = std::process::Command::new("systemctl")
         .args(["--user", "show", "--property=MainPID", "--value", name])

@@ -105,6 +105,10 @@ fn main() -> eframe::Result {
         }
     });
 
+    // ── GTK init required by tray-icon on Linux (must happen before build_tray) ──
+    #[cfg(target_os = "linux")]
+    gtk::init().ok();
+
     // ── System tray (Linux: needs DISPLAY/WAYLAND_DISPLAY; gracefully no-op otherwise) ──
     let (tray_tx, mut tray_rx) = mpsc::channel::<tray::TrayEvent>(8);
     let _tray = if std::env::var("DISPLAY").is_ok() || std::env::var("WAYLAND_DISPLAY").is_ok() {

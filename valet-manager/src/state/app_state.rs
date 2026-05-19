@@ -6,6 +6,7 @@ use crate::valet::variant::{ValetPaths, ValetVariant};
 use crate::state::creator_state::CreatorState;
 
 #[derive(Debug, Clone, Default)]
+#[allow(dead_code)]
 pub struct MailpitMessage {
     pub id: String,
     pub from: String,
@@ -25,6 +26,7 @@ pub enum Screen {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
+#[allow(dead_code)]
 pub enum Panel {
     #[default]
     Dashboard,
