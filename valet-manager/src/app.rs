@@ -2603,8 +2603,11 @@ pub async fn run_dispatcher(
                         Ok(out) => {
                             let stdout = String::from_utf8_lossy(&out.stdout);
                             let stderr = String::from_utf8_lossy(&out.stderr);
-                            for line in stdout.lines().chain(stderr.lines()) {
+                            for line in stdout.lines() {
                                 let _ = event_tx_sh.send(AppEvent::ShellOutput(line.to_string())).await;
+                            }
+                            for line in stderr.lines() {
+                                let _ = event_tx_sh.send(AppEvent::ShellOutput(format!("[err] {}", line))).await;
                             }
                         }
                         Err(e) => {

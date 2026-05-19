@@ -54,10 +54,15 @@ fn render_shell_body(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<Ap
         .stick_to_bottom(true)
         .show(ui, |ui| {
             for line in &state.shell_output {
+                let (display, color) = if let Some(rest) = line.strip_prefix("[err] ") {
+                    (rest, Colors::WARNING)
+                } else {
+                    (line.as_str(), Colors::TEXT_SECONDARY)
+                };
                 ui.label(
-                    RichText::new(line)
+                    RichText::new(display)
                         .size(12.0)
-                        .color(Colors::TEXT_SECONDARY)
+                        .color(color)
                         .text_style(egui::TextStyle::Monospace),
                 );
             }

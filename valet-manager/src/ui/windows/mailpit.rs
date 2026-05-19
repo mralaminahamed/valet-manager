@@ -83,6 +83,15 @@ fn render_mailpit_body(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppC
                 })
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
+                        // Unread dot or spacer
+                        let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(12.0, 16.0), egui::Sense::hover());
+                        if !msg.read {
+                            ui.painter().circle_filled(
+                                egui::pos2(dot_rect.center().x, dot_rect.center().y),
+                                3.5,
+                                Colors::ACCENT,
+                            );
+                        }
                         ui.vertical(|ui| {
                             ui.label(
                                 RichText::new(&msg.subject)

@@ -27,7 +27,7 @@ pub fn render(ctx: &egui::Context, state: &mut AppState, cmd_tx: &Sender<AppComm
     }
 }
 
-fn render_pma_body(ui: &mut egui::Ui, state: &AppState, _cmd_tx: &Sender<AppCommand>) {
+fn render_pma_body(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
     // Header row
     ui.horizontal(|ui| {
         ui.label(
@@ -37,7 +37,7 @@ fn render_pma_body(ui: &mut egui::Ui, state: &AppState, _cmd_tx: &Sender<AppComm
                 .strong(),
         );
         ui.label(
-            RichText::new("· port :80")
+            RichText::new("· port :8082")
                 .size(11.0)
                 .color(Colors::TEXT_TERTIARY),
         );
@@ -103,7 +103,7 @@ fn render_pma_body(ui: &mut egui::Ui, state: &AppState, _cmd_tx: &Sender<AppComm
         ui.add_space(8.0);
 
         ui.label(
-            RichText::new("Per-site access")
+            RichText::new("Per-site scoped access")
                 .size(11.5)
                 .color(Colors::TEXT_SECONDARY),
         );
@@ -139,11 +139,11 @@ fn render_pma_body(ui: &mut egui::Ui, state: &AppState, _cmd_tx: &Sender<AppComm
                             ui.with_layout(
                                 egui::Layout::right_to_left(egui::Align::Center),
                                 |ui| {
-                                    let url = site_status.access_url.clone();
                                     if ghost_button(ui, "↗ Open scoped").clicked() {
-                                        let _ = std::process::Command::new("xdg-open")
-                                            .arg(&url)
-                                            .spawn();
+                                        let _ = cmd_tx.try_send(AppCommand::OpenPhpMyAdmin {
+                                            site: site_name.clone(),
+                                            scope: crate::site_config::models::PmaDbScope::SiteOnly,
+                                        });
                                     }
                                 },
                             );
