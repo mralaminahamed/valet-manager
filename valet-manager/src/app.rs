@@ -404,7 +404,7 @@ impl eframe::App for ValetManagerApp {
 
         // ── Titlebar ─────────────────────────────────────────────────────
         egui::Panel::top("titlebar")
-            .exact_size(38.0)
+            .exact_size(36.0)
             .frame(
                 egui::Frame::NONE
                     .fill(theme::Colors::DEEP_BG)
@@ -422,45 +422,27 @@ impl eframe::App for ValetManagerApp {
                 }
 
                 ui.horizontal_centered(|ui| {
-                    // ── LEFT: GNOME-style window control buttons ──────────
+                    // ── LEFT: Traffic-light window control buttons ──────────
                     ui.add_space(10.0);
 
-                    let btn_size = egui::vec2(22.0, 22.0);
-                    let btn_defs: &[(egui::Color32, egui::Color32, &str)] = &[
-                        (theme::Colors::CARD, theme::Colors::TEXT_SECONDARY, "—"),
-                        (theme::Colors::CARD, theme::Colors::TEXT_SECONDARY, "⬜"),
-                        (theme::Colors::CLOSE_BTN_BG, theme::Colors::DANGER, "✕"),
+                    let traffic_colors = [
+                        egui::Color32::from_rgb(0xE2, 0x4B, 0x4A), // close — red
+                        egui::Color32::from_rgb(0xEF, 0x9F, 0x27), // minimize — amber
+                        egui::Color32::from_rgb(0x5D, 0xCA, 0xA5), // maximize — teal
                     ];
-
                     let mut close_clicked = false;
-                    for (idx, (bg, icon_color, icon)) in btn_defs.iter().enumerate() {
-                        let (rect, resp) = ui.allocate_exact_size(btn_size, egui::Sense::click());
+                    for (idx, color) in traffic_colors.iter().enumerate() {
+                        let (rect, resp) = ui.allocate_exact_size(egui::vec2(14.0, 14.0), egui::Sense::click());
                         if ui.is_rect_visible(rect) {
-                            let painter = ui.painter();
-                            let center = rect.center();
-                            let radius = 11.0_f32;
-                            painter.circle(
-                                center,
-                                radius,
-                                *bg,
-                                egui::Stroke::new(0.5, theme::Colors::BORDER_MED),
-                            );
-                            painter.text(
-                                center,
-                                egui::Align2::CENTER_CENTER,
-                                *icon,
-                                egui::FontId::proportional(10.0),
-                                *icon_color,
-                            );
+                            ui.painter().circle_filled(rect.center(), 7.0, *color);
                         }
-                        if idx == 2 && resp.clicked() {
+                        if idx == 0 && resp.clicked() {
                             close_clicked = true;
                         }
-                        if idx < btn_defs.len() - 1 {
-                            ui.add_space(8.0);
+                        if idx < traffic_colors.len() - 1 {
+                            ui.add_space(4.0);
                         }
                     }
-
                     if close_clicked {
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
@@ -668,7 +650,7 @@ fn render_mobile_hamburger(
     if state.ui.mobile_sidebar_open {
         egui::Area::new(egui::Id::new("mobile_sidebar_overlay"))
             .order(egui::Order::Tooltip)
-            .anchor(egui::Align2::LEFT_TOP, egui::vec2(0.0, 38.0))
+            .anchor(egui::Align2::LEFT_TOP, egui::vec2(0.0, 36.0))
             .show(ctx, |ui| {
                 egui::Frame::NONE
                     .fill(theme::Colors::DEEP_BG)
@@ -676,7 +658,7 @@ fn render_mobile_hamburger(
                     .show(ui, |ui| {
                         ui.set_min_width(220.0);
                         let total_h = ctx.input(|i| i.viewport().outer_rect.map(|r| r.height()).unwrap_or_else(|| i.content_rect().height()));
-                        ui.set_min_height(total_h - 38.0);
+                        ui.set_min_height(total_h - 36.0);
                         sidebar::render(ui, state, cmd_tx, false);
                     });
             });
