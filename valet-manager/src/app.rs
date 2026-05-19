@@ -29,6 +29,7 @@ impl ValetManagerApp {
         event_rx: mpsc::Receiver<AppEvent>,
     ) -> Self {
         theme::apply_dark(&cc.egui_ctx);
+        load_symbol_fonts(&cc.egui_ctx);
         Self { state: AppState::default(), cmd_tx, event_rx }
     }
 
@@ -2710,4 +2711,33 @@ async fn initial_detection(tx: mpsc::Sender<AppEvent>, _state: Arc<RwLock<AppSta
     if let Ok(versions) = detector::detect_installed_versions().await {
         let _ = tx.send(AppEvent::PhpVersionsRefreshed(versions)).await;
     }
+}
+
+fn load_symbol_fonts(ctx: &egui::Context) {
+    let mut fonts = egui::FontDefinitions::default();
+
+    // NotoSansSymbols2 covers the Unicode Miscellaneous Symbols / Technical blocks
+    // used for nav icons (◈ ◻ ≡ ⬡ ⚙ ✚ ⌨ ⊟ ✉ etc.)
+    let symbol_paths = [
+        "/usr/share/fonts/truetype/noto/NotoSansSymbols2-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansSymbols-Regular.ttf",
+    ];
+    for path in &symbol_paths {
+        if let Ok(data) = std::fs::read(path) {
+            fonts.font_data.insert(
+                "NotoSansSymbols2".to_owned(),
+                egui::FontData::from_owned(data).into(),
+            );
+            // Add as last-resort fallback for both proportional and monospace families.
+            fonts.families.entry(egui::FontFamily::Proportional)
+                .or_default()
+                .push("NotoSansSymbols2".to_owned());
+            fonts.families.entry(egui::FontFamily::Monospace)
+                .or_default()
+                .push("NotoSansSymbols2".to_owned());
+            break;
+        }
+    }
+
+    ctx.set_fonts(fonts);
 }
