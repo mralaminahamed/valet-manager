@@ -123,7 +123,10 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>, 
                 let health = if all_running { "All services healthy" } else { "Some services stopped" };
                 ui.label(RichText::new(health).size(11.5).color(Colors::TEXT_PRIMARY).strong());
                 ui.label(
-                    RichText::new(format!("valet · {} sites", state.sites.len()))
+                    RichText::new(match &state.valet_uptime {
+                        Some(up) => format!("valet · uptime {}", up),
+                        None     => format!("valet · {} sites", state.sites.len()),
+                    })
                         .size(10.5)
                         .color(Colors::TEXT_TERTIARY),
                 );

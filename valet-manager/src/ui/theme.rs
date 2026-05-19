@@ -27,6 +27,7 @@ impl Colors {
     #[allow(dead_code)]
     pub const PURPLE:         Color32 = Color32::from_rgb(0x9B, 0x5F, 0xF5);
     // Close button danger tint: rgba(226,75,74,0.18) = premultiplied ~(41,14,13,46)
+    #[allow(dead_code)]
     pub const CLOSE_BTN_BG:   Color32 = Color32::from_rgba_premultiplied(41, 14, 13, 46);
 }
 

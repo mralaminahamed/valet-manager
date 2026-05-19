@@ -50,6 +50,7 @@ fn framework_docs_url(fw: &DetectedFramework) -> &'static str {
 }
 
 // ── Column widths ────────────────────────────────────────────────────────────
+const COL_FAV:       f32 = 26.0;
 const COL_DOT:       f32 = 28.0;
 const COL_FRAMEWORK: f32 = 110.0;
 const COL_PHP:       f32 = 70.0;
@@ -160,6 +161,13 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
             .color(Colors::TEXT_TERTIARY)
     };
 
+    // ★ header (first column)
+    child.allocate_ui(egui::vec2(COL_FAV, HEADER_HEIGHT), |ui| {
+        ui.centered_and_justified(|ui| {
+            ui.label(RichText::new("★").size(10.0).color(Colors::TEXT_TERTIARY));
+        });
+    });
+
     // dot column — empty
     child.allocate_ui(egui::vec2(COL_DOT, HEADER_HEIGHT), |_| {});
 
@@ -238,6 +246,19 @@ fn render_site_row(
             .max_rect(row_rect)
             .layout(egui::Layout::left_to_right(egui::Align::Center)),
     );
+
+    // ── Col 0: Favorite star (26px) ─────────────────────────────────────
+    row_cell(&mut child, COL_FAV, ROW_HEIGHT, |ui| {
+        let star  = if site.is_favorite { "★" } else { "☆" };
+        let color = if site.is_favorite { Colors::WARNING } else { Colors::TEXT_TERTIARY };
+        let resp  = ui.add(
+            egui::Label::new(RichText::new(star).size(13.0).color(color))
+                .sense(egui::Sense::click()),
+        );
+        if resp.clicked() {
+            let _ = cmd_tx.try_send(AppCommand::ToggleFavoriteSite(site.name.clone()));
+        }
+    });
 
     // ── Col 1: Status dot (28px) ─────────────────────────────────────────
     row_cell(&mut child, COL_DOT, ROW_HEIGHT, |ui| {
@@ -510,6 +531,18 @@ mod tests {
     }
 
     #[test]
+    fn favorites_sort_before_non_favorites() {
+        // favorites must appear before non-favorites after sort
+        let fav = true;
+        let non_fav = false;
+        // b.is_favorite.cmp(&a.is_favorite) sorts true before false
+        use std::cmp::Ordering;
+        assert_eq!(fav.cmp(&non_fav), Ordering::Greater);
+        // reversed (b vs a) puts favorites first
+        assert_eq!(non_fav.cmp(&fav), Ordering::Less);
+    }
+
+    #[test]
     fn status_color_varies_by_status() {
         use crate::valet::site_scanner::SiteStatus;
         assert_ne!(status_color(&SiteStatus::Running), status_color(&SiteStatus::Failed));
@@ -579,7 +612,9 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             status_ok && search_ok
         })
         .collect();
-    filtered.sort_by(|a, b| a.name.cmp(&b.name));
+    filtered.sort_by(|a, b| {
+        b.is_favorite.cmp(&a.is_favorite).then(a.name.cmp(&b.name))
+    });
 
     // ── Stat strip ───────────────────────────────────────────────────────
     ui.horizontal(|ui| {
@@ -658,7 +693,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         let table_width = ui.available_width() - 22.0;
 
         // flex_width = total - fixed columns
-        let fixed = COL_DOT + COL_FRAMEWORK + COL_PHP + COL_TLS + COL_LASTHIT + COL_ACTION;
+        let fixed = COL_FAV + COL_DOT + COL_FRAMEWORK + COL_PHP + COL_TLS + COL_LASTHIT + COL_ACTION;
         let flex_width = (table_width - fixed).max(120.0);
 
         Frame::NONE

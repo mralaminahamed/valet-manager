@@ -272,6 +272,8 @@ pub struct AppState {
     pub shell_site: Option<String>,
     // M8 — Mailpit inbox
     pub mailpit_messages: Vec<MailpitMessage>,
+    // Sidebar footer
+    pub valet_uptime: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -430,6 +432,8 @@ impl Default for AppState {
             shell_site: None,
             // M8 — Mailpit inbox
             mailpit_messages: Vec::new(),
+            // Sidebar footer
+            valet_uptime: None,
         }
     }
 }
