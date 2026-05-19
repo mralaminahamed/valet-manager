@@ -11,6 +11,16 @@ use crate::ui::theme::{
 };
 use crate::valet::site_scanner::ValetSite;
 
+fn status_color(status: &crate::valet::site_scanner::SiteStatus) -> egui::Color32 {
+    use crate::valet::site_scanner::SiteStatus;
+    match status {
+        SiteStatus::Running => Colors::ACCENT,
+        SiteStatus::Failed  => Colors::DANGER,
+        SiteStatus::Stopped => Colors::TEXT_TERTIARY,
+        SiteStatus::Unknown => Colors::WARNING,
+    }
+}
+
 /// Doc URL for each framework — used by the "Open framework docs" context menu.
 #[allow(dead_code)]
 fn framework_docs_url(fw: &DetectedFramework) -> &'static str {
@@ -232,7 +242,7 @@ fn render_site_row(
     // ── Col 1: Status dot (28px) ─────────────────────────────────────────
     row_cell(&mut child, COL_DOT, ROW_HEIGHT, |ui| {
         ui.add_space(10.0);
-        let dot_color = Colors::ACCENT; // all valet sites are "running"
+        let dot_color = status_color(&site.status);
         let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
         ui.painter().circle_filled(dot_rect.center(), 4.0, dot_color);
     });
@@ -244,12 +254,22 @@ fn render_site_row(
                 // Domain line
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 4.0;
-                    ui.label(
-                        RichText::new(&site.domain)
-                            .size(12.5)
-                            .strong()
-                            .color(Colors::TEXT_PRIMARY),
+                    let domain_resp = ui.add(
+                        egui::Label::new(
+                            RichText::new(&site.domain)
+                                .size(12.5)
+                                .strong()
+                                .color(Colors::ACCENT),
+                        )
+                        .sense(egui::Sense::click()),
                     );
+                    if domain_resp.clicked() {
+                        let url = format!("https://{}", site.domain);
+                        let _ = std::process::Command::new("xdg-open").arg(&url).spawn();
+                    }
+                    if domain_resp.hovered() {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                    }
                     if site.is_secured {
                         ui.label(
                             RichText::new("🔒")
@@ -304,18 +324,14 @@ fn render_site_row(
     // ── Col 5: TLS (60px) ────────────────────────────────────────────────
     row_cell(&mut child, COL_TLS, ROW_HEIGHT, |ui| {
         if site.is_secured {
-            ui.label(
-                RichText::new("TLS")
-                    .size(11.0)
-                    .strong()
-                    .color(Colors::ACCENT),
-            );
+            let tls_color = match site.tls_expiry_days {
+                Some(d) if d < 7   => Colors::DANGER,
+                Some(d) if d < 30  => Colors::WARNING,
+                _                  => Colors::ACCENT,
+            };
+            ui.label(RichText::new("🔒").size(12.0).color(tls_color));
         } else {
-            ui.label(
-                RichText::new("—")
-                    .size(11.0)
-                    .color(Colors::TEXT_TERTIARY),
-            );
+            ui.label(RichText::new("—").size(11.0).color(Colors::TEXT_TERTIARY));
         }
     });
 
@@ -433,6 +449,7 @@ mod tests {
             php_version: None,
             is_secured: secured,
             ssl_expiry: None,
+            tls_expiry_days: None,
             is_favorite: false,
             status,
             last_hit: None,
@@ -491,6 +508,24 @@ mod tests {
         let text = site.last_hit.as_deref().unwrap_or("—");
         assert_eq!(text, "—");
     }
+
+    #[test]
+    fn status_color_varies_by_status() {
+        use crate::valet::site_scanner::SiteStatus;
+        assert_ne!(status_color(&SiteStatus::Running), status_color(&SiteStatus::Failed));
+        assert_ne!(status_color(&SiteStatus::Running), status_color(&SiteStatus::Stopped));
+    }
+
+    #[test]
+    fn tls_color_danger_under_7_days() {
+        use crate::ui::theme::Colors;
+        let color = match Some(3u32) {
+            Some(d) if d < 7  => Colors::DANGER,
+            Some(d) if d < 30 => Colors::WARNING,
+            _                 => Colors::ACCENT,
+        };
+        assert_eq!(color, Colors::DANGER);
+    }
 }
 
 // ── Public entry point ───────────────────────────────────────────────────────
@@ -513,6 +548,9 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             if ghost_button(ui, "Refresh").clicked() {
                 let _ = cmd_tx.try_send(AppCommand::RefreshSites);
             }
+            if accent_button(ui, "+ Link site").clicked() {
+                let _ = cmd_tx.try_send(AppCommand::OpenAddSiteModal);
+            }
         });
     });
     divider(ui);
@@ -524,8 +562,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
     use crate::state::app_state::SiteStatusFilter;
     use crate::valet::site_scanner::SiteStatus;
 
-    let search_query  = state.site_search.clone();
-    let search_lower  = search_query.to_lowercase();
+    let search_lower  = state.site_search.to_lowercase();
     let mut filtered: Vec<&ValetSite> = state
         .sites
         .iter()
@@ -590,7 +627,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         let avail = ui.available_width() - 22.0;
         ui.add_sized(
             egui::vec2(avail, 28.0),
-            egui::TextEdit::singleline(&mut search_query.clone())
+            egui::TextEdit::singleline(&mut state.site_search)
                 .hint_text("Search sites…")
                 .text_color(Colors::TEXT_PRIMARY),
         );
@@ -607,8 +644,8 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                     .color(Colors::TEXT_SECONDARY),
             );
             ui.add_space(12.0);
-            if accent_button(ui, "Refresh").clicked() {
-                let _ = cmd_tx.try_send(AppCommand::RefreshSites);
+            if accent_button(ui, "Link a site").clicked() {
+                let _ = cmd_tx.try_send(AppCommand::OpenAddSiteModal);
             }
         });
         return;

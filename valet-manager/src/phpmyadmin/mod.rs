@@ -340,6 +340,7 @@ mod tests {
             is_secured: false,
             is_favorite: false,
             ssl_expiry: None,
+            tls_expiry_days: None,
             status: crate::valet::site_scanner::SiteStatus::Unknown,
             last_hit: None,
             proxy_target: None,

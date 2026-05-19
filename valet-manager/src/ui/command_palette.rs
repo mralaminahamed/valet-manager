@@ -528,6 +528,7 @@ mod tests {
             php_version: None,
             is_secured: false,
             ssl_expiry: None,
+            tls_expiry_days: None,
             is_favorite: false,
             status: crate::valet::site_scanner::SiteStatus::Unknown,
             last_hit: None,
