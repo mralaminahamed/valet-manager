@@ -37,7 +37,7 @@ fn render_modal(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComm
         });
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button(RichText::new("✕").size(14.0).color(Colors::TEXT_TERTIARY)).clicked() {
-                let _ = cmd_tx.try_send(AppCommand::CloseAddSiteModal);
+                state.ui.add_site_modal_open = false;
             }
         });
     });
@@ -80,7 +80,7 @@ fn render_modal(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComm
             }
             ui.add_space(6.0);
             if ghost_button(ui, "Cancel").clicked() {
-                let _ = cmd_tx.try_send(AppCommand::CloseAddSiteModal);
+                state.ui.add_site_modal_open = false;
             }
         });
     });
@@ -445,7 +445,7 @@ fn submit_modal(state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
             let _ = cmd_tx.try_send(AppCommand::ParkDirectory(path));
         }
         AddSiteTab::Create => {
-            let _ = cmd_tx.try_send(AppCommand::OpenScreen(crate::state::app_state::Screen::Sites));
+            state.ui.active_screen = crate::state::app_state::Screen::Sites;
         }
         AddSiteTab::Proxy => {
             let f = &state.ui.add_site_form;
@@ -456,7 +456,7 @@ fn submit_modal(state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
             });
         }
     }
-    let _ = cmd_tx.try_send(AppCommand::CloseAddSiteModal);
+    state.ui.add_site_modal_open = false;
 }
 
 #[cfg(test)]

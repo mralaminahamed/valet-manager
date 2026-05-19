@@ -22,9 +22,7 @@ pub fn render(ctx: &egui::Context, state: &mut AppState, cmd_tx: &Sender<AppComm
             render_pma_body(ui, state, cmd_tx);
         });
 
-    if !open {
-        let _ = cmd_tx.try_send(AppCommand::ClosePmaWindow);
-    }
+    state.ui.pma_open = open;
 }
 
 fn render_pma_body(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {

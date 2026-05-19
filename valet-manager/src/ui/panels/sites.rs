@@ -582,7 +582,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 let _ = cmd_tx.try_send(AppCommand::RefreshSites);
             }
             if accent_button(ui, "+ Link site").clicked() {
-                let _ = cmd_tx.try_send(AppCommand::OpenAddSiteModal);
+                state.ui.add_site_modal_open = true;
             }
         });
     });
@@ -680,7 +680,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             );
             ui.add_space(12.0);
             if accent_button(ui, "Link a site").clicked() {
-                let _ = cmd_tx.try_send(AppCommand::OpenAddSiteModal);
+                state.ui.add_site_modal_open = true;
             }
         });
         return;

@@ -22,9 +22,7 @@ pub fn render(ctx: &egui::Context, state: &mut AppState, cmd_tx: &Sender<AppComm
             render_shell_body(ui, state, cmd_tx);
         });
 
-    if !open {
-        let _ = cmd_tx.try_send(AppCommand::CloseShellWindow);
-    }
+    state.ui.shell_open = open;
 }
 
 fn render_shell_body(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {

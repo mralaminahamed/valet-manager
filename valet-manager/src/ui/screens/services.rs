@@ -9,7 +9,7 @@ use crate::ui::theme::{
     status_color, with_alpha,
 };
 
-pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
+pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     // ── Header ────────────────────────────────────────────────────────
     ui.horizontal(|ui| {
         ui.set_min_height(44.0);
@@ -82,7 +82,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
     for chunk in services.chunks(2) {
         ui.columns(chunk.len(), |cols| {
             for (col, svc) in cols.iter_mut().zip(chunk.iter()) {
-                service_card(col, svc, cmd_tx);
+                service_card(col, svc, cmd_tx, &mut state.ui.active_screen);
             }
         });
         ui.add_space(6.0);
@@ -115,7 +115,7 @@ fn stat_card(ui: &mut egui::Ui, icon: &str, value: &str, label: &str) {
         });
 }
 
-fn service_card(ui: &mut egui::Ui, svc: &ManagedService, cmd_tx: &Sender<AppCommand>) {
+fn service_card(ui: &mut egui::Ui, svc: &ManagedService, cmd_tx: &Sender<AppCommand>, active_screen: &mut crate::state::app_state::Screen) {
     card_frame().show(ui, |ui| {
         let rect = ui.max_rect();
         ui.painter().line_segment(
@@ -188,7 +188,7 @@ fn service_card(ui: &mut egui::Ui, svc: &ManagedService, cmd_tx: &Sender<AppComm
             });
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ghost_button(ui, "≡ Logs").clicked() {
-                    let _ = cmd_tx.try_send(AppCommand::OpenScreen(crate::state::app_state::Screen::Logs));
+                    *active_screen = crate::state::app_state::Screen::Logs;
                 }
             });
         });

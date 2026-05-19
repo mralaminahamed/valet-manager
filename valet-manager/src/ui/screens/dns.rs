@@ -5,7 +5,7 @@ use crate::commands::AppCommand;
 use crate::state::app_state::AppState;
 use crate::ui::theme::{Colors, accent_button, divider, ghost_button};
 
-pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
+pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     // ── Header ────────────────────────────────────────────────────────
     ui.horizontal(|ui| {
         ui.set_min_height(44.0);
@@ -18,7 +18,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             ui.add_space(8.0);
             if accent_button(ui, "+ Add proxy").clicked() {
-                let _ = cmd_tx.try_send(AppCommand::OpenAddSiteModal);
+                state.ui.add_site_modal_open = true;
             }
             ui.add_space(6.0);
             if ghost_button(ui, "↺ Flush DNS").clicked() {
@@ -74,7 +74,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         }
         ui.add_space(4.0);
         if ghost_button(ui, "+ Park new directory").clicked() {
-            let _ = cmd_tx.try_send(AppCommand::OpenAddSiteModal);
+            state.ui.add_site_modal_open = true;
         }
     });
     ui.add_space(8.0);
@@ -104,7 +104,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         }
         ui.add_space(4.0);
         if ghost_button(ui, "+ Add proxy").clicked() {
-            let _ = cmd_tx.try_send(AppCommand::OpenAddSiteModal);
+            state.ui.add_site_modal_open = true;
         }
     });
     ui.add_space(8.0);
@@ -129,7 +129,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         }
         ui.add_space(4.0);
         if ghost_button(ui, "+ Add alias").clicked() {
-            let _ = cmd_tx.try_send(AppCommand::OpenAddSiteModal);
+            state.ui.add_site_modal_open = true;
         }
     });
 }
