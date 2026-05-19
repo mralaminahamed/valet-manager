@@ -619,17 +619,7 @@ impl eframe::App for ValetManagerApp {
             crate::ui::windows::mailpit::render(&ctx, &mut self.state, &self.cmd_tx);
         }
         if self.state.ui.pma_open {
-            egui::Window::new("phpMyAdmin")
-                .id(egui::Id::new("pma_window"))
-                .resizable(true)
-                .collapsible(false)
-                .default_size([680.0, 480.0])
-                .show(&ctx, |ui| {
-                    ui.label("phpMyAdmin window — coming in M8");
-                    if ui.button("Close").clicked() {
-                        let _ = self.cmd_tx.try_send(AppCommand::ClosePmaWindow);
-                    }
-                });
+            crate::ui::windows::pma::render(&ctx, &mut self.state, &self.cmd_tx);
         }
 
         // ── Mobile hamburger overlay ─────────────────────────────────────
