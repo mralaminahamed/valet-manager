@@ -29,7 +29,7 @@ The following is implemented in the source code:
 
 ## Platform
 
-Linux only. Several dependencies are declared for Linux targets only but are used unconditionally, so the workspace does not build on macOS.
+Linux only. The application depends on systemd, `pkexec` and `xdg-open`, and the tray uses GTK. The workspace type-checks and its tests pass on macOS (checked locally with `cargo check`, `cargo clippy` and `cargo test`), but the application is not intended to run there. A Linux build has not been verified.
 
 ## Build and test
 
@@ -42,7 +42,7 @@ cargo clippy --workspace -- -D warnings
 cargo fmt --all --check
 ```
 
-These commands were not run on Linux while preparing this README. The formatting check passes on the current tree.
+These commands were not run on Linux while preparing this README. On macOS, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` pass.
 
 ## Layout
 
