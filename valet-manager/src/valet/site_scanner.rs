@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
+use crate::ui::DetectedFramework;
+use chrono::NaiveDate;
 use std::fs;
 use std::path::{Path, PathBuf};
-use chrono::NaiveDate;
-use crate::ui::DetectedFramework;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum SiteStatus {
@@ -19,7 +19,7 @@ impl SiteStatus {
         match self {
             SiteStatus::Running => "Running",
             SiteStatus::Stopped => "Stopped",
-            SiteStatus::Failed  => "Failed",
+            SiteStatus::Failed => "Failed",
             SiteStatus::Unknown => "Unknown",
         }
     }
@@ -110,14 +110,11 @@ pub fn detect_framework(path: &Path) -> DetectedFramework {
     }
 
     // Priority 5: CMS platforms
-    if path.join("web/core/lib/Drupal.php").exists()
-        || path.join("core/lib/Drupal.php").exists()
-    {
+    if path.join("web/core/lib/Drupal.php").exists() || path.join("core/lib/Drupal.php").exists() {
         return DetectedFramework::Drupal;
     }
     if path.join("administrator").is_dir()
-        && (path.join("includes/defines.php").exists()
-            || path.join("configuration.php").exists())
+        && (path.join("includes/defines.php").exists() || path.join("configuration.php").exists())
     {
         return DetectedFramework::Joomla;
     }
@@ -172,15 +169,22 @@ pub async fn scan_all(
     // 1. Scan parked directories (from valet_config.paths)
     for park_path in &valet_config.paths {
         let park = Path::new(park_path);
-        let Ok(entries) = std::fs::read_dir(park) else { continue };
+        let Ok(entries) = std::fs::read_dir(park) else {
+            continue;
+        };
         for entry in entries.filter_map(|e| e.ok()) {
             let path = entry.path();
-            if !path.is_dir() { continue }
-            let name = path.file_name()
+            if !path.is_dir() {
+                continue;
+            }
+            let name = path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("")
                 .to_string();
-            if name.starts_with('.') { continue }
+            if name.starts_with('.') {
+                continue;
+            }
             let framework = detect_framework(&path);
             let php_version = read_valetrc(&path);
             let is_secured = check_secured(&path, valet_paths);
@@ -203,18 +207,25 @@ pub async fn scan_all(
     }
 
     // 2. Scan linked sites from valet_paths.sites_dir (symlinks)
-    let Ok(entries) = std::fs::read_dir(&valet_paths.sites_dir) else { return sites };
+    let Ok(entries) = std::fs::read_dir(&valet_paths.sites_dir) else {
+        return sites;
+    };
     for entry in entries.filter_map(|e| e.ok()) {
         let link_path = entry.path();
         // Resolve symlink to actual path
         let actual = std::fs::read_link(&link_path).unwrap_or_else(|_| link_path.clone());
-        let name = link_path.file_name()
+        let name = link_path
+            .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("")
             .to_string();
-        if name.starts_with('.') { continue }
+        if name.starts_with('.') {
+            continue;
+        }
         // Skip if already found as parked
-        if sites.iter().any(|s| s.name == name) { continue }
+        if sites.iter().any(|s| s.name == name) {
+            continue;
+        }
         let framework = detect_framework(&actual);
         let php_version = read_valetrc(&actual);
         let is_secured = check_secured(&link_path, valet_paths);
@@ -241,7 +252,8 @@ pub async fn scan_all(
 
 fn read_valetrc(path: &Path) -> Option<String> {
     let content = std::fs::read_to_string(path.join(".valetrc")).ok()?;
-    content.lines()
+    content
+        .lines()
         .find(|l| l.starts_with("php="))
         .map(|l| l.trim_start_matches("php=").to_string())
 }
@@ -310,7 +322,11 @@ mod tests {
         create_file(&dir, "config.php");
         create_dir(&dir, "posts");
         // no source/ dir
-        std::fs::write(dir.join("config.php"), "<?php // Katana config\nclass SiteConfiguration {}").unwrap();
+        std::fs::write(
+            dir.join("config.php"),
+            "<?php // Katana config\nclass SiteConfiguration {}",
+        )
+        .unwrap();
         assert_eq!(detect_framework(&dir), DetectedFramework::Katana);
         cleanup(&dir);
     }
@@ -357,7 +373,8 @@ mod tests {
         std::fs::write(
             dir.join("composer.json"),
             r#"{"require": {"statamic/statamic": "^4.0"}}"#,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(detect_framework(&dir), DetectedFramework::Statamic);
         cleanup(&dir);
     }
@@ -471,7 +488,8 @@ mod tests {
         std::fs::write(
             dir.join("composer.json"),
             r#"{"require": {"slim/slim": "^4.0"}}"#,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(detect_framework(&dir), DetectedFramework::Slim);
         cleanup(&dir);
     }
@@ -482,7 +500,8 @@ mod tests {
         std::fs::write(
             dir.join("composer.json"),
             r#"{"require": {"laminas/laminas-mvc": "^3.0"}}"#,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(detect_framework(&dir), DetectedFramework::Zend);
         cleanup(&dir);
     }
@@ -608,7 +627,7 @@ mod tests {
     fn site_status_label() {
         assert_eq!(SiteStatus::Running.label(), "Running");
         assert_eq!(SiteStatus::Stopped.label(), "Stopped");
-        assert_eq!(SiteStatus::Failed.label(),  "Failed");
+        assert_eq!(SiteStatus::Failed.label(), "Failed");
         assert_eq!(SiteStatus::Unknown.label(), "Unknown");
     }
 

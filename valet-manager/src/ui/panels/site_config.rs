@@ -11,24 +11,38 @@ use crate::site_config::models::{
 };
 use crate::state::app_state::AppState;
 use crate::ui::theme::{
-    accent_button, card_frame, danger_button, divider, framework_badge, ghost_button, section_label,
-    with_alpha, Colors,
+    accent_button, card_frame, danger_button, divider, framework_badge, ghost_button,
+    section_label, with_alpha, Colors,
 };
 use crate::ui::DetectedFramework;
 
-const TABS: &[&str] = &["PHP", "WordPress", "Laravel", "Server", "Database", "Development", "phpMyAdmin"];
+const TABS: &[&str] = &[
+    "PHP",
+    "WordPress",
+    "Laravel",
+    "Server",
+    "Database",
+    "Development",
+    "phpMyAdmin",
+];
 
 fn site_is_wp(state: &AppState, name: &str) -> bool {
     state.sites.iter().any(|s| {
         s.name == name
-            && matches!(s.framework, DetectedFramework::WordPress | DetectedFramework::Bedrock)
+            && matches!(
+                s.framework,
+                DetectedFramework::WordPress | DetectedFramework::Bedrock
+            )
     })
 }
 
 fn site_is_laravel(state: &AppState, name: &str) -> bool {
     state.sites.iter().any(|s| {
         s.name == name
-            && matches!(s.framework, DetectedFramework::Laravel | DetectedFramework::Statamic)
+            && matches!(
+                s.framework,
+                DetectedFramework::Laravel | DetectedFramework::Statamic
+            )
     })
 }
 
@@ -45,7 +59,11 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 .strong(),
         );
         if let Some(selected) = state.site_config_selected.clone() {
-            let saved = state.site_configs.get(&selected).cloned().unwrap_or_default();
+            let saved = state
+                .site_configs
+                .get(&selected)
+                .cloned()
+                .unwrap_or_default();
             let draft = state.site_config_draft.clone().unwrap_or_default();
             if saved != draft {
                 ui.add_space(10.0);
@@ -63,7 +81,11 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             let mut sel = state.site_config_selected.clone().unwrap_or_default();
             let prev = sel.clone();
             egui::ComboBox::from_id_salt("site_config_site_picker")
-                .selected_text(if sel.is_empty() { "Select site…".to_string() } else { sel.clone() })
+                .selected_text(if sel.is_empty() {
+                    "Select site…".to_string()
+                } else {
+                    sel.clone()
+                })
                 .show_ui(ui, |ui| {
                     for s in &state.sites {
                         ui.selectable_value(&mut sel, s.name.clone(), s.domain.clone());
@@ -108,7 +130,13 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
 
     // Ensure draft exists.
     if state.site_config_draft.is_none() {
-        state.site_config_draft = Some(state.site_configs.get(&selected).cloned().unwrap_or_default());
+        state.site_config_draft = Some(
+            state
+                .site_configs
+                .get(&selected)
+                .cloned()
+                .unwrap_or_default(),
+        );
     }
 
     let mut draft = state.site_config_draft.clone().unwrap_or_default();
@@ -156,7 +184,11 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.add_space(18.0);
-                    let saved = state.site_configs.get(&selected).cloned().unwrap_or_default();
+                    let saved = state
+                        .site_configs
+                        .get(&selected)
+                        .cloned()
+                        .unwrap_or_default();
                     let dirty = saved != draft;
                     let save_label = if dirty { "Save" } else { "Saved" };
                     let save_resp = accent_button(ui, save_label);
@@ -205,19 +237,39 @@ fn render_php_tab(
     section_label(ui, "PHP version");
     card_frame().show(ui, |ui| {
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Version").size(12.0).color(Colors::TEXT_SECONDARY));
-            let mut current_value = draft.php.version.clone().unwrap_or_else(|| "inherit".to_string());
+            ui.label(
+                RichText::new("Version")
+                    .size(12.0)
+                    .color(Colors::TEXT_SECONDARY),
+            );
+            let mut current_value = draft
+                .php
+                .version
+                .clone()
+                .unwrap_or_else(|| "inherit".to_string());
             let prev = current_value.clone();
             egui::ComboBox::from_id_salt("site_php_version")
                 .selected_text(&current_value)
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut current_value, "inherit".to_string(), "Inherit global");
+                    ui.selectable_value(
+                        &mut current_value,
+                        "inherit".to_string(),
+                        "Inherit global",
+                    );
                     for v in &state.php_versions {
-                        ui.selectable_value(&mut current_value, v.version.clone(), v.version.clone());
+                        ui.selectable_value(
+                            &mut current_value,
+                            v.version.clone(),
+                            v.version.clone(),
+                        );
                     }
                 });
             if current_value != prev {
-                draft.php.version = if current_value == "inherit" { None } else { Some(current_value) };
+                draft.php.version = if current_value == "inherit" {
+                    None
+                } else {
+                    Some(current_value)
+                };
             }
         });
     });
@@ -225,14 +277,50 @@ fn render_php_tab(
 
     section_label(ui, "INI overrides");
     card_frame().show(ui, |ui| {
-        ini_text(ui, "memory_limit", &mut draft.php.ini_overrides.memory_limit, "512M");
-        ini_text(ui, "upload_max_filesize", &mut draft.php.ini_overrides.upload_max_filesize, "64M");
-        ini_text(ui, "post_max_size", &mut draft.php.ini_overrides.post_max_size, "64M");
-        ini_uint(ui, "max_execution_time", &mut draft.php.ini_overrides.max_execution_time);
-        ini_uint(ui, "max_input_vars", &mut draft.php.ini_overrides.max_input_vars);
-        ini_uint(ui, "max_file_uploads", &mut draft.php.ini_overrides.max_file_uploads);
-        ini_uint(ui, "session_gc_maxlifetime", &mut draft.php.ini_overrides.session_gc_maxlifetime);
-        ini_text(ui, "date_timezone", &mut draft.php.ini_overrides.date_timezone, "UTC");
+        ini_text(
+            ui,
+            "memory_limit",
+            &mut draft.php.ini_overrides.memory_limit,
+            "512M",
+        );
+        ini_text(
+            ui,
+            "upload_max_filesize",
+            &mut draft.php.ini_overrides.upload_max_filesize,
+            "64M",
+        );
+        ini_text(
+            ui,
+            "post_max_size",
+            &mut draft.php.ini_overrides.post_max_size,
+            "64M",
+        );
+        ini_uint(
+            ui,
+            "max_execution_time",
+            &mut draft.php.ini_overrides.max_execution_time,
+        );
+        ini_uint(
+            ui,
+            "max_input_vars",
+            &mut draft.php.ini_overrides.max_input_vars,
+        );
+        ini_uint(
+            ui,
+            "max_file_uploads",
+            &mut draft.php.ini_overrides.max_file_uploads,
+        );
+        ini_uint(
+            ui,
+            "session_gc_maxlifetime",
+            &mut draft.php.ini_overrides.session_gc_maxlifetime,
+        );
+        ini_text(
+            ui,
+            "date_timezone",
+            &mut draft.php.ini_overrides.date_timezone,
+            "UTC",
+        );
     });
     ui.add_space(8.0);
 
@@ -240,12 +328,23 @@ fn render_php_tab(
     card_frame().show(ui, |ui| {
         ui.checkbox(&mut draft.php.xdebug_enabled, "Enable Xdebug for this site");
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Mode").size(12.0).color(Colors::TEXT_SECONDARY));
+            ui.label(
+                RichText::new("Mode")
+                    .size(12.0)
+                    .color(Colors::TEXT_SECONDARY),
+            );
             let mut cur = draft.php.xdebug_mode;
             egui::ComboBox::from_id_salt("xdebug_mode_site")
                 .selected_text(format!("{:?}", cur))
                 .show_ui(ui, |ui| {
-                    for m in [XdebugMode::Off, XdebugMode::Develop, XdebugMode::Debug, XdebugMode::Profile, XdebugMode::Trace, XdebugMode::Coverage] {
+                    for m in [
+                        XdebugMode::Off,
+                        XdebugMode::Develop,
+                        XdebugMode::Debug,
+                        XdebugMode::Profile,
+                        XdebugMode::Trace,
+                        XdebugMode::Coverage,
+                    ] {
                         ui.selectable_value(&mut cur, m, format!("{:?}", m));
                     }
                 });
@@ -264,7 +363,11 @@ fn ini_text(ui: &mut egui::Ui, key: &str, value: &mut Option<String>, hint: &str
                 .hint_text(hint),
         );
         if resp.changed() {
-            *value = if text.is_empty() { None } else { Some(text.clone()) };
+            *value = if text.is_empty() {
+                None
+            } else {
+                Some(text.clone())
+            };
         }
         if let Some(v) = value.as_ref() {
             if let Some(err) = validate_ini_value(key, v) {
@@ -290,7 +393,11 @@ fn ini_uint(ui: &mut egui::Ui, key: &str, value: &mut Option<u32>) {
             }
         }
         if !text.is_empty() && value.is_none() {
-            ui.label(RichText::new("expected integer").size(11.0).color(Colors::DANGER));
+            ui.label(
+                RichText::new("expected integer")
+                    .size(11.0)
+                    .color(Colors::DANGER),
+            );
         }
     });
 }
@@ -321,9 +428,21 @@ fn render_wp_tab(
         ui.checkbox(&mut wp.multisite_enabled, "Multisite enabled");
         if wp.multisite_enabled {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Type").size(12.0).color(Colors::TEXT_SECONDARY));
-                ui.radio_value(&mut wp.multisite_type, MultisiteType::Subdomain, "Subdomain");
-                ui.radio_value(&mut wp.multisite_type, MultisiteType::Subdirectory, "Subdirectory");
+                ui.label(
+                    RichText::new("Type")
+                        .size(12.0)
+                        .color(Colors::TEXT_SECONDARY),
+                );
+                ui.radio_value(
+                    &mut wp.multisite_type,
+                    MultisiteType::Subdomain,
+                    "Subdomain",
+                );
+                ui.radio_value(
+                    &mut wp.multisite_type,
+                    MultisiteType::Subdirectory,
+                    "Subdirectory",
+                );
             });
             ui.horizontal(|ui| {
                 if accent_button(ui, "Enable multisite").clicked() {
@@ -352,8 +471,16 @@ fn render_wp_tab(
                                 .size(11.0)
                                 .color(Colors::TEXT_TERTIARY),
                         );
-                        ui.label(RichText::new(&ns.title).size(12.0).color(Colors::TEXT_PRIMARY));
-                        ui.label(RichText::new(&ns.url).size(11.0).color(Colors::TEXT_SECONDARY));
+                        ui.label(
+                            RichText::new(&ns.title)
+                                .size(12.0)
+                                .color(Colors::TEXT_PRIMARY),
+                        );
+                        ui.label(
+                            RichText::new(&ns.url)
+                                .size(11.0)
+                                .color(Colors::TEXT_SECONDARY),
+                        );
                     });
                 }
             });
@@ -391,7 +518,11 @@ fn render_wp_tab(
 
 fn labeled_opt_text(ui: &mut egui::Ui, label: &str, value: &mut Option<String>) {
     ui.horizontal(|ui| {
-        ui.label(RichText::new(label).size(12.0).color(Colors::TEXT_SECONDARY));
+        ui.label(
+            RichText::new(label)
+                .size(12.0)
+                .color(Colors::TEXT_SECONDARY),
+        );
         let mut text = value.clone().unwrap_or_default();
         let resp = ui.add(egui::TextEdit::singleline(&mut text).desired_width(220.0));
         if resp.changed() {
@@ -425,18 +556,38 @@ fn render_laravel_tab(
     card_frame().show(ui, |ui| {
         if let Some(pkg) = state.laravel_packages.get(selected) {
             ui.horizontal_wrapped(|ui| {
-                if pkg.octane { pkg_badge(ui, "Octane", Colors::ACCENT); }
-                if pkg.horizon { pkg_badge(ui, "Horizon", Colors::INFO); }
-                if pkg.telescope { pkg_badge(ui, "Telescope", Colors::PURPLE); }
-                if pkg.pulse { pkg_badge(ui, "Pulse", Colors::WARNING); }
-                if pkg.reverb { pkg_badge(ui, "Reverb", Colors::DANGER); }
-                if pkg.filament { pkg_badge(ui, "Filament", Colors::ACCENT); }
-                if pkg.livewire { pkg_badge(ui, "Livewire", Colors::PURPLE); }
-                if pkg.inertia { pkg_badge(ui, "Inertia", Colors::INFO); }
+                if pkg.octane {
+                    pkg_badge(ui, "Octane", Colors::ACCENT);
+                }
+                if pkg.horizon {
+                    pkg_badge(ui, "Horizon", Colors::INFO);
+                }
+                if pkg.telescope {
+                    pkg_badge(ui, "Telescope", Colors::PURPLE);
+                }
+                if pkg.pulse {
+                    pkg_badge(ui, "Pulse", Colors::WARNING);
+                }
+                if pkg.reverb {
+                    pkg_badge(ui, "Reverb", Colors::DANGER);
+                }
+                if pkg.filament {
+                    pkg_badge(ui, "Filament", Colors::ACCENT);
+                }
+                if pkg.livewire {
+                    pkg_badge(ui, "Livewire", Colors::PURPLE);
+                }
+                if pkg.inertia {
+                    pkg_badge(ui, "Inertia", Colors::INFO);
+                }
             });
         } else {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("No packages detected yet.").size(11.0).color(Colors::TEXT_TERTIARY));
+                ui.label(
+                    RichText::new("No packages detected yet.")
+                        .size(11.0)
+                        .color(Colors::TEXT_TERTIARY),
+                );
                 if ghost_button(ui, "Detect packages").clicked() {
                     to_send.push(AppCommand::DetectLaravelPackages(selected.to_string()));
                 }
@@ -450,13 +601,25 @@ fn render_laravel_tab(
         let was_enabled = lc.octane_enabled;
         ui.checkbox(&mut lc.octane_enabled, "Use Laravel Octane");
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Server").size(12.0).color(Colors::TEXT_SECONDARY));
-            for srv in [OctaneServer::Swoole, OctaneServer::RoadRunner, OctaneServer::FrankenPhp] {
+            ui.label(
+                RichText::new("Server")
+                    .size(12.0)
+                    .color(Colors::TEXT_SECONDARY),
+            );
+            for srv in [
+                OctaneServer::Swoole,
+                OctaneServer::RoadRunner,
+                OctaneServer::FrankenPhp,
+            ] {
                 ui.radio_value(&mut lc.octane_server, srv, srv.display_name());
             }
         });
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Port").size(12.0).color(Colors::TEXT_SECONDARY));
+            ui.label(
+                RichText::new("Port")
+                    .size(12.0)
+                    .color(Colors::TEXT_SECONDARY),
+            );
             let mut port = lc.octane_port.unwrap_or(8000);
             let resp = ui.add(egui::DragValue::new(&mut port).range(1024..=65535));
             if resp.changed() {
@@ -486,7 +649,12 @@ fn pkg_badge(ui: &mut egui::Ui, label: &str, color: egui::Color32) {
         .fill(with_alpha(color, 30))
         .stroke(Stroke::new(0.5, with_alpha(color, 60)))
         .corner_radius(egui::CornerRadius::same(10))
-        .inner_margin(egui::Margin { left: 7, right: 7, top: 2, bottom: 2 })
+        .inner_margin(egui::Margin {
+            left: 7,
+            right: 7,
+            top: 2,
+            bottom: 2,
+        })
         .show(ui, |ui| {
             ui.label(RichText::new(label).size(10.5).color(color));
         });
@@ -510,10 +678,7 @@ fn render_server_tab(
         ui.horizontal_wrapped(|ui| {
             for t in &available {
                 let mut cur = draft.server.server_type;
-                if ui
-                    .radio_value(&mut cur, *t, t.display_name())
-                    .clicked()
-                {
+                if ui.radio_value(&mut cur, *t, t.display_name()).clicked() {
                     if draft.server.server_type != cur {
                         draft.server.server_type = cur;
                         to_send.push(AppCommand::SetSiteHttpServer {
@@ -551,9 +716,17 @@ fn render_server_tab(
 
     section_label(ui, "Limits");
     card_frame().show(ui, |ui| {
-        labeled_opt_text(ui, "client_max_body_size", &mut draft.server.client_max_body_size);
+        labeled_opt_text(
+            ui,
+            "client_max_body_size",
+            &mut draft.server.client_max_body_size,
+        );
         ui.horizontal(|ui| {
-            ui.label(RichText::new("read_timeout (s)").size(12.0).color(Colors::TEXT_SECONDARY));
+            ui.label(
+                RichText::new("read_timeout (s)")
+                    .size(12.0)
+                    .color(Colors::TEXT_SECONDARY),
+            );
             let mut v = draft.server.read_timeout.unwrap_or(60);
             let r = ui.add(egui::DragValue::new(&mut v).range(1..=600));
             if r.changed() {
@@ -568,7 +741,11 @@ fn render_server_tab(
         ui.checkbox(&mut draft.server.basic_auth.enabled, "Require login");
         if draft.server.basic_auth.enabled {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Realm").size(12.0).color(Colors::TEXT_SECONDARY));
+                ui.label(
+                    RichText::new("Realm")
+                        .size(12.0)
+                        .color(Colors::TEXT_SECONDARY),
+                );
                 ui.add(
                     egui::TextEdit::singleline(&mut draft.server.basic_auth.realm)
                         .desired_width(220.0)
@@ -584,8 +761,16 @@ fn render_server_tab(
             let mut remove_username: Option<String> = None;
             for u in &draft.server.basic_auth.users {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new(&u.username).size(12.0).color(Colors::TEXT_PRIMARY));
-                    ui.label(RichText::new("•••••").size(12.0).color(Colors::TEXT_TERTIARY));
+                    ui.label(
+                        RichText::new(&u.username)
+                            .size(12.0)
+                            .color(Colors::TEXT_PRIMARY),
+                    );
+                    ui.label(
+                        RichText::new("•••••")
+                            .size(12.0)
+                            .color(Colors::TEXT_TERTIARY),
+                    );
                     if ghost_button(ui, "Remove").clicked() {
                         remove_username = Some(u.username.clone());
                     }
@@ -633,8 +818,16 @@ fn render_server_tab(
     card_frame().show(ui, |ui| {
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
-                ui.label(RichText::new("Custom config").size(12.0).color(Colors::TEXT_SECONDARY));
-                ui.label(RichText::new("Edit the raw Nginx site block").size(10.5).color(Colors::TEXT_TERTIARY));
+                ui.label(
+                    RichText::new("Custom config")
+                        .size(12.0)
+                        .color(Colors::TEXT_SECONDARY),
+                );
+                ui.label(
+                    RichText::new("Edit the raw Nginx site block")
+                        .size(10.5)
+                        .color(Colors::TEXT_TERTIARY),
+                );
             });
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ghost_button(ui, "↗ Edit").clicked() {
@@ -646,19 +839,28 @@ fn render_server_tab(
 }
 
 // ── DATABASE TAB ──────────────────────────────────────────────────────
-fn render_db_tab(ui: &mut egui::Ui, _state: &AppState, site_name: &str, draft: &mut SiteConfig, to_send: &mut Vec<AppCommand>) {
+fn render_db_tab(
+    ui: &mut egui::Ui,
+    _state: &AppState,
+    site_name: &str,
+    draft: &mut SiteConfig,
+    to_send: &mut Vec<AppCommand>,
+) {
     // DB info grid
     section_label(ui, "Database info");
     card_frame().show(ui, |ui| {
         let db_name = db_name_for_site(site_name);
-        egui::Grid::new("db_grid").num_columns(2).spacing([16.0, 4.0]).show(ui, |ui| {
-            db_field(ui, "Database", &db_name);
-            db_field(ui, "User", "root");
-            ui.end_row();
-            db_field(ui, "Charset", "utf8mb4");
-            db_field(ui, "Engine", "MySQL 8.0");
-            ui.end_row();
-        });
+        egui::Grid::new("db_grid")
+            .num_columns(2)
+            .spacing([16.0, 4.0])
+            .show(ui, |ui| {
+                db_field(ui, "Database", &db_name);
+                db_field(ui, "User", "root");
+                ui.end_row();
+                db_field(ui, "Charset", "utf8mb4");
+                db_field(ui, "Engine", "MySQL 8.0");
+                ui.end_row();
+            });
     });
     ui.add_space(8.0);
 
@@ -666,7 +868,10 @@ fn render_db_tab(ui: &mut egui::Ui, _state: &AppState, site_name: &str, draft: &
     section_label(ui, "Database");
     card_frame().show(ui, |ui| {
         labeled_opt_text(ui, "Engine override", &mut draft.database.engine);
-        ui.checkbox(&mut draft.database.backup_before_destroy, "Take a backup before destructive migrations");
+        ui.checkbox(
+            &mut draft.database.backup_before_destroy,
+            "Take a backup before destructive migrations",
+        );
         labeled_opt_text(ui, "Backup path", &mut draft.database.backup_path);
     });
     ui.add_space(8.0);
@@ -692,19 +897,32 @@ fn render_dev_tab(ui: &mut egui::Ui, draft: &mut SiteConfig) {
     card_frame().show(ui, |ui| {
         labeled_opt_text(ui, "Node version", &mut draft.development.node_version);
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Package manager").size(12.0).color(Colors::TEXT_SECONDARY));
+            ui.label(
+                RichText::new("Package manager")
+                    .size(12.0)
+                    .color(Colors::TEXT_SECONDARY),
+            );
             let mut cur = draft.development.package_manager;
             egui::ComboBox::from_id_salt("pkg_manager_combo")
                 .selected_text(cur.display_name())
                 .show_ui(ui, |ui| {
-                    for pm in [NodePackageManager::Npm, NodePackageManager::Pnpm, NodePackageManager::Yarn, NodePackageManager::Bun] {
+                    for pm in [
+                        NodePackageManager::Npm,
+                        NodePackageManager::Pnpm,
+                        NodePackageManager::Yarn,
+                        NodePackageManager::Bun,
+                    ] {
                         ui.selectable_value(&mut cur, pm, pm.display_name());
                     }
                 });
             draft.development.package_manager = cur;
         });
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Dev server port").size(12.0).color(Colors::TEXT_SECONDARY));
+            ui.label(
+                RichText::new("Dev server port")
+                    .size(12.0)
+                    .color(Colors::TEXT_SECONDARY),
+            );
             let mut v = draft.development.dev_server_port.unwrap_or(0);
             let r = ui.add(egui::DragValue::new(&mut v).range(0..=65535));
             if r.changed() {
@@ -729,7 +947,10 @@ fn render_pma_tab(
     card_frame().show(ui, |ui| {
         // Enable toggle
         let mut enabled = draft.phpmyadmin.enabled;
-        if ui.checkbox(&mut enabled, "Enable phpMyAdmin for this site").changed() {
+        if ui
+            .checkbox(&mut enabled, "Enable phpMyAdmin for this site")
+            .changed()
+        {
             draft.phpmyadmin.enabled = enabled;
             if enabled {
                 to_send.push(AppCommand::ConfigurePhpMyAdminForSite(site.to_string()));
@@ -740,7 +961,11 @@ fn render_pma_tab(
         ui.add_space(8.0);
 
         // Access mode radio row
-        ui.label(RichText::new("Access mode").size(11.0).color(Colors::TEXT_TERTIARY));
+        ui.label(
+            RichText::new("Access mode")
+                .size(11.0)
+                .color(Colors::TEXT_TERTIARY),
+        );
         ui.horizontal(|ui| {
             for (mode, label) in [
                 (PmaAccessMode::PathAlias, "Path alias"),
@@ -748,27 +973,45 @@ fn render_pma_tab(
                 (PmaAccessMode::GlobalOnly, "Global only"),
             ] {
                 let active = draft.phpmyadmin.access_mode == mode;
-                let resp = if active { accent_button(ui, label) } else { ghost_button(ui, label) };
+                let resp = if active {
+                    accent_button(ui, label)
+                } else {
+                    ghost_button(ui, label)
+                };
                 if resp.clicked() && !active {
                     draft.phpmyadmin.access_mode = mode.clone();
-                    to_send.push(AppCommand::SetPmaAccessMode { site: site.to_string(), mode });
+                    to_send.push(AppCommand::SetPmaAccessMode {
+                        site: site.to_string(),
+                        mode,
+                    });
                 }
             }
         });
         ui.add_space(8.0);
 
         // DB scope radio row
-        ui.label(RichText::new("DB scope").size(11.0).color(Colors::TEXT_TERTIARY));
+        ui.label(
+            RichText::new("DB scope")
+                .size(11.0)
+                .color(Colors::TEXT_TERTIARY),
+        );
         ui.horizontal(|ui| {
             for (scope, label) in [
                 (PmaDbScope::SiteOnly, "Site only"),
                 (PmaDbScope::AllDatabases, "All databases"),
             ] {
                 let active = draft.phpmyadmin.db_scope == scope;
-                let resp = if active { accent_button(ui, label) } else { ghost_button(ui, label) };
+                let resp = if active {
+                    accent_button(ui, label)
+                } else {
+                    ghost_button(ui, label)
+                };
                 if resp.clicked() && !active {
                     draft.phpmyadmin.db_scope = scope.clone();
-                    to_send.push(AppCommand::SetPmaDbScope { site: site.to_string(), scope });
+                    to_send.push(AppCommand::SetPmaDbScope {
+                        site: site.to_string(),
+                        scope,
+                    });
                 }
             }
         });
@@ -777,13 +1020,21 @@ fn render_pma_tab(
         // path_alias TextEdit when applicable
         if draft.phpmyadmin.access_mode == PmaAccessMode::PathAlias {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Path alias").size(11.0).color(Colors::TEXT_TERTIARY));
+                ui.label(
+                    RichText::new("Path alias")
+                        .size(11.0)
+                        .color(Colors::TEXT_TERTIARY),
+                );
                 ui.text_edit_singleline(&mut draft.phpmyadmin.path_alias);
             });
         }
 
         // DB name override
-        labeled_opt_text(ui, "DB name override", &mut draft.phpmyadmin.db_name_override);
+        labeled_opt_text(
+            ui,
+            "DB name override",
+            &mut draft.phpmyadmin.db_name_override,
+        );
     });
 
     ui.add_space(10.0);
@@ -793,9 +1044,16 @@ fn render_pma_tab(
         section_label(ui, "Status");
         card_frame().show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Access URL").size(11.0).color(Colors::TEXT_TERTIARY));
+                ui.label(
+                    RichText::new("Access URL")
+                        .size(11.0)
+                        .color(Colors::TEXT_TERTIARY),
+                );
                 let url = status.access_url.clone();
-                if ui.link(RichText::new(&url).size(13.0).color(Colors::ACCENT)).clicked() {
+                if ui
+                    .link(RichText::new(&url).size(13.0).color(Colors::ACCENT))
+                    .clicked()
+                {
                     to_send.push(AppCommand::OpenPhpMyAdmin {
                         site: site.to_string(),
                         scope: crate::site_config::models::PmaDbScope::SiteOnly,
@@ -804,8 +1062,17 @@ fn render_pma_tab(
             });
             ui.horizontal(|ui| {
                 ui.label(RichText::new("DB").size(11.0).color(Colors::TEXT_TERTIARY));
-                ui.label(RichText::new(&status.db_name).size(12.0).color(Colors::TEXT_PRIMARY).monospace());
-                ui.label(RichText::new("Detected from .env / wp-config.php").size(10.5).color(Colors::TEXT_TERTIARY));
+                ui.label(
+                    RichText::new(&status.db_name)
+                        .size(12.0)
+                        .color(Colors::TEXT_PRIMARY)
+                        .monospace(),
+                );
+                ui.label(
+                    RichText::new("Detected from .env / wp-config.php")
+                        .size(10.5)
+                        .color(Colors::TEXT_TERTIARY),
+                );
             });
             ui.add_space(4.0);
             ui.horizontal(|ui| {
@@ -824,7 +1091,11 @@ fn render_pma_tab(
             });
         });
     } else if draft.phpmyadmin.enabled {
-        ui.label(RichText::new("Configuring… (terminal output below)").size(12.0).color(Colors::TEXT_SECONDARY));
+        ui.label(
+            RichText::new("Configuring… (terminal output below)")
+                .size(12.0)
+                .color(Colors::TEXT_SECONDARY),
+        );
     }
 
     // Output stream
@@ -862,7 +1133,10 @@ mod tests {
     #[test]
     fn db_name_from_site_name() {
         assert_eq!(super::db_name_for_site("my-site"), "my_site");
-        assert_eq!(super::db_name_for_site("no-hyphens-here"), "no_hyphens_here");
+        assert_eq!(
+            super::db_name_for_site("no-hyphens-here"),
+            "no_hyphens_here"
+        );
         assert_eq!(super::db_name_for_site("clean"), "clean");
     }
 }

@@ -194,7 +194,8 @@ mod tests {
         std::fs::write(
             dir.join("wp-includes/version.php"),
             "<?php\n$wp_version = '6.4.2';\n",
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(read_wordpress_php_min(&dir), Some("6.4.2".to_string()));
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -208,7 +209,8 @@ mod tests {
         std::fs::write(
             dir.join("wp-includes/version.php"),
             "<?php\n$wp_version = \"6.6.1\";\n",
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(read_wordpress_php_min(&dir), Some("6.6.1".to_string()));
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -232,11 +234,16 @@ mod tests {
         std::fs::write(
             dir.join("wp-includes/version.php"),
             "<?php\n$wp_version = '6.4.2';\n",
-        ).unwrap();
+        )
+        .unwrap();
         // PHP 8.3 is well above the 7.2.24 floor.
         let r = evaluate_site("wp", &dir, "8.3");
         assert_eq!(r.status, CompatStatus::Compatible);
-        assert!(r.php_required.as_ref().expect("required set").contains("WordPress"));
+        assert!(r
+            .php_required
+            .as_ref()
+            .expect("required set")
+            .contains("WordPress"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

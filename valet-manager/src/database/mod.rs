@@ -2,7 +2,11 @@ use serde::Deserialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
-pub enum DbEngine { MySql, PostgreSql, Sqlite }
+pub enum DbEngine {
+    MySql,
+    PostgreSql,
+    Sqlite,
+}
 
 impl DbEngine {
     #[allow(dead_code)]
@@ -40,7 +44,14 @@ pub struct DbCredentials {
 }
 
 impl Default for DbCredentials {
-    fn default() -> Self { Self { host: "127.0.0.1".into(), port: 3306, user: "root".into(), password: "".into() } }
+    fn default() -> Self {
+        Self {
+            host: "127.0.0.1".into(),
+            port: 3306,
+            user: "root".into(),
+            password: "".into(),
+        }
+    }
 }
 
 /// Format a u64 with commas: 12450 -> "12,450"
@@ -50,7 +61,9 @@ pub fn format_thousands(n: u64) -> String {
     let chars: Vec<char> = s.chars().rev().collect();
     let mut out = String::new();
     for (i, c) in chars.iter().enumerate() {
-        if i > 0 && i % 3 == 0 { out.push(','); }
+        if i > 0 && i % 3 == 0 {
+            out.push(',');
+        }
         out.push(*c);
     }
     out.chars().rev().collect()
@@ -61,26 +74,65 @@ pub fn format_thousands(n: u64) -> String {
 #[allow(dead_code)]
 pub async fn list_databases(creds: &DbCredentials) -> anyhow::Result<Vec<DbDatabase>> {
     let out = tokio::process::Command::new("mysql")
-        .args(["-h", &creds.host, "-P", &creds.port.to_string(), "-u", &creds.user, "-N", "-e", "SHOW DATABASES;"])
+        .args([
+            "-h",
+            &creds.host,
+            "-P",
+            &creds.port.to_string(),
+            "-u",
+            &creds.user,
+            "-N",
+            "-e",
+            "SHOW DATABASES;",
+        ])
         .env("MYSQL_PWD", &creds.password)
-        .output().await;
+        .output()
+        .await;
     let stdout = match out {
         Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(),
         Err(_) => return Ok(Vec::new()),
     };
-    let names: Vec<String> = stdout.lines()
+    let names: Vec<String> = stdout
+        .lines()
         .map(|l| l.trim().to_string())
-        .filter(|n| !n.is_empty() && !matches!(n.as_str(), "information_schema" | "performance_schema" | "mysql" | "sys"))
+        .filter(|n| {
+            !n.is_empty()
+                && !matches!(
+                    n.as_str(),
+                    "information_schema" | "performance_schema" | "mysql" | "sys"
+                )
+        })
         .collect();
     let mut dbs = Vec::with_capacity(names.len());
     for name in names {
         // Get table count quickly (best-effort)
         let tc_out = tokio::process::Command::new("mysql")
-            .args(["-h", &creds.host, "-P", &creds.port.to_string(), "-u", &creds.user, "-N", "-e",
-                   &format!("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='{}';", name.replace('\'', ""))])
+            .args([
+                "-h",
+                &creds.host,
+                "-P",
+                &creds.port.to_string(),
+                "-u",
+                &creds.user,
+                "-N",
+                "-e",
+                &format!(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='{}';",
+                    name.replace('\'', "")
+                ),
+            ])
             .env("MYSQL_PWD", &creds.password)
-            .output().await;
-        let table_count = tc_out.ok().and_then(|o| String::from_utf8_lossy(&o.stdout).trim().parse::<usize>().ok()).unwrap_or(0);
+            .output()
+            .await;
+        let table_count = tc_out
+            .ok()
+            .and_then(|o| {
+                String::from_utf8_lossy(&o.stdout)
+                    .trim()
+                    .parse::<usize>()
+                    .ok()
+            })
+            .unwrap_or(0);
         dbs.push(DbDatabase { name, table_count });
     }
     Ok(dbs)
@@ -90,9 +142,21 @@ pub async fn list_databases(creds: &DbCredentials) -> anyhow::Result<Vec<DbDatab
 pub async fn list_tables(creds: &DbCredentials, database: &str) -> anyhow::Result<Vec<DbTable>> {
     let query = format!("SELECT TABLE_NAME, IFNULL(TABLE_ROWS,0), IFNULL(ENGINE,'') FROM information_schema.tables WHERE table_schema='{}' ORDER BY TABLE_NAME;", database.replace('\'', ""));
     let out = tokio::process::Command::new("mysql")
-        .args(["-h", &creds.host, "-P", &creds.port.to_string(), "-u", &creds.user, "-N", "-B", "-e", &query])
+        .args([
+            "-h",
+            &creds.host,
+            "-P",
+            &creds.port.to_string(),
+            "-u",
+            &creds.user,
+            "-N",
+            "-B",
+            "-e",
+            &query,
+        ])
         .env("MYSQL_PWD", &creds.password)
-        .output().await;
+        .output()
+        .await;
     let stdout = match out {
         Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(),
         Err(_) => return Ok(Vec::new()),

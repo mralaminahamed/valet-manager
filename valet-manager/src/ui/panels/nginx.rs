@@ -1,5 +1,5 @@
+use crate::ui::theme::{accent_button, divider, ghost_button, Colors};
 use egui::RichText;
-use crate::ui::theme::{Colors, accent_button, divider, ghost_button};
 
 #[allow(dead_code)]
 pub fn render(
@@ -24,17 +24,15 @@ pub fn render(
                 egui::ScrollArea::vertical()
                     .id_salt("nginx_site_list_scroll")
                     .show(ui, |ui| {
-                        let mut sites: Vec<&String> =
-                            state.nginx_configs.keys().collect();
+                        let mut sites: Vec<&String> = state.nginx_configs.keys().collect();
                         sites.sort();
 
                         for site_name in sites {
                             let is_selected =
                                 state.nginx_selected.as_deref() == Some(site_name.as_str());
 
-                            let response = ui.add(
-                                egui::Button::selectable(is_selected, site_name.as_str()),
-                            );
+                            let response =
+                                ui.add(egui::Button::selectable(is_selected, site_name.as_str()));
 
                             if response.clicked() {
                                 // Selection is wired in Task #22; no-op here
@@ -76,18 +74,13 @@ pub fn render(
                                 .size(14.0)
                                 .color(Colors::TEXT_PRIMARY),
                         );
-                        ui.with_layout(
-                            egui::Layout::right_to_left(egui::Align::Center),
-                            |ui| {
-                                if ghost_button(ui, "Open in editor").clicked() {
-                                    let _ = cmd_tx.try_send(
-                                        crate::commands::AppCommand::OpenSiteInEditor(
-                                            selected.clone(),
-                                        ),
-                                    );
-                                }
-                            },
-                        );
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ghost_button(ui, "Open in editor").clicked() {
+                                let _ = cmd_tx.try_send(
+                                    crate::commands::AppCommand::OpenSiteInEditor(selected.clone()),
+                                );
+                            }
+                        });
                     });
                     ui.add_space(4.0);
                     divider(ui);
@@ -97,14 +90,12 @@ pub fn render(
                         ui.add_space(8.0);
                         ui.horizontal(|ui| {
                             if accent_button(ui, "Save & Reload").clicked() {
-                                let _ = cmd_tx.try_send(
-                                    crate::commands::AppCommand::SaveNginxConfig {
+                                let _ =
+                                    cmd_tx.try_send(crate::commands::AppCommand::SaveNginxConfig {
                                         site: selected.clone(),
                                         content: config_text.clone(),
-                                    },
-                                );
-                                let _ = cmd_tx
-                                    .try_send(crate::commands::AppCommand::ReloadNginx);
+                                    });
+                                let _ = cmd_tx.try_send(crate::commands::AppCommand::ReloadNginx);
                             }
                             ui.add_space(8.0);
                             if ghost_button(ui, "Revert").clicked() {

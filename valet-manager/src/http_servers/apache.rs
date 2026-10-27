@@ -8,15 +8,14 @@ pub async fn is_installed() -> bool {
 }
 
 /// Stub: renders an Apache VirtualHost and writes to /etc/apache2/sites-available.
-pub async fn write_vhost(
-    site: &ValetSite,
-    config: &HttpServerSiteConfig,
-) -> anyhow::Result<()> {
+pub async fn write_vhost(site: &ValetSite, config: &HttpServerSiteConfig) -> anyhow::Result<()> {
     Ok(())
 }
 
 pub async fn read_htaccess(site: &ValetSite) -> Option<String> {
-    tokio::fs::read_to_string(site.path.join(".htaccess")).await.ok()
+    tokio::fs::read_to_string(site.path.join(".htaccess"))
+        .await
+        .ok()
 }
 
 pub async fn write_htaccess(site: &ValetSite, content: &str) -> anyhow::Result<()> {

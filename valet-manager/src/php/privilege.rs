@@ -50,7 +50,9 @@ mod tests {
 
     #[test]
     fn request_serializes_to_json() {
-        let req = HelperRequest::StartFpm { version: "8.3".to_string() };
+        let req = HelperRequest::StartFpm {
+            version: "8.3".to_string(),
+        };
         let json = serde_json::to_string(&req).unwrap();
         assert!(json.contains("StartFpm"));
         assert!(json.contains("8.3"));

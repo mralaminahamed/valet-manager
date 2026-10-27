@@ -114,15 +114,10 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
 
 fn render_header(ui: &mut egui::Ui, flex_w: f32) {
     let avail_w = ui.available_width();
-    let (rect, _) = ui.allocate_exact_size(
-        egui::vec2(avail_w, HEADER_HEIGHT),
-        egui::Sense::hover(),
-    );
-    ui.painter().rect_filled(
-        rect,
-        CornerRadius::ZERO,
-        with_alpha(Color32::BLACK, 38),
-    );
+    let (rect, _) =
+        ui.allocate_exact_size(egui::vec2(avail_w, HEADER_HEIGHT), egui::Sense::hover());
+    ui.painter()
+        .rect_filled(rect, CornerRadius::ZERO, with_alpha(Color32::BLACK, 38));
     ui.painter().hline(
         rect.x_range(),
         rect.bottom(),
@@ -170,16 +165,17 @@ fn render_header(ui: &mut egui::Ui, flex_w: f32) {
 
 fn render_row(ui: &mut egui::Ui, c: &SiteCompat, flex_w: f32, cmd_tx: &Sender<AppCommand>) {
     let avail_w = ui.available_width();
-    let (rect, resp) = ui.allocate_exact_size(
-        egui::vec2(avail_w, ROW_HEIGHT),
-        egui::Sense::hover(),
-    );
+    let (rect, resp) =
+        ui.allocate_exact_size(egui::vec2(avail_w, ROW_HEIGHT), egui::Sense::hover());
     if resp.hovered() {
         ui.painter()
             .rect_filled(rect, CornerRadius::ZERO, Colors::CARD_HOVER);
     }
-    ui.painter()
-        .hline(rect.x_range(), rect.bottom(), Stroke::new(0.5, Colors::BORDER));
+    ui.painter().hline(
+        rect.x_range(),
+        rect.bottom(),
+        Stroke::new(0.5, Colors::BORDER),
+    );
 
     let mut child = ui.new_child(
         egui::UiBuilder::new()
@@ -202,10 +198,7 @@ fn render_row(ui: &mut egui::Ui, c: &SiteCompat, flex_w: f32, cmd_tx: &Sender<Ap
     // REQUIRES
     child.allocate_ui(egui::vec2(COL_REQUIRES, ROW_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-            let txt = c
-                .php_required
-                .clone()
-                .unwrap_or_else(|| "—".to_string());
+            let txt = c.php_required.clone().unwrap_or_else(|| "—".to_string());
             ui.label(
                 RichText::new(txt)
                     .size(11.5)
@@ -254,11 +247,7 @@ fn render_row(ui: &mut egui::Ui, c: &SiteCompat, flex_w: f32, cmd_tx: &Sender<Ap
 
 fn status_pill(ui: &mut egui::Ui, status: &CompatStatus) {
     let (bg, fg, label) = match status {
-        CompatStatus::Compatible => (
-            with_alpha(Colors::ACCENT, 30),
-            Colors::ACCENT,
-            "Compatible",
-        ),
+        CompatStatus::Compatible => (with_alpha(Colors::ACCENT, 30), Colors::ACCENT, "Compatible"),
         CompatStatus::Incompatible => (
             with_alpha(Colors::DANGER, 30),
             Colors::DANGER,

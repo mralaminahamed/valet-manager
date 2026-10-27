@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
-use std::time::Duration;
-use tokio::sync::mpsc::Sender;
 use crate::commands::AppCommand;
 use crate::valet::variant::ValetPaths;
+use std::time::Duration;
+use tokio::sync::mpsc::Sender;
 
 /// Start watching Sites/ and Nginx/ directories.
 /// When any change is detected, debounce 500ms then send RefreshSites.
@@ -33,7 +33,9 @@ pub async fn start_watcher(valet_paths: ValetPaths, cmd_tx: Sender<AppCommand>) 
         let deadline = std::time::Instant::now() + debounce;
         loop {
             let remaining = deadline.saturating_duration_since(std::time::Instant::now());
-            if remaining.is_zero() { break }
+            if remaining.is_zero() {
+                break;
+            }
             match rx.recv_timeout(remaining) {
                 Ok(_) => {} // drain
                 Err(_) => break,

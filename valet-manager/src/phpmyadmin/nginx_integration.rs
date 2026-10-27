@@ -27,12 +27,21 @@ pub fn render_path_alias_block(
     s.push_str(&format!("location {} {{\n", trimmed));
     s.push_str(&format!("    alias {};\n", pma_install_path.display()));
     s.push_str(&format!("    index index.php;\n"));
-    s.push_str(&format!("    try_files $uri $uri/ {}/index.php?$args;\n", trimmed));
+    s.push_str(&format!(
+        "    try_files $uri $uri/ {}/index.php?$args;\n",
+        trimmed
+    ));
     s.push_str("\n");
     s.push_str(&format!("    location ~ ^{}/(.+\\.php)$ {{\n", trimmed));
-    s.push_str(&format!("        alias {}/$1;\n", pma_install_path.display()));
+    s.push_str(&format!(
+        "        alias {}/$1;\n",
+        pma_install_path.display()
+    ));
     s.push_str("        fastcgi_split_path_info ^(.+\\.php)(/.+)$;\n");
-    s.push_str(&format!("        fastcgi_pass unix:{};\n", php_fpm_socket.display()));
+    s.push_str(&format!(
+        "        fastcgi_pass unix:{};\n",
+        php_fpm_socket.display()
+    ));
     s.push_str("        fastcgi_index index.php;\n");
     s.push_str("        include fastcgi_params;\n");
     s.push_str("        fastcgi_param SCRIPT_FILENAME $request_filename;\n");
@@ -84,7 +93,9 @@ pub fn inject_block(config: &str, body: &str) -> String {
 
 /// Strip the phpmyadmin block from `config`. No-op if sentinels are absent.
 pub fn remove_block(config: &str) -> String {
-    let Some(start_idx) = config.find(BEGIN) else { return config.to_string() };
+    let Some(start_idx) = config.find(BEGIN) else {
+        return config.to_string();
+    };
     let end_idx = config
         .find(END)
         .map(|i| i + END.len())
@@ -134,10 +145,7 @@ pub async fn inject_into_site(
     write_atomic(&path, &new).await
 }
 
-pub async fn remove_from_site(
-    site: &ValetSite,
-    valet_paths: &ValetPaths,
-) -> anyhow::Result<()> {
+pub async fn remove_from_site(site: &ValetSite, valet_paths: &ValetPaths) -> anyhow::Result<()> {
     let path = nginx_config_path(site, valet_paths);
     let cur = match tokio::fs::read_to_string(&path).await {
         Ok(c) => c,

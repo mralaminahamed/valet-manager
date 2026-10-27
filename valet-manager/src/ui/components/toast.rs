@@ -1,10 +1,15 @@
-use std::time::{Duration, Instant};
+use crate::ui::theme::{with_alpha, Colors};
 use egui::{Align2, Color32, CornerRadius, Frame, Margin, RichText, Stroke};
-use crate::ui::theme::{Colors, with_alpha};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
-pub enum ToastType { Success, Error, Warning, Info }
+pub enum ToastType {
+    Success,
+    Error,
+    Warning,
+    Info,
+}
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -16,13 +21,27 @@ pub struct Toast {
 
 impl Toast {
     pub fn new(msg: impl Into<String>, kind: ToastType) -> Self {
-        Self { message: msg.into(), kind, created_at: Instant::now() }
+        Self {
+            message: msg.into(),
+            kind,
+            created_at: Instant::now(),
+        }
     }
-    pub fn elapsed(&self) -> Duration { self.created_at.elapsed() }
-    pub fn is_expired(&self) -> bool { self.elapsed() >= Duration::from_millis(4000) }
+    pub fn elapsed(&self) -> Duration {
+        self.created_at.elapsed()
+    }
+    pub fn is_expired(&self) -> bool {
+        self.elapsed() >= Duration::from_millis(4000)
+    }
     pub fn opacity(&self) -> f32 {
         let e = self.elapsed().as_secs_f32();
-        if e <= 3.5 { 1.0 } else if e >= 4.0 { 0.0 } else { (4.0 - e) / 0.5 }
+        if e <= 3.5 {
+            1.0
+        } else if e >= 4.0 {
+            0.0
+        } else {
+            (4.0 - e) / 0.5
+        }
     }
 }
 
@@ -40,7 +59,9 @@ fn type_color(t: ToastType) -> Color32 {
 #[allow(dead_code)]
 pub fn render_toasts(ctx: &egui::Context, toasts: &mut Vec<Toast>) {
     toasts.retain(|t| !t.is_expired());
-    if toasts.is_empty() { return; }
+    if toasts.is_empty() {
+        return;
+    }
 
     // Animate (ask for a repaint every frame while toasts are visible so fade is smooth)
     ctx.request_repaint_after(Duration::from_millis(33));
@@ -59,13 +80,22 @@ pub fn render_toasts(ctx: &egui::Context, toasts: &mut Vec<Toast>) {
                         .fill(with_alpha(Colors::CARD, alpha))
                         .corner_radius(CornerRadius::same(6))
                         .stroke(Stroke::new(0.5, Colors::BORDER_MED))
-                        .inner_margin(Margin { left: 0, right: 12, top: 0, bottom: 0 })
+                        .inner_margin(Margin {
+                            left: 0,
+                            right: 12,
+                            top: 0,
+                            bottom: 0,
+                        })
                         .show(ui, |ui| {
                             ui.set_min_width(280.0);
                             ui.horizontal(|ui| {
                                 // 3px left strip
-                                let (rect, _) = ui.allocate_exact_size(egui::vec2(3.0, 36.0), egui::Sense::hover());
-                                ui.painter().rect_filled(rect, CornerRadius::ZERO, border_color);
+                                let (rect, _) = ui.allocate_exact_size(
+                                    egui::vec2(3.0, 36.0),
+                                    egui::Sense::hover(),
+                                );
+                                ui.painter()
+                                    .rect_filled(rect, CornerRadius::ZERO, border_color);
                                 ui.add_space(10.0);
                                 ui.label(
                                     RichText::new(&toast.message)
@@ -83,7 +113,9 @@ pub fn render_toasts(ctx: &egui::Context, toasts: &mut Vec<Toast>) {
 /// Convenience: push a toast and cap the queue.
 #[allow(dead_code)]
 pub fn push_toast(toasts: &mut Vec<Toast>, msg: impl Into<String>, kind: ToastType) {
-    if toasts.len() >= 32 { toasts.remove(0); }
+    if toasts.len() >= 32 {
+        toasts.remove(0);
+    }
     toasts.push(Toast::new(msg, kind));
 }
 
@@ -106,7 +138,9 @@ mod tests {
     #[test]
     fn push_toast_caps_queue_at_32() {
         let mut q = Vec::new();
-        for i in 0..40 { push_toast(&mut q, format!("t{}", i), ToastType::Info); }
+        for i in 0..40 {
+            push_toast(&mut q, format!("t{}", i), ToastType::Info);
+        }
         assert_eq!(q.len(), 32);
         // Newest stays
         assert_eq!(q.last().unwrap().message, "t39");

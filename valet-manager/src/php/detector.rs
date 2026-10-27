@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use crate::services::monitor::ServiceStatus;
 use crate::ui::DetectedFramework;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// Recommended default PHP version for a given framework.
 /// Used by the App Creator wizard and the compatibility checker.
@@ -9,20 +9,20 @@ use crate::ui::DetectedFramework;
 pub fn recommended_php_version(fw: &DetectedFramework) -> &'static str {
     use DetectedFramework as F;
     match fw {
-        F::Laravel | F::Statamic                       => "8.3",
-        F::Symfony                                      => "8.2",
-        F::WordPress | F::Bedrock                       => "8.2",
-        F::Drupal                                       => "8.3",
-        F::Magento                                      => "8.2",
-        F::CakePHP                                      => "8.1",
-        F::Craft | F::ConcreteCms                       => "8.2",
-        F::Joomla | F::Kirby                            => "8.1",
-        F::OctoberCms                                   => "8.1",
-        F::Contao                                       => "8.1",
-        F::Slim | F::Zend                               => "8.2",
-        F::Jigsaw | F::Sculpin                          => "8.1",
-        F::ExpressionEngine                             => "8.1",
-        F::Katana | F::StaticHtml | F::Unknown          => "8.3",
+        F::Laravel | F::Statamic => "8.3",
+        F::Symfony => "8.2",
+        F::WordPress | F::Bedrock => "8.2",
+        F::Drupal => "8.3",
+        F::Magento => "8.2",
+        F::CakePHP => "8.1",
+        F::Craft | F::ConcreteCms => "8.2",
+        F::Joomla | F::Kirby => "8.1",
+        F::OctoberCms => "8.1",
+        F::Contao => "8.1",
+        F::Slim | F::Zend => "8.2",
+        F::Jigsaw | F::Sculpin => "8.1",
+        F::ExpressionEngine => "8.1",
+        F::Katana | F::StaticHtml | F::Unknown => "8.3",
     }
 }
 
@@ -44,16 +44,16 @@ pub struct PhpVersion {
 impl PhpVersion {
     pub fn from_version_str(version: &str) -> Self {
         PhpVersion {
-            binary_path:  PathBuf::from(format!("/usr/bin/php{}", version)),
-            fpm_service:  format!("php{}-fpm", version),
+            binary_path: PathBuf::from(format!("/usr/bin/php{}", version)),
+            fpm_service: format!("php{}-fpm", version),
             cli_ini_path: PathBuf::from(format!("/etc/php/{}/cli/php.ini", version)),
             fpm_ini_path: PathBuf::from(format!("/etc/php/{}/fpm/php.ini", version)),
-            conf_d_path:  PathBuf::from(format!("/etc/php/{}/cli/conf.d", version)),
-            version:      version.to_string(),
+            conf_d_path: PathBuf::from(format!("/etc/php/{}/cli/conf.d", version)),
+            version: version.to_string(),
             full_version: String::new(),
-            is_active:    false,
-            fpm_running:  false,
-            fpm_status:   ServiceStatus::Unknown,
+            is_active: false,
+            fpm_running: false,
+            fpm_status: ServiceStatus::Unknown,
         }
     }
 }
@@ -145,7 +145,12 @@ async fn query_full_version(binary: &Path) -> Option<String> {
         .output()
         .await
         .ok()?;
-    Some(String::from_utf8_lossy(&output.stdout).lines().next()?.to_string())
+    Some(
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .next()?
+            .to_string(),
+    )
 }
 
 #[cfg(test)]
@@ -179,7 +184,10 @@ mod tests {
 
     #[test]
     fn version_output_extracts_major_minor() {
-        assert_eq!(parse_php_version_output("PHP 8.3.12 (cli) (built: ...)\n"), "8.3");
+        assert_eq!(
+            parse_php_version_output("PHP 8.3.12 (cli) (built: ...)\n"),
+            "8.3"
+        );
     }
 
     #[test]
@@ -208,7 +216,10 @@ mod tests {
 
     #[test]
     fn recommended_php_version_for_wordpress_is_82() {
-        assert_eq!(recommended_php_version(&DetectedFramework::WordPress), "8.2");
+        assert_eq!(
+            recommended_php_version(&DetectedFramework::WordPress),
+            "8.2"
+        );
     }
 
     #[test]

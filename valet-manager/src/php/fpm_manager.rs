@@ -4,17 +4,26 @@ use crate::php::privilege::{run_privileged, HelperRequest};
 use crate::services::monitor::ServiceStatus;
 
 pub async fn start(version: &str) -> anyhow::Result<()> {
-    run_privileged(&HelperRequest::StartFpm { version: version.to_string() }).await?;
+    run_privileged(&HelperRequest::StartFpm {
+        version: version.to_string(),
+    })
+    .await?;
     Ok(())
 }
 
 pub async fn stop(version: &str) -> anyhow::Result<()> {
-    run_privileged(&HelperRequest::StopFpm { version: version.to_string() }).await?;
+    run_privileged(&HelperRequest::StopFpm {
+        version: version.to_string(),
+    })
+    .await?;
     Ok(())
 }
 
 pub async fn restart(version: &str) -> anyhow::Result<()> {
-    run_privileged(&HelperRequest::RestartFpm { version: version.to_string() }).await?;
+    run_privileged(&HelperRequest::RestartFpm {
+        version: version.to_string(),
+    })
+    .await?;
     Ok(())
 }
 

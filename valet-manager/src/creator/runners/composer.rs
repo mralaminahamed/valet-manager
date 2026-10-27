@@ -1,7 +1,7 @@
+use crate::creator::output_streamer::OutputLine;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::sync::mpsc::Sender;
-use crate::creator::output_streamer::OutputLine;
 
 /// Generic Composer-based runner. Used by every PHP type whose install_command
 /// starts with `composer create-project`.
@@ -188,8 +188,14 @@ mod tests {
         assert!(args.contains(&"--prefer-dist".to_string()));
         assert!(args.contains(&"--no-dev".to_string()));
         // extras come after --no-interaction
-        let no_int_idx = args.iter().position(|a| a == "--no-interaction").expect("flag present");
-        let prefer_idx = args.iter().position(|a| a == "--prefer-dist").expect("flag present");
+        let no_int_idx = args
+            .iter()
+            .position(|a| a == "--no-interaction")
+            .expect("flag present");
+        let prefer_idx = args
+            .iter()
+            .position(|a| a == "--prefer-dist")
+            .expect("flag present");
         assert!(prefer_idx > no_int_idx);
     }
 }

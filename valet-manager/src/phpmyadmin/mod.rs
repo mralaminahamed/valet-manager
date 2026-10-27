@@ -5,18 +5,16 @@
 //! Orchestrates credential resolution, config.inc.php generation,
 //! nginx sentinel-block injection, and per-site state reporting.
 
-pub mod installer;
 pub mod config_generator;
-pub mod nginx_integration;
 pub mod global_site;
+pub mod installer;
+pub mod nginx_integration;
 
 use std::path::PathBuf;
 
 use crate::config::AppConfig;
 use crate::creator::output_streamer::{OutputLine, Stream};
-use crate::site_config::models::{
-    PhpMyAdminSiteConfig, PmaAccessMode, PmaDbScope, SiteConfig,
-};
+use crate::site_config::models::{PhpMyAdminSiteConfig, PmaAccessMode, PmaDbScope, SiteConfig};
 use crate::state::app_state::PmaSiteStatus;
 use crate::valet::site_scanner::ValetSite;
 use crate::valet::variant::ValetPaths;
@@ -83,10 +81,20 @@ pub async fn resolve_db_credentials(
                     .clone()
                     .or_else(|| lookup("DB_USERNAME"))
                     .unwrap_or_else(|| default_user(app_config));
-                let password = lookup("DB_PASSWORD").unwrap_or_else(|| app_config.mysql_pass.clone());
+                let password =
+                    lookup("DB_PASSWORD").unwrap_or_else(|| app_config.mysql_pass.clone());
                 let host = lookup("DB_HOST").unwrap_or_else(|| "127.0.0.1".into());
-                let port = lookup("DB_PORT").and_then(|p| p.parse().ok()).unwrap_or(3306);
-                return ResolvedDb { name, user, password, host, port, source: DbSource::Env };
+                let port = lookup("DB_PORT")
+                    .and_then(|p| p.parse().ok())
+                    .unwrap_or(3306);
+                return ResolvedDb {
+                    name,
+                    user,
+                    password,
+                    host,
+                    port,
+                    source: DbSource::Env,
+                };
             }
         }
     }
@@ -110,7 +118,10 @@ pub async fn resolve_db_credentials(
                     .get("DB_PASSWORD")
                     .cloned()
                     .unwrap_or_else(|| app_config.mysql_pass.clone());
-                let host = map.get("DB_HOST").cloned().unwrap_or_else(|| "127.0.0.1".into());
+                let host = map
+                    .get("DB_HOST")
+                    .cloned()
+                    .unwrap_or_else(|| "127.0.0.1".into());
                 return ResolvedDb {
                     name,
                     user,
@@ -192,19 +203,28 @@ pub async fn configure_for_site(
     out_tx: tokio::sync::mpsc::Sender<OutputLine>,
 ) -> anyhow::Result<PmaSiteStatus> {
     let pma = &req.site_config.phpmyadmin;
-    log_line(&out_tx, Stream::Stdout, format!("Configuring phpMyAdmin for '{}'…", req.site.name)).await;
+    log_line(
+        &out_tx,
+        Stream::Stdout,
+        format!("Configuring phpMyAdmin for '{}'…", req.site.name),
+    )
+    .await;
 
     // Resolve credentials.
-    let resolved =
-        resolve_db_credentials(req.site, req.site_config, req.app_config).await;
+    let resolved = resolve_db_credentials(req.site, req.site_config, req.app_config).await;
     log_line(
         &out_tx,
         Stream::Stdout,
         format!(
             "Detected DB: name='{}' user='{}' host='{}' port={} ({})",
-            resolved.name, resolved.user, resolved.host, resolved.port, resolved.source.label()
+            resolved.name,
+            resolved.user,
+            resolved.host,
+            resolved.port,
+            resolved.source.label()
         ),
-    ).await;
+    )
+    .await;
 
     // Render config (no secrets logged).
     let db_name = match pma.db_scope {
@@ -226,7 +246,8 @@ pub async fn configure_for_site(
         &out_tx,
         Stream::Stdout,
         format!("Wrote {} (mode 0640)", cfg_path.display()),
-    ).await;
+    )
+    .await;
 
     // Inject nginx block when access mode requires it.
     if matches!(pma.access_mode, PmaAccessMode::PathAlias) {
@@ -240,14 +261,22 @@ pub async fn configure_for_site(
         log_line(
             &out_tx,
             Stream::Stdout,
-            format!("Injected nginx phpmyadmin block (idempotent) for {}", req.site.name),
-        ).await;
+            format!(
+                "Injected nginx phpmyadmin block (idempotent) for {}",
+                req.site.name
+            ),
+        )
+        .await;
     } else {
         log_line(
             &out_tx,
             Stream::Stdout,
-            format!("Skipping nginx injection (mode = {})", pma.access_mode.display_name()),
-        ).await;
+            format!(
+                "Skipping nginx injection (mode = {})",
+                pma.access_mode.display_name()
+            ),
+        )
+        .await;
     }
 
     let url = access_url(&req.site.domain, pma, pma.db_scope, req.tld);
@@ -352,7 +381,9 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!(
             "vm-pma-env-{}",
             std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         std::fs::create_dir_all(&tmp).unwrap();
         std::fs::write(
@@ -377,7 +408,9 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!(
             "vm-pma-wp-{}",
             std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         std::fs::create_dir_all(&tmp).unwrap();
         std::fs::write(
@@ -400,7 +433,9 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!(
             "vm-pma-def-{}",
             std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         std::fs::create_dir_all(&tmp).unwrap();
         let site = make_site(tmp.clone());
@@ -421,7 +456,9 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!(
             "vm-pma-override-{}",
             std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         std::fs::create_dir_all(&tmp).unwrap();
         std::fs::write(tmp.join(".env"), "DB_DATABASE=envdb\nDB_USERNAME=envuser\n").unwrap();

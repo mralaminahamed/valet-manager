@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use crate::creator::output_streamer::OutputLine;
 use crate::creator::project_types::ProjectType;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 #[allow(dead_code)]
@@ -19,10 +19,10 @@ pub enum CreatorStep {
 pub struct CreatorState {
     pub step: CreatorStep,
     pub selected_type: Option<ProjectType>,
-    pub form_values: HashMap<String, String>,    // option key → user value
-    pub output_lines: Vec<OutputLine>,           // streamed terminal output
-    pub error: Option<String>,                   // last error message
-    pub is_running: bool,                        // install in progress
+    pub form_values: HashMap<String, String>, // option key → user value
+    pub output_lines: Vec<OutputLine>,        // streamed terminal output
+    pub error: Option<String>,                // last error message
+    pub is_running: bool,                     // install in progress
     pub cancel_requested: bool,
     // Wizard UI state
     pub active_group: crate::creator::project_types::ProjectGroup,

@@ -12,12 +12,22 @@ pub async fn read_site_config(site: &str, valet_paths: &ValetPaths) -> String {
 /// Write nginx config for a site via privilege helper.
 /// Uses HelperRequest::SaveIni with the nginx config path.
 /// (Reusing SaveIni since it does the same thing: write content to a path)
-pub async fn write_site_config(site: &str, content: &str, valet_paths: &ValetPaths) -> anyhow::Result<()> {
+pub async fn write_site_config(
+    site: &str,
+    content: &str,
+    valet_paths: &ValetPaths,
+) -> anyhow::Result<()> {
     use crate::php::privilege::{run_privileged, HelperRequest};
-    let path = valet_paths.nginx_dir.join(site)
+    let path = valet_paths
+        .nginx_dir
+        .join(site)
         .to_string_lossy()
         .to_string();
-    run_privileged(&HelperRequest::SaveIni { path, content: content.to_string() }).await?;
+    run_privileged(&HelperRequest::SaveIni {
+        path,
+        content: content.to_string(),
+    })
+    .await?;
     Ok(())
 }
 
@@ -50,7 +60,10 @@ pub fn inject_directives(config: &str, block: &str) -> String {
     if config.contains(BEGIN) {
         // Replace existing block
         let start = config.find(BEGIN).unwrap_or(0);
-        let end = config.find(END).map(|i| i + END.len()).unwrap_or(config.len());
+        let end = config
+            .find(END)
+            .map(|i| i + END.len())
+            .unwrap_or(config.len());
         format!("{}{}{}", &config[..start], injected, &config[end..])
     } else {
         format!("{}\n\n{}\n", config.trim_end(), injected)

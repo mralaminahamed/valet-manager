@@ -23,13 +23,22 @@ pub async fn detect_installed() -> Vec<HttpServerType> {
 /// Inspect site config files to guess which server is currently fronting a site.
 /// Defaults to Nginx if no Caddy/Apache file is found.
 pub async fn detect_site_server(site_name: &str) -> HttpServerType {
-    if tokio::fs::metadata(format!("/etc/caddy/sites/{site_name}.caddy")).await.is_ok() {
+    if tokio::fs::metadata(format!("/etc/caddy/sites/{site_name}.caddy"))
+        .await
+        .is_ok()
+    {
         return HttpServerType::Caddy;
     }
-    if tokio::fs::metadata(format!("/etc/apache2/sites-enabled/{site_name}.conf")).await.is_ok() {
+    if tokio::fs::metadata(format!("/etc/apache2/sites-enabled/{site_name}.conf"))
+        .await
+        .is_ok()
+    {
         return HttpServerType::Apache;
     }
-    if tokio::fs::metadata(format!("/etc/frankenphp/conf.d/{site_name}.caddy")).await.is_ok() {
+    if tokio::fs::metadata(format!("/etc/frankenphp/conf.d/{site_name}.caddy"))
+        .await
+        .is_ok()
+    {
         return HttpServerType::FrankenPhp;
     }
     HttpServerType::Nginx

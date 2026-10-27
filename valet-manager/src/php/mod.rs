@@ -1,11 +1,11 @@
+pub mod compat_checker;
 pub mod detector;
-pub mod types;
-pub mod privilege;
-pub mod switcher;
-pub mod fpm_manager;
 pub mod extension_manager;
+pub mod fpm_manager;
 pub mod ini_manager;
 pub mod phpinfo_parser;
-pub mod compat_checker;
-pub mod xdebug;
+pub mod privilege;
+pub mod switcher;
+pub mod types;
 pub mod user_ini;
+pub mod xdebug;

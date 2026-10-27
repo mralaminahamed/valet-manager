@@ -125,8 +125,8 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                     for db in &state.databases {
                         let selected =
                             state.db_selected_database.as_deref() == Some(db.name.as_str());
-                        let (rect, resp) = ui
-                            .allocate_exact_size(egui::vec2(168.0, 28.0), egui::Sense::click());
+                        let (rect, resp) =
+                            ui.allocate_exact_size(egui::vec2(168.0, 28.0), egui::Sense::click());
                         if ui.is_rect_visible(rect) {
                             let p = ui.painter();
                             let bg = if selected {
@@ -190,7 +190,12 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                     .fill(Colors::CARD)
                     .corner_radius(CornerRadius::same(8))
                     .stroke(Stroke::new(0.5, Colors::BORDER))
-                    .inner_margin(Margin { left: 0, right: 0, top: 0, bottom: 0 })
+                    .inner_margin(Margin {
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                    })
                     .show(ui, |ui| {
                         ui.set_min_width(avail);
                         ScrollArea::vertical()
@@ -222,8 +227,11 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         // Top border
         let w = ui.available_width();
         let (line_rect, _) = ui.allocate_exact_size(egui::vec2(w, 1.0), egui::Sense::hover());
-        ui.painter()
-            .hline(line_rect.x_range(), line_rect.center().y, Stroke::new(0.5, Colors::BORDER));
+        ui.painter().hline(
+            line_rect.x_range(),
+            line_rect.center().y,
+            Stroke::new(0.5, Colors::BORDER),
+        );
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
@@ -280,7 +288,12 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                     Frame::NONE
                         .fill(Colors::DEEP_BG)
                         .corner_radius(CornerRadius::same(6))
-                        .inner_margin(Margin { left: 0, right: 0, top: 0, bottom: 0 })
+                        .inner_margin(Margin {
+                            left: 0,
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                        })
                         .show(ui, |ui| {
                             terminal_output::render(ui, &state.db_migration_output, true);
                         });
@@ -296,7 +309,11 @@ fn table_header_row(ui: &mut egui::Ui) {
     let (rect, _) = ui.allocate_exact_size(egui::vec2(avail, 28.0), egui::Sense::hover());
     let p = ui.painter();
     p.rect_filled(rect, CornerRadius::ZERO, with_alpha(Color32::BLACK, 38));
-    p.hline(rect.x_range(), rect.bottom(), Stroke::new(0.5, Colors::BORDER));
+    p.hline(
+        rect.x_range(),
+        rect.bottom(),
+        Stroke::new(0.5, Colors::BORDER),
+    );
     let hdr = |text: &str, pos: egui::Pos2, align: egui::Align2| {
         ui.painter().text(
             pos,
@@ -306,7 +323,11 @@ fn table_header_row(ui: &mut egui::Ui) {
             Colors::TEXT_TERTIARY,
         );
     };
-    hdr("NAME", egui::pos2(rect.min.x + 12.0, rect.center().y), egui::Align2::LEFT_CENTER);
+    hdr(
+        "NAME",
+        egui::pos2(rect.min.x + 12.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+    );
     hdr(
         "ROWS",
         egui::pos2(rect.max.x - 80.0 - 70.0, rect.center().y),
@@ -323,7 +344,11 @@ fn table_row(ui: &mut egui::Ui, name: &str, rows: u64, engine: &str) {
     let avail = ui.available_width();
     let (rect, _) = ui.allocate_exact_size(egui::vec2(avail, 28.0), egui::Sense::hover());
     let p = ui.painter();
-    p.hline(rect.x_range(), rect.bottom(), Stroke::new(0.5, Colors::BORDER));
+    p.hline(
+        rect.x_range(),
+        rect.bottom(),
+        Stroke::new(0.5, Colors::BORDER),
+    );
     p.text(
         egui::pos2(rect.min.x + 12.0, rect.center().y),
         egui::Align2::LEFT_CENTER,
@@ -350,11 +375,7 @@ fn table_row(ui: &mut egui::Ui, name: &str, rows: u64, engine: &str) {
 fn empty_state(ui: &mut egui::Ui, msg: &str) {
     ui.add_space(20.0);
     ui.vertical_centered(|ui| {
-        ui.label(
-            RichText::new(msg)
-                .size(12.5)
-                .color(Colors::TEXT_SECONDARY),
-        );
+        ui.label(RichText::new(msg).size(12.5).color(Colors::TEXT_SECONDARY));
     });
     ui.add_space(20.0);
 }

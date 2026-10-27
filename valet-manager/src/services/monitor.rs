@@ -14,7 +14,7 @@ impl ServiceStatus {
         match self {
             ServiceStatus::Running => "Running",
             ServiceStatus::Stopped => "Stopped",
-            ServiceStatus::Failed  => "Failed",
+            ServiceStatus::Failed => "Failed",
             ServiceStatus::Unknown => "Unknown",
         }
     }
@@ -41,7 +41,11 @@ pub fn pid_for_service(name: &str) -> Option<u32> {
         .ok()?;
     let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
     let pid: u32 = s.parse().ok()?;
-    if pid == 0 { None } else { Some(pid) }
+    if pid == 0 {
+        None
+    } else {
+        Some(pid)
+    }
 }
 
 pub async fn query_service_status(name: &str) -> ServiceStatus {
@@ -64,7 +68,11 @@ pub async fn query_service_status(name: &str) -> ServiceStatus {
         .map(|s| s.success())
         .unwrap_or(false);
 
-    if failed { ServiceStatus::Failed } else { ServiceStatus::Stopped }
+    if failed {
+        ServiceStatus::Failed
+    } else {
+        ServiceStatus::Stopped
+    }
 }
 
 pub async fn poll_services(service_names: Vec<String>, tx: mpsc::Sender<Vec<ManagedService>>) {
@@ -93,14 +101,17 @@ pub async fn poll_services(service_names: Vec<String>, tx: mpsc::Sender<Vec<Mana
 fn friendly_name(service: &str) -> String {
     match service {
         s if s.starts_with("php") && s.ends_with("-fpm") => {
-            format!("PHP {}", s.trim_start_matches("php").trim_end_matches("-fpm"))
+            format!(
+                "PHP {}",
+                s.trim_start_matches("php").trim_end_matches("-fpm")
+            )
         }
-        "nginx"   => "Nginx".to_string(),
+        "nginx" => "Nginx".to_string(),
         "mysql" | "mysqld" => "MySQL".to_string(),
         "mariadb" => "MariaDB".to_string(),
         "dnsmasq" => "Dnsmasq".to_string(),
         "mailpit" => "Mailpit".to_string(),
-        other     => other.to_string(),
+        other => other.to_string(),
     }
 }
 
@@ -150,7 +161,7 @@ mod tests {
     fn service_status_labels() {
         assert_eq!(ServiceStatus::Running.label(), "Running");
         assert_eq!(ServiceStatus::Stopped.label(), "Stopped");
-        assert_eq!(ServiceStatus::Failed.label(),  "Failed");
+        assert_eq!(ServiceStatus::Failed.label(), "Failed");
         assert_eq!(ServiceStatus::Unknown.label(), "Unknown");
     }
 }

@@ -37,7 +37,11 @@ pub async fn is_installed() -> bool {
 }
 
 async fn is_pma_directory(path: &Path) -> bool {
-    if !tokio::fs::metadata(path).await.map(|m| m.is_dir()).unwrap_or(false) {
+    if !tokio::fs::metadata(path)
+        .await
+        .map(|m| m.is_dir())
+        .unwrap_or(false)
+    {
         return false;
     }
     // The canonical entry point.
@@ -66,7 +70,9 @@ pub(crate) fn parse_readme_version(content: &str) -> Option<String> {
 
 pub(crate) fn parse_composer_version(content: &str) -> Option<String> {
     let v: serde_json::Value = serde_json::from_str(content).ok()?;
-    v.get("version").and_then(|x| x.as_str()).map(|s| s.to_string())
+    v.get("version")
+        .and_then(|x| x.as_str())
+        .map(|s| s.to_string())
 }
 
 /// Latest known stable upstream version. Stub used by the UI when offline.

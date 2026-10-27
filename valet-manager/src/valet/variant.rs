@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use dirs::home_dir;
+use std::path::PathBuf;
 
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, PartialEq)]
@@ -38,12 +38,12 @@ pub fn for_variant(v: &ValetVariant) -> ValetPaths {
         ValetVariant::ValetOfficial => home.join(".config").join("valet"),
     };
     ValetPaths {
-        nginx_dir:   valet_root.join("Nginx"),
-        sites_dir:   valet_root.join("Sites"),
+        nginx_dir: valet_root.join("Nginx"),
+        sites_dir: valet_root.join("Sites"),
         drivers_dir: valet_root.join("Drivers"),
-        log_dir:     valet_root.join("Log"),
+        log_dir: valet_root.join("Log"),
         config_json: valet_root.join("config.json"),
-        ca_dir:      valet_root.join("CA"),
+        ca_dir: valet_root.join("CA"),
         config_root: valet_root,
     }
 }
@@ -78,7 +78,12 @@ pub async fn detect_valet_variant() -> anyhow::Result<ValetVariant> {
     if home.join(".valet").join("config.json").exists() {
         return Ok(ValetVariant::ValetLinux);
     }
-    if home.join(".config").join("valet").join("config.json").exists() {
+    if home
+        .join(".config")
+        .join("valet")
+        .join("config.json")
+        .exists()
+    {
         return Ok(ValetVariant::ValetOfficial);
     }
 
@@ -100,7 +105,11 @@ mod tests {
     fn for_variant_official_uses_dot_config_valet() {
         let paths = for_variant(&ValetVariant::ValetOfficial);
         let s = paths.config_root.to_string_lossy().to_string();
-        assert!(s.contains(".config") && s.contains("valet"), "expected .config/valet in {}", s);
+        assert!(
+            s.contains(".config") && s.contains("valet"),
+            "expected .config/valet in {}",
+            s
+        );
     }
 
     #[test]
@@ -111,7 +120,13 @@ mod tests {
 
     #[test]
     fn display_names_are_distinct() {
-        assert_ne!(ValetVariant::ValetLinux.display_name(), ValetVariant::ValetOfficial.display_name());
-        assert_ne!(ValetVariant::ValetLinux.display_name(), ValetVariant::ValetLinuxPlus.display_name());
+        assert_ne!(
+            ValetVariant::ValetLinux.display_name(),
+            ValetVariant::ValetOfficial.display_name()
+        );
+        assert_ne!(
+            ValetVariant::ValetLinux.display_name(),
+            ValetVariant::ValetLinuxPlus.display_name()
+        );
     }
 }

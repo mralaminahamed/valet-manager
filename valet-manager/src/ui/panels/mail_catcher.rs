@@ -6,15 +6,20 @@ use crate::mail::mailpit::{env_lines, MailStatus};
 use crate::services::monitor::ServiceStatus;
 use crate::state::app_state::AppState;
 use crate::ui::theme::{
-    accent_button, card_frame, danger_button, divider, ghost_button, section_label,
-    status_dot, with_alpha, Colors,
+    accent_button, card_frame, danger_button, divider, ghost_button, section_label, status_dot,
+    with_alpha, Colors,
 };
 
 fn small_badge(ui: &mut egui::Ui, text: &str, fg: egui::Color32) {
     Frame::NONE
         .fill(with_alpha(fg, 30))
         .corner_radius(CornerRadius::same(10))
-        .inner_margin(Margin { left: 7, right: 7, top: 2, bottom: 2 })
+        .inner_margin(Margin {
+            left: 7,
+            right: 7,
+            top: 2,
+            bottom: 2,
+        })
         .show(ui, |ui| {
             ui.label(RichText::new(text).size(10.5).color(fg));
         });
@@ -85,7 +90,12 @@ fn env_preview(ui: &mut egui::Ui, body: &str) {
         .fill(Colors::DEEP_BG)
         .corner_radius(CornerRadius::same(6))
         .stroke(Stroke::new(0.5, Colors::BORDER))
-        .inner_margin(Margin { left: 10, right: 10, top: 8, bottom: 8 })
+        .inner_margin(Margin {
+            left: 10,
+            right: 10,
+            top: 8,
+            bottom: 8,
+        })
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
             for line in body.lines() {

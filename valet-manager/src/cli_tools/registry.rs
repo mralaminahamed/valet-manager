@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use anyhow::Result;
+use std::collections::HashMap;
 use tokio::process::Command;
 
 #[allow(dead_code)]
@@ -69,15 +69,13 @@ async fn detect_tool(tool: CliTool) -> (CliTool, ToolStatus) {
 
 async fn detect_wp_cli() -> ToolStatus {
     match which::which("wp") {
-        Ok(path) => {
-            match get_version_output("wp", &["--version"]).await {
-                Ok(version) => ToolStatus::Installed {
-                    path: path.to_string_lossy().to_string(),
-                    version,
-                },
-                Err(_) => ToolStatus::Missing,
-            }
-        }
+        Ok(path) => match get_version_output("wp", &["--version"]).await {
+            Ok(version) => ToolStatus::Installed {
+                path: path.to_string_lossy().to_string(),
+                version,
+            },
+            Err(_) => ToolStatus::Missing,
+        },
         Err(_) => ToolStatus::Missing,
     }
 }
@@ -85,12 +83,7 @@ async fn detect_wp_cli() -> ToolStatus {
 async fn detect_wp_cli_valet_command() -> ToolStatus {
     match which::which("wp") {
         Ok(path) => {
-            match Command::new("wp")
-                .arg("valet")
-                .arg("--info")
-                .output()
-                .await
-            {
+            match Command::new("wp").arg("valet").arg("--info").output().await {
                 Ok(output) => {
                     if output.status.success() {
                         // Get version from wp --version
@@ -114,75 +107,65 @@ async fn detect_wp_cli_valet_command() -> ToolStatus {
 
 async fn detect_laravel_installer() -> ToolStatus {
     match which::which("laravel") {
-        Ok(path) => {
-            match get_version_output("laravel", &["--version"]).await {
-                Ok(version) => ToolStatus::Installed {
-                    path: path.to_string_lossy().to_string(),
-                    version,
-                },
-                Err(_) => ToolStatus::Missing,
-            }
-        }
+        Ok(path) => match get_version_output("laravel", &["--version"]).await {
+            Ok(version) => ToolStatus::Installed {
+                path: path.to_string_lossy().to_string(),
+                version,
+            },
+            Err(_) => ToolStatus::Missing,
+        },
         Err(_) => ToolStatus::Missing,
     }
 }
 
 async fn detect_composer() -> ToolStatus {
     match which::which("composer") {
-        Ok(path) => {
-            match get_version_output("composer", &["--version"]).await {
-                Ok(version) => ToolStatus::Installed {
-                    path: path.to_string_lossy().to_string(),
-                    version,
-                },
-                Err(_) => ToolStatus::Missing,
-            }
-        }
+        Ok(path) => match get_version_output("composer", &["--version"]).await {
+            Ok(version) => ToolStatus::Installed {
+                path: path.to_string_lossy().to_string(),
+                version,
+            },
+            Err(_) => ToolStatus::Missing,
+        },
         Err(_) => ToolStatus::Missing,
     }
 }
 
 async fn detect_npm() -> ToolStatus {
     match which::which("npm") {
-        Ok(path) => {
-            match get_version_output("npm", &["--version"]).await {
-                Ok(version) => ToolStatus::Installed {
-                    path: path.to_string_lossy().to_string(),
-                    version,
-                },
-                Err(_) => ToolStatus::Missing,
-            }
-        }
+        Ok(path) => match get_version_output("npm", &["--version"]).await {
+            Ok(version) => ToolStatus::Installed {
+                path: path.to_string_lossy().to_string(),
+                version,
+            },
+            Err(_) => ToolStatus::Missing,
+        },
         Err(_) => ToolStatus::Missing,
     }
 }
 
 async fn detect_git() -> ToolStatus {
     match which::which("git") {
-        Ok(path) => {
-            match get_version_output("git", &["--version"]).await {
-                Ok(version) => ToolStatus::Installed {
-                    path: path.to_string_lossy().to_string(),
-                    version,
-                },
-                Err(_) => ToolStatus::Missing,
-            }
-        }
+        Ok(path) => match get_version_output("git", &["--version"]).await {
+            Ok(version) => ToolStatus::Installed {
+                path: path.to_string_lossy().to_string(),
+                version,
+            },
+            Err(_) => ToolStatus::Missing,
+        },
         Err(_) => ToolStatus::Missing,
     }
 }
 
 async fn detect_node() -> ToolStatus {
     match which::which("node") {
-        Ok(path) => {
-            match get_version_output("node", &["--version"]).await {
-                Ok(version) => ToolStatus::Installed {
-                    path: path.to_string_lossy().to_string(),
-                    version,
-                },
-                Err(_) => ToolStatus::Missing,
-            }
-        }
+        Ok(path) => match get_version_output("node", &["--version"]).await {
+            Ok(version) => ToolStatus::Installed {
+                path: path.to_string_lossy().to_string(),
+                version,
+            },
+            Err(_) => ToolStatus::Missing,
+        },
         Err(_) => ToolStatus::Missing,
     }
 }
@@ -190,10 +173,7 @@ async fn detect_node() -> ToolStatus {
 /// Helper function to get version output from a command.
 /// Returns the first line of stdout, trimmed.
 async fn get_version_output(command: &str, args: &[&str]) -> Result<String> {
-    let output = Command::new(command)
-        .args(args)
-        .output()
-        .await?;
+    let output = Command::new(command).args(args).output().await?;
 
     if !output.status.success() {
         return Err(anyhow::anyhow!("Command failed"));

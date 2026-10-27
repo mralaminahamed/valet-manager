@@ -22,7 +22,10 @@ pub fn inject_block(config: &str, begin: &str, end: &str, body: &str) -> String 
     let block = format!("{}\n{}\n{}", begin, body.trim_matches('\n'), end);
     if config.contains(begin) {
         let start_idx = config.find(begin).unwrap();
-        let end_idx = config.find(end).map(|i| i + end.len()).unwrap_or(config.len());
+        let end_idx = config
+            .find(end)
+            .map(|i| i + end.len())
+            .unwrap_or(config.len());
         let mut out = String::new();
         out.push_str(&config[..start_idx]);
         out.push_str(&block);
@@ -49,7 +52,11 @@ async fn read_config(site: &ValetSite, valet_paths: &ValetPaths) -> String {
     tokio::fs::read_to_string(&path).await.unwrap_or_default()
 }
 
-async fn write_config(site: &ValetSite, content: &str, valet_paths: &ValetPaths) -> anyhow::Result<()> {
+async fn write_config(
+    site: &ValetSite,
+    content: &str,
+    valet_paths: &ValetPaths,
+) -> anyhow::Result<()> {
     let path = valet_paths.nginx_dir.join(&site.name);
     write_atomic(&path, content).await
 }

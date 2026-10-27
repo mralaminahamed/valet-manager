@@ -2,29 +2,41 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[allow(dead_code)]
-pub enum XdebugMode { Off, Debug, Profile, Coverage, Trace }
+pub enum XdebugMode {
+    Off,
+    Debug,
+    Profile,
+    Coverage,
+    Trace,
+}
 
 impl XdebugMode {
     pub fn ini_value(&self) -> &'static str {
         match self {
-            XdebugMode::Off      => "off",
-            XdebugMode::Debug    => "debug",
-            XdebugMode::Profile  => "profile",
+            XdebugMode::Off => "off",
+            XdebugMode::Debug => "debug",
+            XdebugMode::Profile => "profile",
             XdebugMode::Coverage => "coverage",
-            XdebugMode::Trace    => "trace",
+            XdebugMode::Trace => "trace",
         }
     }
     pub fn label(&self) -> &'static str {
         match self {
-            XdebugMode::Off      => "Off",
-            XdebugMode::Debug    => "Debug",
-            XdebugMode::Profile  => "Profile",
+            XdebugMode::Off => "Off",
+            XdebugMode::Debug => "Debug",
+            XdebugMode::Profile => "Profile",
             XdebugMode::Coverage => "Coverage",
-            XdebugMode::Trace    => "Trace",
+            XdebugMode::Trace => "Trace",
         }
     }
     pub fn all() -> [XdebugMode; 5] {
-        [XdebugMode::Off, XdebugMode::Debug, XdebugMode::Profile, XdebugMode::Coverage, XdebugMode::Trace]
+        [
+            XdebugMode::Off,
+            XdebugMode::Debug,
+            XdebugMode::Profile,
+            XdebugMode::Coverage,
+            XdebugMode::Trace,
+        ]
     }
 }
 
@@ -72,7 +84,13 @@ mod tests {
     }
     #[test]
     fn render_ini_contains_mode_and_port() {
-        let cfg = XdebugConfig { php_version: "8.3".into(), installed: true, mode: XdebugMode::Profile, ide_key: "PHPSTORM".into(), port: 9003 };
+        let cfg = XdebugConfig {
+            php_version: "8.3".into(),
+            installed: true,
+            mode: XdebugMode::Profile,
+            ide_key: "PHPSTORM".into(),
+            port: 9003,
+        };
         let s = render_ini(&cfg);
         assert!(s.contains("xdebug.mode=profile"));
         assert!(s.contains("xdebug.client_port=9003"));
@@ -80,6 +98,9 @@ mod tests {
     }
     #[test]
     fn ini_path_per_version() {
-        assert_eq!(XdebugConfig::ini_path("8.3"), PathBuf::from("/etc/php/8.3/mods-available/xdebug.ini"));
+        assert_eq!(
+            XdebugConfig::ini_path("8.3"),
+            PathBuf::from("/etc/php/8.3/mods-available/xdebug.ini")
+        );
     }
 }

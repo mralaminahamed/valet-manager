@@ -1,8 +1,8 @@
 #[allow(dead_code)]
-pub mod terminal_output;
+pub mod banner;
 #[allow(dead_code)]
 pub mod confirm_dialog;
 #[allow(dead_code)]
-pub mod toast;
+pub mod terminal_output;
 #[allow(dead_code)]
-pub mod banner;
+pub mod toast;

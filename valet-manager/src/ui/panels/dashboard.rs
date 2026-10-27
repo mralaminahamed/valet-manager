@@ -7,8 +7,8 @@ use crate::services::monitor::ServiceStatus;
 use crate::state::app_state::AppState;
 use crate::ui::components::banner::{alert_banner, alert_banner_with_actions, BannerLevel};
 use crate::ui::theme::{
-    Colors, accent_button, card_frame, divider, ghost_button, section_label,
-    status_color, status_dot, with_alpha,
+    accent_button, card_frame, divider, ghost_button, section_label, status_color, status_dot,
+    with_alpha, Colors,
 };
 
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
@@ -26,7 +26,11 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
             let sub = format!(
                 "PHP {} · {} · {} sites",
                 state.active_php,
-                state.valet_variant.as_ref().map(|v| v.display_name()).unwrap_or("Valet"),
+                state
+                    .valet_variant
+                    .as_ref()
+                    .map(|v| v.display_name())
+                    .unwrap_or("Valet"),
                 state.sites.len(),
             );
             ui.label(RichText::new(sub).size(12.0).color(Colors::TEXT_SECONDARY));
@@ -193,15 +197,43 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
     }
 
     // ── Stats grid (4 equal columns) ────────────────────────────────────
-    let running = state.services.iter().filter(|s| s.status == ServiceStatus::Running).count();
-    let total   = state.services.len();
-    let svc_color = if running == total && total > 0 { Colors::ACCENT } else { Colors::WARNING };
+    let running = state
+        .services
+        .iter()
+        .filter(|s| s.status == ServiceStatus::Running)
+        .count();
+    let total = state.services.len();
+    let svc_color = if running == total && total > 0 {
+        Colors::ACCENT
+    } else {
+        Colors::WARNING
+    };
 
     ui.columns(4, |cols| {
-        stat_card(&mut cols[0], "Active PHP",  &state.active_php, Colors::ACCENT);
-        stat_card(&mut cols[1], "Sites",        &state.sites.len().to_string(), Colors::TEXT_PRIMARY);
-        stat_card(&mut cols[2], "Services",     &format!("{}/{}", running, total), svc_color);
-        stat_card(&mut cols[3], "TLD",          &format!(".{}", state.tld), Colors::TEXT_PRIMARY);
+        stat_card(
+            &mut cols[0],
+            "Active PHP",
+            &state.active_php,
+            Colors::ACCENT,
+        );
+        stat_card(
+            &mut cols[1],
+            "Sites",
+            &state.sites.len().to_string(),
+            Colors::TEXT_PRIMARY,
+        );
+        stat_card(
+            &mut cols[2],
+            "Services",
+            &format!("{}/{}", running, total),
+            svc_color,
+        );
+        stat_card(
+            &mut cols[3],
+            "TLD",
+            &format!(".{}", state.tld),
+            Colors::TEXT_PRIMARY,
+        );
     });
     ui.add_space(12.0);
 
@@ -279,7 +311,12 @@ fn legacy_alert_banner(
     let bg = with_alpha(color, 18);
     Frame::NONE
         .fill(bg)
-        .inner_margin(Margin { left: 12, right: 8, top: 8, bottom: 8 })
+        .inner_margin(Margin {
+            left: 12,
+            right: 8,
+            top: 8,
+            bottom: 8,
+        })
         .show(ui, |ui| {
             let rect = ui.max_rect();
             ui.painter().line_segment(

@@ -3,8 +3,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
 use crate::state::app_state::{AppState, Screen};
-use crate::ui::theme::{Colors, divider, section_label, with_alpha};
-
+use crate::ui::theme::{divider, section_label, with_alpha, Colors};
 
 /// Viewport ≥ 1000 px → full 220 px sidebar with labels.
 #[allow(dead_code)]
@@ -22,7 +21,12 @@ pub fn should_hide(viewport_width: f32) -> bool {
     viewport_width < 800.0
 }
 
-pub fn render(ui: &mut egui::Ui, state: &mut AppState, _cmd_tx: &Sender<AppCommand>, icon_only: bool) {
+pub fn render(
+    ui: &mut egui::Ui,
+    state: &mut AppState,
+    _cmd_tx: &Sender<AppCommand>,
+    icon_only: bool,
+) {
     ui.spacing_mut().item_spacing.y = 2.0;
 
     // ── Brand ──────────────────────────────────────────────────────────
@@ -82,22 +86,46 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, _cmd_tx: &Sender<AppComma
     }
 
     let site_count = state.sites.len();
-    let svc_count  = state.services.len();
-    let active     = state.ui.active_screen.clone();
+    let svc_count = state.services.len();
+    let active = state.ui.active_screen.clone();
 
-    if screen_nav_item(ui, "◈", "Sites",    Screen::Sites,    &active, Some(site_count), icon_only) {
+    if screen_nav_item(
+        ui,
+        "◈",
+        "Sites",
+        Screen::Sites,
+        &active,
+        Some(site_count),
+        icon_only,
+    ) {
         state.ui.active_screen = Screen::Sites;
     }
-    if screen_nav_item(ui, "◻", "Services", Screen::Services, &active, Some(svc_count),  icon_only) {
+    if screen_nav_item(
+        ui,
+        "◻",
+        "Services",
+        Screen::Services,
+        &active,
+        Some(svc_count),
+        icon_only,
+    ) {
         state.ui.active_screen = Screen::Services;
     }
-    if screen_nav_item(ui, "≡", "Logs",     Screen::Logs,     &active, None,             icon_only) {
+    if screen_nav_item(ui, "≡", "Logs", Screen::Logs, &active, None, icon_only) {
         state.ui.active_screen = Screen::Logs;
     }
-    if screen_nav_item(ui, "⬡", "DNS",      Screen::Dns,      &active, None,             icon_only) {
+    if screen_nav_item(ui, "⬡", "DNS", Screen::Dns, &active, None, icon_only) {
         state.ui.active_screen = Screen::Dns;
     }
-    if screen_nav_item(ui, "⚙", "Settings", Screen::Settings, &active, None,             icon_only) {
+    if screen_nav_item(
+        ui,
+        "⚙",
+        "Settings",
+        Screen::Settings,
+        &active,
+        None,
+        icon_only,
+    ) {
         state.ui.active_screen = Screen::Settings;
     }
 
@@ -134,21 +162,38 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, _cmd_tx: &Sender<AppComma
 
         ui.horizontal(|ui| {
             ui.add_space(14.0);
-            let all_running = state.services.iter().all(|s| s.status == crate::services::monitor::ServiceStatus::Running);
-            let dot_color = if all_running { Colors::ACCENT } else { Colors::WARNING };
+            let all_running = state
+                .services
+                .iter()
+                .all(|s| s.status == crate::services::monitor::ServiceStatus::Running);
+            let dot_color = if all_running {
+                Colors::ACCENT
+            } else {
+                Colors::WARNING
+            };
             let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
-            ui.painter().circle_filled(dot_rect.center(), 4.0, dot_color);
+            ui.painter()
+                .circle_filled(dot_rect.center(), 4.0, dot_color);
             ui.add_space(8.0);
             ui.vertical(|ui| {
-                let health = if all_running { "All services healthy" } else { "Some services stopped" };
-                ui.label(RichText::new(health).size(11.5).color(Colors::TEXT_PRIMARY).strong());
+                let health = if all_running {
+                    "All services healthy"
+                } else {
+                    "Some services stopped"
+                };
+                ui.label(
+                    RichText::new(health)
+                        .size(11.5)
+                        .color(Colors::TEXT_PRIMARY)
+                        .strong(),
+                );
                 ui.label(
                     RichText::new(match &state.valet_uptime {
                         Some(up) => format!("valet · uptime {}", up),
-                        None     => format!("valet · {} sites", state.sites.len()),
+                        None => format!("valet · {} sites", state.sites.len()),
                     })
-                        .size(10.5)
-                        .color(Colors::TEXT_TERTIARY),
+                    .size(10.5)
+                    .color(Colors::TEXT_TERTIARY),
                 );
             });
         });
@@ -166,14 +211,19 @@ fn screen_nav_item(
     icon_only: bool,
 ) -> bool {
     let is_active = active == &screen;
-    let text_color = if is_active { egui::Color32::WHITE } else { Colors::TEXT_SECONDARY };
+    let text_color = if is_active {
+        egui::Color32::WHITE
+    } else {
+        Colors::TEXT_SECONDARY
+    };
 
     let desired_size = egui::vec2(ui.available_width(), 28.0);
     let (rect, resp) = ui.allocate_exact_size(desired_size, egui::Sense::click());
 
     if ui.is_rect_visible(rect) {
         if is_active {
-            ui.painter().rect_filled(rect, egui::CornerRadius::same(4), Colors::ACCENT_DARK);
+            ui.painter()
+                .rect_filled(rect, egui::CornerRadius::same(4), Colors::ACCENT_DARK);
             ui.painter().rect_stroke(
                 rect,
                 egui::CornerRadius::same(4),
@@ -181,7 +231,11 @@ fn screen_nav_item(
                 egui::StrokeKind::Inside,
             );
         } else if resp.hovered() {
-            ui.painter().rect_filled(rect, egui::CornerRadius::same(4), with_alpha(egui::Color32::WHITE, 6));
+            ui.painter().rect_filled(
+                rect,
+                egui::CornerRadius::same(4),
+                with_alpha(egui::Color32::WHITE, 6),
+            );
         }
         let inner_rect = rect.shrink2(egui::vec2(10.0, 0.0));
         if icon_only {
@@ -214,7 +268,11 @@ fn screen_nav_item(
                         egui::pos2(inner_rect.right() - 26.0, rect.center().y - 9.0),
                         egui::vec2(26.0, 18.0),
                     );
-                    ui.painter().rect_filled(badge_rect, egui::CornerRadius::same(9), with_alpha(Colors::ACCENT, 22));
+                    ui.painter().rect_filled(
+                        badge_rect,
+                        egui::CornerRadius::same(9),
+                        with_alpha(Colors::ACCENT, 22),
+                    );
                     ui.painter().text(
                         badge_rect.center(),
                         egui::Align2::CENTER_CENTER,
@@ -236,7 +294,11 @@ fn quick_action_render(ui: &mut egui::Ui, icon: &str, label: &str, badge: &str) 
 
     if ui.is_rect_visible(rect) {
         if resp.hovered() {
-            ui.painter().rect_filled(rect, egui::CornerRadius::same(5), with_alpha(Colors::ACCENT, 12));
+            ui.painter().rect_filled(
+                rect,
+                egui::CornerRadius::same(5),
+                with_alpha(Colors::ACCENT, 12),
+            );
         }
         let inner_rect = rect.shrink2(egui::vec2(14.0, 0.0));
         ui.painter().text(
@@ -275,7 +337,7 @@ fn paint_v_mark(painter: &egui::Painter, rect: egui::Rect) {
 
     // Outer V (white fill)
     let outer = vec![
-        egui::pos2(ox + 4.0,  oy + 6.4),
+        egui::pos2(ox + 4.0, oy + 6.4),
         egui::pos2(ox + 22.4, oy + 6.4),
         egui::pos2(ox + 13.2, oy + 17.1),
     ];
@@ -287,7 +349,7 @@ fn paint_v_mark(painter: &egui::Painter, rect: egui::Rect) {
 
     // Inner cutout (ACCENT_DEEP fill to punch hole)
     let inner = vec![
-        egui::pos2(ox + 6.5,  oy + 7.5),
+        egui::pos2(ox + 6.5, oy + 7.5),
         egui::pos2(ox + 19.9, oy + 7.5),
         egui::pos2(ox + 13.2, oy + 15.6),
     ];

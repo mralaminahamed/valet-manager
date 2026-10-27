@@ -26,10 +26,10 @@ impl FrameworkCli {
     /// Short human label shown in the Artisan panel header.
     pub fn label(&self) -> &'static str {
         match self {
-            Self::Artisan    => "Artisan",
+            Self::Artisan => "Artisan",
             Self::SymfonyCli => "bin/console",
             Self::BinMagento => "bin/magento",
-            Self::DrushCli   => "drush",
+            Self::DrushCli => "drush",
         }
     }
 }
@@ -39,10 +39,18 @@ impl FrameworkCli {
 /// Order: `artisan` → `bin/console` → `bin/magento` → `vendor/bin/drush`.
 pub fn detect_cli(site: &ValetSite) -> Option<FrameworkCli> {
     let p = &site.path;
-    if p.join("artisan").exists()            { return Some(FrameworkCli::Artisan); }
-    if p.join("bin/console").exists()        { return Some(FrameworkCli::SymfonyCli); }
-    if p.join("bin/magento").exists()        { return Some(FrameworkCli::BinMagento); }
-    if p.join("vendor/bin/drush").exists()   { return Some(FrameworkCli::DrushCli); }
+    if p.join("artisan").exists() {
+        return Some(FrameworkCli::Artisan);
+    }
+    if p.join("bin/console").exists() {
+        return Some(FrameworkCli::SymfonyCli);
+    }
+    if p.join("bin/magento").exists() {
+        return Some(FrameworkCli::BinMagento);
+    }
+    if p.join("vendor/bin/drush").exists() {
+        return Some(FrameworkCli::DrushCli);
+    }
     None
 }
 
@@ -51,10 +59,10 @@ pub fn detect_cli(site: &ValetSite) -> Option<FrameworkCli> {
 /// invoke the vendor binary directly and pass an empty prefix.
 pub fn cli_binary(cli: FrameworkCli, php_bin: &str) -> (String, Vec<String>) {
     match cli {
-        FrameworkCli::Artisan    => (php_bin.to_string(), vec!["artisan".to_string()]),
+        FrameworkCli::Artisan => (php_bin.to_string(), vec!["artisan".to_string()]),
         FrameworkCli::SymfonyCli => (php_bin.to_string(), vec!["bin/console".to_string()]),
         FrameworkCli::BinMagento => (php_bin.to_string(), vec!["bin/magento".to_string()]),
-        FrameworkCli::DrushCli   => ("vendor/bin/drush".to_string(), vec![]),
+        FrameworkCli::DrushCli => ("vendor/bin/drush".to_string(), vec![]),
     }
 }
 
@@ -81,7 +89,9 @@ mod tests {
         std::fs::write(&p, "").unwrap();
     }
 
-    fn cleanup(dir: &PathBuf) { let _ = std::fs::remove_dir_all(dir); }
+    fn cleanup(dir: &PathBuf) {
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     fn site_at(path: PathBuf) -> ValetSite {
         ValetSite {
@@ -185,9 +195,9 @@ mod tests {
 
     #[test]
     fn label_returns_unique_per_variant() {
-        assert_eq!(FrameworkCli::Artisan.label(),    "Artisan");
+        assert_eq!(FrameworkCli::Artisan.label(), "Artisan");
         assert_eq!(FrameworkCli::SymfonyCli.label(), "bin/console");
         assert_eq!(FrameworkCli::BinMagento.label(), "bin/magento");
-        assert_eq!(FrameworkCli::DrushCli.label(),   "drush");
+        assert_eq!(FrameworkCli::DrushCli.label(), "drush");
     }
 }

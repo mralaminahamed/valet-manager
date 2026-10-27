@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use tokio::sync::mpsc::Sender;
 use crate::creator::output_streamer::{OutputLine, Stream};
 use chrono::Local;
+use std::path::PathBuf;
+use tokio::sync::mpsc::Sender;
 
 /// Configuration for post-install steps (valet link, secure, isolate, open browser).
 #[derive(Debug, Clone)]
@@ -21,12 +21,24 @@ pub struct PostInstallConfig {
 pub async fn run(config: &PostInstallConfig, tx: Sender<OutputLine>) -> anyhow::Result<()> {
     // Step 1: valet link {site_name}
     send_info(&tx, &format!("Linking site: {}...", config.site_name)).await;
-    run_step("valet", &["link", &config.site_name], &config.site_path, &tx).await?;
+    run_step(
+        "valet",
+        &["link", &config.site_name],
+        &config.site_path,
+        &tx,
+    )
+    .await?;
 
     // Step 2: valet secure (if requested)
     if config.secure {
         send_info(&tx, "Securing with SSL...").await;
-        run_step("valet", &["secure", &config.site_name], &config.site_path, &tx).await?;
+        run_step(
+            "valet",
+            &["secure", &config.site_name],
+            &config.site_path,
+            &tx,
+        )
+        .await?;
     }
 
     // Step 3: valet isolate (if php_version is Some)

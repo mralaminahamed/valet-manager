@@ -5,8 +5,8 @@ use crate::commands::AppCommand;
 use crate::services::monitor::{ManagedService, ServiceStatus};
 use crate::state::app_state::AppState;
 use crate::ui::theme::{
-    Colors, accent_button, card_frame, danger_button, divider, ghost_button, section_label,
-    status_color, with_alpha,
+    accent_button, card_frame, danger_button, divider, ghost_button, section_label, status_color,
+    with_alpha, Colors,
 };
 
 pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
@@ -15,8 +15,17 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         ui.set_min_height(44.0);
         ui.vertical(|ui| {
             ui.add_space(8.0);
-            ui.label(RichText::new("Services").size(15.0).color(Colors::TEXT_PRIMARY).strong());
-            let running = state.services.iter().filter(|s| s.status == ServiceStatus::Running).count();
+            ui.label(
+                RichText::new("Services")
+                    .size(15.0)
+                    .color(Colors::TEXT_PRIMARY)
+                    .strong(),
+            );
+            let running = state
+                .services
+                .iter()
+                .filter(|s| s.status == ServiceStatus::Running)
+                .count();
             let total = state.services.len();
             ui.label(
                 RichText::new(format!("{} of {} services running", running, total))
@@ -44,26 +53,43 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         .iter()
         .filter(|s| s.name.starts_with("php") && s.status == ServiceStatus::Running)
         .count();
-    let php_total = state.services.iter().filter(|s| s.name.starts_with("php")).count();
+    let php_total = state
+        .services
+        .iter()
+        .filter(|s| s.name.starts_with("php"))
+        .count();
     let nginx = state.services.iter().find(|s| s.name == "nginx");
-    let mysql = state.services.iter().find(|s| s.name == "mysql" || s.name == "mysqld");
+    let mysql = state
+        .services
+        .iter()
+        .find(|s| s.name == "mysql" || s.name == "mysqld");
     let mailpit = state.services.iter().find(|s| s.name == "mailpit");
 
     ui.columns(4, |cols| {
-        stat_card(&mut cols[0], "⚙", &format!("{}/{}", php_active, php_total), "PHP versions active");
         stat_card(
-            &mut cols[1], "◻",
+            &mut cols[0],
+            "⚙",
+            &format!("{}/{}", php_active, php_total),
+            "PHP versions active",
+        );
+        stat_card(
+            &mut cols[1],
+            "◻",
             nginx.map(|s| s.display_name.as_str()).unwrap_or("Nginx"),
             "Listening on :80, :443",
         );
         stat_card(
-            &mut cols[2], "⊟",
+            &mut cols[2],
+            "⊟",
             mysql.map(|s| s.display_name.as_str()).unwrap_or("MySQL"),
             "Port 3306",
         );
         stat_card(
-            &mut cols[3], "✉",
-            mailpit.map(|s| s.display_name.as_str()).unwrap_or("Mailpit"),
+            &mut cols[3],
+            "✉",
+            mailpit
+                .map(|s| s.display_name.as_str())
+                .unwrap_or("Mailpit"),
             "Captured emails",
         );
     });
@@ -74,7 +100,11 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
     ui.add_space(6.0);
 
     if state.services.is_empty() {
-        ui.label(RichText::new("No services detected — click Refresh.").size(12.0).color(Colors::TEXT_TERTIARY));
+        ui.label(
+            RichText::new("No services detected — click Refresh.")
+                .size(12.0)
+                .color(Colors::TEXT_TERTIARY),
+        );
         return;
     }
 
@@ -93,12 +123,19 @@ fn stat_card(ui: &mut egui::Ui, icon: &str, value: &str, label: &str) {
     Frame::NONE
         .fill(Colors::CARD)
         .corner_radius(CornerRadius::same(6))
-        .inner_margin(Margin { left: 12, right: 12, top: 10, bottom: 10 })
+        .inner_margin(Margin {
+            left: 12,
+            right: 12,
+            top: 10,
+            bottom: 10,
+        })
         .stroke(Stroke::new(0.5, Colors::BORDER))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                let (icon_rect, _) = ui.allocate_exact_size(egui::vec2(28.0, 28.0), egui::Sense::hover());
-                ui.painter().rect_filled(icon_rect, CornerRadius::same(6), Colors::ACCENT_DEEP);
+                let (icon_rect, _) =
+                    ui.allocate_exact_size(egui::vec2(28.0, 28.0), egui::Sense::hover());
+                ui.painter()
+                    .rect_filled(icon_rect, CornerRadius::same(6), Colors::ACCENT_DEEP);
                 ui.painter().text(
                     icon_rect.center(),
                     egui::Align2::CENTER_CENTER,
@@ -108,14 +145,28 @@ fn stat_card(ui: &mut egui::Ui, icon: &str, value: &str, label: &str) {
                 );
                 ui.add_space(8.0);
                 ui.vertical(|ui| {
-                    ui.label(RichText::new(value).size(16.0).strong().color(Colors::TEXT_PRIMARY));
-                    ui.label(RichText::new(label).size(10.5).color(Colors::TEXT_SECONDARY));
+                    ui.label(
+                        RichText::new(value)
+                            .size(16.0)
+                            .strong()
+                            .color(Colors::TEXT_PRIMARY),
+                    );
+                    ui.label(
+                        RichText::new(label)
+                            .size(10.5)
+                            .color(Colors::TEXT_SECONDARY),
+                    );
                 });
             });
         });
 }
 
-fn service_card(ui: &mut egui::Ui, svc: &ManagedService, cmd_tx: &Sender<AppCommand>, active_screen: &mut crate::state::app_state::Screen) {
+fn service_card(
+    ui: &mut egui::Ui,
+    svc: &ManagedService,
+    cmd_tx: &Sender<AppCommand>,
+    active_screen: &mut crate::state::app_state::Screen,
+) {
     card_frame().show(ui, |ui| {
         let rect = ui.max_rect();
         ui.painter().line_segment(
@@ -124,21 +175,36 @@ fn service_card(ui: &mut egui::Ui, svc: &ManagedService, cmd_tx: &Sender<AppComm
         );
 
         ui.horizontal(|ui| {
-            let (icon_rect, _) = ui.allocate_exact_size(egui::vec2(32.0, 32.0), egui::Sense::hover());
+            let (icon_rect, _) =
+                ui.allocate_exact_size(egui::vec2(32.0, 32.0), egui::Sense::hover());
             let dim = svc.status != ServiceStatus::Running;
-            let icon_bg = if dim { with_alpha(Colors::BORDER, 80) } else { Colors::ACCENT_DEEP };
-            ui.painter().rect_filled(icon_rect, CornerRadius::same(6), icon_bg);
+            let icon_bg = if dim {
+                with_alpha(Colors::BORDER, 80)
+            } else {
+                Colors::ACCENT_DEEP
+            };
+            ui.painter()
+                .rect_filled(icon_rect, CornerRadius::same(6), icon_bg);
             ui.painter().text(
                 icon_rect.center(),
                 egui::Align2::CENTER_CENTER,
                 "◻",
                 egui::FontId::proportional(14.0),
-                if dim { Colors::TEXT_TERTIARY } else { Colors::ACCENT },
+                if dim {
+                    Colors::TEXT_TERTIARY
+                } else {
+                    Colors::ACCENT
+                },
             );
             ui.add_space(8.0);
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new(&svc.display_name).size(13.0).color(Colors::TEXT_PRIMARY).strong());
+                    ui.label(
+                        RichText::new(&svc.display_name)
+                            .size(13.0)
+                            .color(Colors::TEXT_PRIMARY)
+                            .strong(),
+                    );
                     if svc.is_default {
                         ui.add_space(4.0);
                         tag(ui, "default", Colors::ACCENT);
@@ -153,12 +219,21 @@ fn service_card(ui: &mut egui::Ui, svc: &ManagedService, cmd_tx: &Sender<AppComm
         Frame::NONE
             .fill(with_alpha(Colors::BORDER, 30))
             .corner_radius(CornerRadius::same(4))
-            .inner_margin(Margin { left: 8, right: 8, top: 6, bottom: 6 })
+            .inner_margin(Margin {
+                left: 8,
+                right: 8,
+                top: 6,
+                bottom: 6,
+            })
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    meta_pair(ui, "pid",    &svc.pid.map(|p| p.to_string()).unwrap_or("—".into()));
+                    meta_pair(
+                        ui,
+                        "pid",
+                        &svc.pid.map(|p| p.to_string()).unwrap_or("—".into()),
+                    );
                     ui.add_space(12.0);
-                    meta_pair(ui, "port",   svc.port.as_deref().unwrap_or("—"));
+                    meta_pair(ui, "port", svc.port.as_deref().unwrap_or("—"));
                     ui.add_space(12.0);
                     meta_pair(ui, "uptime", svc.uptime.as_deref().unwrap_or("—"));
                 });
@@ -200,7 +275,8 @@ fn tag(ui: &mut egui::Ui, text: &str, color: Color32) {
         egui::vec2(text.len() as f32 * 6.5 + 10.0, 16.0),
         egui::Sense::hover(),
     );
-    ui.painter().rect_filled(rect, CornerRadius::same(4), with_alpha(color, 25));
+    ui.painter()
+        .rect_filled(rect, CornerRadius::same(4), with_alpha(color, 25));
     ui.painter().text(
         rect.center(),
         egui::Align2::CENTER_CENTER,
@@ -214,7 +290,7 @@ fn status_badge(ui: &mut egui::Ui, status: &ServiceStatus) {
     let (text, color) = match status {
         ServiceStatus::Running => ("Running", Colors::ACCENT),
         ServiceStatus::Stopped => ("Stopped", Colors::TEXT_TERTIARY),
-        ServiceStatus::Failed  => ("Failed",  Colors::DANGER),
+        ServiceStatus::Failed => ("Failed", Colors::DANGER),
         ServiceStatus::Unknown => ("Unknown", Colors::WARNING),
     };
     ui.label(RichText::new(text).size(10.5).color(color));
@@ -223,7 +299,12 @@ fn status_badge(ui: &mut egui::Ui, status: &ServiceStatus) {
 fn meta_pair(ui: &mut egui::Ui, key: &str, value: &str) {
     ui.label(RichText::new(key).size(10.5).color(Colors::TEXT_TERTIARY));
     ui.add_space(4.0);
-    ui.label(RichText::new(value).size(10.5).color(Colors::TEXT_SECONDARY).text_style(egui::TextStyle::Monospace));
+    ui.label(
+        RichText::new(value)
+            .size(10.5)
+            .color(Colors::TEXT_SECONDARY)
+            .text_style(egui::TextStyle::Monospace),
+    );
 }
 
 #[cfg(test)]
@@ -246,11 +327,14 @@ mod tests {
     #[test]
     fn service_running_count() {
         let svcs = vec![
-            make_svc("nginx",   ServiceStatus::Running),
-            make_svc("mysql",   ServiceStatus::Running),
+            make_svc("nginx", ServiceStatus::Running),
+            make_svc("mysql", ServiceStatus::Running),
             make_svc("php-fpm", ServiceStatus::Stopped),
         ];
-        let running = svcs.iter().filter(|s| s.status == ServiceStatus::Running).count();
+        let running = svcs
+            .iter()
+            .filter(|s| s.status == ServiceStatus::Running)
+            .count();
         assert_eq!(running, 2);
     }
 
@@ -275,7 +359,7 @@ mod tests {
         let text = match ServiceStatus::Failed {
             ServiceStatus::Running => "Running",
             ServiceStatus::Stopped => "Stopped",
-            ServiceStatus::Failed  => "Failed",
+            ServiceStatus::Failed => "Failed",
             ServiceStatus::Unknown => "Unknown",
         };
         assert_eq!(text, "Failed");

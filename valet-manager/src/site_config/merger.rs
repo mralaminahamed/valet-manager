@@ -19,7 +19,11 @@ fn merge_opt<T>(base: Option<T>, overlay: Option<T>) -> Option<T> {
 }
 
 fn merge_string(base: String, overlay: String) -> String {
-    if overlay.is_empty() { base } else { overlay }
+    if overlay.is_empty() {
+        base
+    } else {
+        overlay
+    }
 }
 
 fn merge_bool(base: bool, overlay: bool) -> bool {
@@ -32,7 +36,10 @@ fn merge_vec<T: Clone>(base: Vec<T>, overlay: Vec<T>) -> Vec<T> {
     out
 }
 
-fn merge_map<K: std::hash::Hash + Eq, V>(base: HashMap<K, V>, overlay: HashMap<K, V>) -> HashMap<K, V> {
+fn merge_map<K: std::hash::Hash + Eq, V>(
+    base: HashMap<K, V>,
+    overlay: HashMap<K, V>,
+) -> HashMap<K, V> {
     let mut out = base;
     for (k, v) in overlay {
         out.insert(k, v);
@@ -48,7 +55,10 @@ fn merge_php_ini(base: PhpIniOverrides, overlay: PhpIniOverrides) -> PhpIniOverr
         max_execution_time: merge_opt(base.max_execution_time, overlay.max_execution_time),
         max_input_vars: merge_opt(base.max_input_vars, overlay.max_input_vars),
         max_file_uploads: merge_opt(base.max_file_uploads, overlay.max_file_uploads),
-        session_gc_maxlifetime: merge_opt(base.session_gc_maxlifetime, overlay.session_gc_maxlifetime),
+        session_gc_maxlifetime: merge_opt(
+            base.session_gc_maxlifetime,
+            overlay.session_gc_maxlifetime,
+        ),
         date_timezone: merge_opt(base.date_timezone, overlay.date_timezone),
         extra: merge_map(base.extra, overlay.extra),
     }
@@ -60,7 +70,11 @@ fn merge_php(base: PhpSiteConfig, overlay: PhpSiteConfig) -> PhpSiteConfig {
         ini_overrides: merge_php_ini(base.ini_overrides, overlay.ini_overrides),
         xdebug_enabled: merge_bool(base.xdebug_enabled, overlay.xdebug_enabled),
         // For xdebug_mode, prefer overlay if not the default.
-        xdebug_mode: if overlay.xdebug_mode == XdebugMode::Off { base.xdebug_mode } else { overlay.xdebug_mode },
+        xdebug_mode: if overlay.xdebug_mode == XdebugMode::Off {
+            base.xdebug_mode
+        } else {
+            overlay.xdebug_mode
+        },
     }
 }
 
@@ -82,7 +96,9 @@ fn merge_basic_auth(base: BasicAuthConfig, overlay: BasicAuthConfig) -> BasicAut
 fn merge_server(base: HttpServerSiteConfig, overlay: HttpServerSiteConfig) -> HttpServerSiteConfig {
     HttpServerSiteConfig {
         // Server type: overlay wins if it differs from default.
-        server_type: if overlay.server_type == HttpServerType::default() && base.server_type != HttpServerType::default() {
+        server_type: if overlay.server_type == HttpServerType::default()
+            && base.server_type != HttpServerType::default()
+        {
             base.server_type
         } else {
             overlay.server_type
@@ -99,7 +115,9 @@ fn merge_server(base: HttpServerSiteConfig, overlay: HttpServerSiteConfig) -> Ht
 fn merge_wp(base: WordPressConfig, overlay: WordPressConfig) -> WordPressConfig {
     WordPressConfig {
         multisite_enabled: merge_bool(base.multisite_enabled, overlay.multisite_enabled),
-        multisite_type: if overlay.multisite_type == MultisiteType::default() && base.multisite_type != MultisiteType::default() {
+        multisite_type: if overlay.multisite_type == MultisiteType::default()
+            && base.multisite_type != MultisiteType::default()
+        {
             base.multisite_type
         } else {
             overlay.multisite_type
@@ -127,7 +145,9 @@ fn merge_laravel(base: LaravelConfig, overlay: LaravelConfig) -> LaravelConfig {
     LaravelConfig {
         environment: merge_opt(base.environment, overlay.environment),
         octane_enabled: merge_bool(base.octane_enabled, overlay.octane_enabled),
-        octane_server: if overlay.octane_server == OctaneServer::default() && base.octane_server != OctaneServer::default() {
+        octane_server: if overlay.octane_server == OctaneServer::default()
+            && base.octane_server != OctaneServer::default()
+        {
             base.octane_server
         } else {
             overlay.octane_server
@@ -156,7 +176,9 @@ fn merge_database(base: DatabaseSiteConfig, overlay: DatabaseSiteConfig) -> Data
 fn merge_dev(base: DevSiteConfig, overlay: DevSiteConfig) -> DevSiteConfig {
     DevSiteConfig {
         node_version: merge_opt(base.node_version, overlay.node_version),
-        package_manager: if overlay.package_manager == NodePackageManager::default() && base.package_manager != NodePackageManager::default() {
+        package_manager: if overlay.package_manager == NodePackageManager::default()
+            && base.package_manager != NodePackageManager::default()
+        {
             base.package_manager
         } else {
             overlay.package_manager
@@ -263,24 +285,40 @@ pub fn merge(base: SiteConfig, overlay: SiteConfig) -> SiteConfig {
         development: merge_dev(base.development, overlay.development),
         phpmyadmin: merge_phpmyadmin(base.phpmyadmin, overlay.phpmyadmin),
         // Phase 13 — overlay-wins-if-Some for each framework sub-config.
-        craft:       merge_optional(base.craft,       overlay.craft,       merge_craft),
+        craft: merge_optional(base.craft, overlay.craft, merge_craft),
         concretecms: merge_optional(base.concretecms, overlay.concretecms, merge_concretecms),
-        drupal:      merge_optional(base.drupal,      overlay.drupal,      merge_drupal),
-        joomla:      merge_optional(base.joomla,      overlay.joomla,      merge_joomla),
-        magento:     merge_optional(base.magento,     overlay.magento,     merge_magento),
-        octobercms:  merge_optional(base.octobercms,  overlay.octobercms,  merge_octobercms),
-        statamic:    merge_optional(base.statamic,    overlay.statamic,    merge_statamic),
+        drupal: merge_optional(base.drupal, overlay.drupal, merge_drupal),
+        joomla: merge_optional(base.joomla, overlay.joomla, merge_joomla),
+        magento: merge_optional(base.magento, overlay.magento, merge_magento),
+        octobercms: merge_optional(base.octobercms, overlay.octobercms, merge_octobercms),
+        statamic: merge_optional(base.statamic, overlay.statamic, merge_statamic),
     }
 }
 
-fn merge_phpmyadmin(base: crate::site_config::models::PhpMyAdminSiteConfig, overlay: crate::site_config::models::PhpMyAdminSiteConfig) -> crate::site_config::models::PhpMyAdminSiteConfig {
+fn merge_phpmyadmin(
+    base: crate::site_config::models::PhpMyAdminSiteConfig,
+    overlay: crate::site_config::models::PhpMyAdminSiteConfig,
+) -> crate::site_config::models::PhpMyAdminSiteConfig {
     crate::site_config::models::PhpMyAdminSiteConfig {
         enabled: base.enabled || overlay.enabled,
-        access_mode: if overlay.access_mode != crate::site_config::models::PmaAccessMode::default() { overlay.access_mode } else { base.access_mode },
-        db_scope: if overlay.db_scope != crate::site_config::models::PmaDbScope::default() { overlay.db_scope } else { base.db_scope },
+        access_mode: if overlay.access_mode != crate::site_config::models::PmaAccessMode::default()
+        {
+            overlay.access_mode
+        } else {
+            base.access_mode
+        },
+        db_scope: if overlay.db_scope != crate::site_config::models::PmaDbScope::default() {
+            overlay.db_scope
+        } else {
+            base.db_scope
+        },
         db_name_override: overlay.db_name_override.or(base.db_name_override),
         db_user_override: overlay.db_user_override.or(base.db_user_override),
-        path_alias: if !overlay.path_alias.is_empty() && overlay.path_alias != "/phpmyadmin" { overlay.path_alias } else { base.path_alias },
+        path_alias: if !overlay.path_alias.is_empty() && overlay.path_alias != "/phpmyadmin" {
+            overlay.path_alias
+        } else {
+            base.path_alias
+        },
     }
 }
 
@@ -345,8 +383,14 @@ mod tests {
         let mut base = SiteConfig::default();
         base.server.extra_headers.insert("X-Foo".into(), "1".into());
         let mut overlay = SiteConfig::default();
-        overlay.server.extra_headers.insert("X-Foo".into(), "2".into());
-        overlay.server.extra_headers.insert("X-Bar".into(), "3".into());
+        overlay
+            .server
+            .extra_headers
+            .insert("X-Foo".into(), "2".into());
+        overlay
+            .server
+            .extra_headers
+            .insert("X-Bar".into(), "3".into());
         let m = merge(base, overlay);
         assert_eq!(m.server.extra_headers.get("X-Foo"), Some(&"2".to_string()));
         assert_eq!(m.server.extra_headers.get("X-Bar"), Some(&"3".to_string()));
@@ -467,9 +511,15 @@ mod tests {
     #[test]
     fn concretecms_pretty_urls_false_is_sticky() {
         let mut base = SiteConfig::default();
-        base.concretecms = Some(ConcreteCmsConfig { pretty_urls: false, ..Default::default() });
+        base.concretecms = Some(ConcreteCmsConfig {
+            pretty_urls: false,
+            ..Default::default()
+        });
         let mut overlay = SiteConfig::default();
-        overlay.concretecms = Some(ConcreteCmsConfig { pretty_urls: true, ..Default::default() });
+        overlay.concretecms = Some(ConcreteCmsConfig {
+            pretty_urls: true,
+            ..Default::default()
+        });
         let m = merge(base, overlay);
         // AND-merge: false in either should keep false.
         assert!(!m.concretecms.unwrap().pretty_urls);
