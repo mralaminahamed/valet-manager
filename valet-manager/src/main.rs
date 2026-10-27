@@ -1,39 +1,39 @@
 mod app;
-mod config;
-mod commands;
-mod events;
-mod valet;
-mod system;
-mod php;
-mod services;
-mod state;
-mod ui;
-mod nginx;
-mod cli_tools;
-mod creator;
-mod tray;
-mod notifications;
-mod history;
-mod deep_link;
-mod updater;
-mod env_file;
 mod artisan;
+mod cli_tools;
+mod commands;
+mod config;
+mod creator;
 mod database;
-mod ssl;
-mod mail;
-mod queue;
-mod site_config;
-mod wordpress;
-mod laravel;
+mod deep_link;
+mod env_file;
+mod events;
+mod history;
 mod http_servers;
+mod laravel;
+mod mail;
+mod nginx;
+mod notifications;
+mod php;
 mod phpmyadmin;
+mod queue;
+mod services;
+mod site_config;
+mod ssl;
+mod state;
+mod system;
+mod tray;
+mod ui;
+mod updater;
+mod valet;
 mod version_registry;
+mod wordpress;
 
-use std::sync::Arc;
-use tokio::sync::{mpsc, RwLock};
-use state::app_state::AppState;
 use commands::AppCommand;
 use events::AppEvent;
+use state::app_state::AppState;
+use std::sync::Arc;
+use tokio::sync::{mpsc, RwLock};
 
 fn main() -> eframe::Result {
     // Parse a deep-link argument before any tokio/UI setup.
@@ -62,13 +62,21 @@ fn main() -> eframe::Result {
     let event_tx_svc = event_tx.clone();
     rt.spawn(async move {
         while let Some(svcs) = svc_rx.recv().await {
-            if event_tx_svc.send(AppEvent::ServiceStatusUpdated(svcs)).await.is_err() {
+            if event_tx_svc
+                .send(AppEvent::ServiceStatusUpdated(svcs))
+                .await
+                .is_err()
+            {
                 break;
             }
         }
     });
     rt.spawn(services::monitor::poll_services(
-        vec!["nginx".to_string(), "dnsmasq".to_string(), "mailpit".to_string()],
+        vec![
+            "nginx".to_string(),
+            "dnsmasq".to_string(),
+            "mailpit".to_string(),
+        ],
         svc_tx,
     ));
 
@@ -76,7 +84,12 @@ fn main() -> eframe::Result {
     let state_clone = Arc::clone(&shared_state);
     let event_tx_clone = event_tx.clone();
     let cmd_tx_clone = cmd_tx.clone();
-    rt.spawn(app::run_dispatcher(cmd_rx, event_tx_clone, state_clone, cmd_tx_clone));
+    rt.spawn(app::run_dispatcher(
+        cmd_rx,
+        event_tx_clone,
+        state_clone,
+        cmd_tx_clone,
+    ));
 
     // Queue a deep-link command at startup if one was provided.
     if let Some(cmd) = initial_deeplink {
@@ -138,7 +151,9 @@ fn main() -> eframe::Result {
                     let _ = cmd_tx_tray.send(commands::AppCommand::RefreshAll).await;
                 }
                 tray::TrayEvent::SwitchPhp(v) => {
-                    let _ = cmd_tx_tray.send(commands::AppCommand::SwitchGlobalPhp(v)).await;
+                    let _ = cmd_tx_tray
+                        .send(commands::AppCommand::SwitchGlobalPhp(v))
+                        .await;
                 }
             }
         }

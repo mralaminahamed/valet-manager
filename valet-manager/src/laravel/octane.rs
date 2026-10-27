@@ -7,7 +7,9 @@ use crate::valet::site_scanner::ValetSite;
 
 pub async fn is_octane_installed(site_path: &Path) -> bool {
     let composer = site_path.join("composer.json");
-    let content = tokio::fs::read_to_string(&composer).await.unwrap_or_default();
+    let content = tokio::fs::read_to_string(&composer)
+        .await
+        .unwrap_or_default();
     content.contains("laravel/octane")
 }
 
@@ -85,10 +87,16 @@ mod tests {
 
     #[tokio::test]
     async fn is_octane_installed_true_when_in_composer() {
-        let tmp = std::env::temp_dir().join(format!("vm-octane-detect-true-{}", std::process::id()));
+        let tmp =
+            std::env::temp_dir().join(format!("vm-octane-detect-true-{}", std::process::id()));
         let _ = tokio::fs::remove_dir_all(&tmp).await;
         tokio::fs::create_dir_all(&tmp).await.unwrap();
-        tokio::fs::write(tmp.join("composer.json"), r#"{"require":{"laravel/octane":"^2.0"}}"#).await.unwrap();
+        tokio::fs::write(
+            tmp.join("composer.json"),
+            r#"{"require":{"laravel/octane":"^2.0"}}"#,
+        )
+        .await
+        .unwrap();
         assert!(is_octane_installed(&tmp).await);
         let _ = tokio::fs::remove_dir_all(&tmp).await;
     }

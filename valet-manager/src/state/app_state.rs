@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use crate::php::detector::PhpVersion;
 use crate::php::types::{IniSection, IniType, PhpExtension};
 use crate::services::monitor::ManagedService;
-use crate::valet::variant::{ValetPaths, ValetVariant};
 use crate::state::creator_state::CreatorState;
+use crate::valet::variant::{ValetPaths, ValetVariant};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default)]
 #[allow(dead_code)]
@@ -256,11 +256,14 @@ pub struct AppState {
     pub site_configs: std::collections::HashMap<String, crate::site_config::models::SiteConfig>,
     pub site_config_selected: Option<String>,
     pub site_config_draft: Option<crate::site_config::models::SiteConfig>,
-    pub wp_network_sites: std::collections::HashMap<String, Vec<crate::site_config::models::WpNetworkSite>>,
+    pub wp_network_sites:
+        std::collections::HashMap<String, Vec<crate::site_config::models::WpNetworkSite>>,
     pub installed_http_servers: Vec<crate::site_config::models::HttpServerType>,
     pub site_config_output: Vec<crate::creator::output_streamer::OutputLine>,
-    pub laravel_packages: std::collections::HashMap<String, crate::laravel::packages::LaravelPackages>,
-    pub octane_processes: std::collections::HashMap<String, crate::site_config::models::OctaneProcess>,
+    pub laravel_packages:
+        std::collections::HashMap<String, crate::laravel::packages::LaravelPackages>,
+    pub octane_processes:
+        std::collections::HashMap<String, crate::site_config::models::OctaneProcess>,
     // Phase 12 — phpMyAdmin
     pub pma_state: PhpMyAdminState,
     // Phase 14 — Version registry

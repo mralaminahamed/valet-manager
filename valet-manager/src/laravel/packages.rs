@@ -15,14 +15,24 @@ pub struct LaravelPackages {
 }
 
 const PACKAGES: &[(&str, fn(&mut LaravelPackages))] = &[
-    ("laravel/horizon", |p: &mut LaravelPackages| p.horizon = true),
-    ("laravel/telescope", |p: &mut LaravelPackages| p.telescope = true),
+    ("laravel/horizon", |p: &mut LaravelPackages| {
+        p.horizon = true
+    }),
+    ("laravel/telescope", |p: &mut LaravelPackages| {
+        p.telescope = true
+    }),
     ("laravel/pulse", |p: &mut LaravelPackages| p.pulse = true),
     ("laravel/reverb", |p: &mut LaravelPackages| p.reverb = true),
     ("laravel/octane", |p: &mut LaravelPackages| p.octane = true),
-    ("filament/filament", |p: &mut LaravelPackages| p.filament = true),
-    ("livewire/livewire", |p: &mut LaravelPackages| p.livewire = true),
-    ("inertiajs/inertia-laravel", |p: &mut LaravelPackages| p.inertia = true),
+    ("filament/filament", |p: &mut LaravelPackages| {
+        p.filament = true
+    }),
+    ("livewire/livewire", |p: &mut LaravelPackages| {
+        p.livewire = true
+    }),
+    ("inertiajs/inertia-laravel", |p: &mut LaravelPackages| {
+        p.inertia = true
+    }),
 ];
 
 pub fn detect_from_json(content: &str) -> LaravelPackages {
@@ -45,7 +55,9 @@ pub fn detect_from_json(content: &str) -> LaravelPackages {
 
 pub async fn detect(site_path: &Path) -> anyhow::Result<LaravelPackages> {
     let composer = site_path.join("composer.json");
-    let content = tokio::fs::read_to_string(&composer).await.unwrap_or_default();
+    let content = tokio::fs::read_to_string(&composer)
+        .await
+        .unwrap_or_default();
     Ok(detect_from_json(&content))
 }
 

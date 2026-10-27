@@ -26,7 +26,10 @@ pub async fn core_version(site_path: &Path) -> anyhow::Result<String> {
         .output()
         .await?;
     if !output.status.success() {
-        anyhow::bail!("wp core version failed: {}", String::from_utf8_lossy(&output.stderr));
+        anyhow::bail!(
+            "wp core version failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
@@ -39,7 +42,10 @@ pub async fn plugin_list(site_path: &Path) -> anyhow::Result<Vec<WpPlugin>> {
         .output()
         .await?;
     if !output.status.success() {
-        anyhow::bail!("wp plugin list failed: {}", String::from_utf8_lossy(&output.stderr));
+        anyhow::bail!(
+            "wp plugin list failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
     parse_plugin_list(&stdout)
@@ -60,7 +66,9 @@ pub async fn plugin_activate(
     tx: Sender<OutputLine>,
 ) -> anyhow::Result<()> {
     let mut args: Vec<&str> = vec!["plugin", "activate", plugin];
-    if network { args.push("--network"); }
+    if network {
+        args.push("--network");
+    }
     let (_c, cancel_rx) = tokio::sync::watch::channel(false);
     let _ = stream_command("wp", &args, Some(&site_path.to_path_buf()), tx, cancel_rx).await;
     Ok(())
@@ -73,7 +81,9 @@ pub async fn plugin_deactivate(
     tx: Sender<OutputLine>,
 ) -> anyhow::Result<()> {
     let mut args: Vec<&str> = vec!["plugin", "deactivate", plugin];
-    if network { args.push("--network"); }
+    if network {
+        args.push("--network");
+    }
     let (_c, cancel_rx) = tokio::sync::watch::channel(false);
     let _ = stream_command("wp", &args, Some(&site_path.to_path_buf()), tx, cancel_rx).await;
     Ok(())
@@ -81,13 +91,27 @@ pub async fn plugin_deactivate(
 
 pub async fn core_update(site_path: &Path, tx: Sender<OutputLine>) -> anyhow::Result<()> {
     let (_c, cancel_rx) = tokio::sync::watch::channel(false);
-    let _ = stream_command("wp", &["core", "update"], Some(&site_path.to_path_buf()), tx, cancel_rx).await;
+    let _ = stream_command(
+        "wp",
+        &["core", "update"],
+        Some(&site_path.to_path_buf()),
+        tx,
+        cancel_rx,
+    )
+    .await;
     Ok(())
 }
 
 pub async fn plugin_update_all(site_path: &Path, tx: Sender<OutputLine>) -> anyhow::Result<()> {
     let (_c, cancel_rx) = tokio::sync::watch::channel(false);
-    let _ = stream_command("wp", &["plugin", "update", "--all"], Some(&site_path.to_path_buf()), tx, cancel_rx).await;
+    let _ = stream_command(
+        "wp",
+        &["plugin", "update", "--all"],
+        Some(&site_path.to_path_buf()),
+        tx,
+        cancel_rx,
+    )
+    .await;
     Ok(())
 }
 

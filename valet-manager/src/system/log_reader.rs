@@ -23,7 +23,9 @@ impl LogSource {
             LogSource::NginxError => std::path::PathBuf::from("/var/log/nginx/error.log"),
             LogSource::PhpFpm => std::path::PathBuf::from("/var/log/php/error.log"),
             LogSource::ValetFpm => std::env::var("HOME")
-                .map(|h| std::path::PathBuf::from(h).join(".config/valet-linux-plus/Log/fpm-php.www.log"))
+                .map(|h| {
+                    std::path::PathBuf::from(h).join(".config/valet-linux-plus/Log/fpm-php.www.log")
+                })
                 .unwrap_or_default(),
             LogSource::Access => std::path::PathBuf::from("/var/log/nginx/access.log"),
         }

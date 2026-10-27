@@ -48,7 +48,10 @@ mod tests {
 
     #[test]
     fn parses_arch() {
-        assert_eq!(parse_id_from_content("NAME=Arch Linux\nID=arch\n"), DistroKind::Arch);
+        assert_eq!(
+            parse_id_from_content("NAME=Arch Linux\nID=arch\n"),
+            DistroKind::Arch
+        );
     }
 
     #[test]

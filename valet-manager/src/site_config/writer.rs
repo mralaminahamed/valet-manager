@@ -11,9 +11,7 @@ async fn atomic_write(path: &Path, content: &str) -> anyhow::Result<()> {
     }
     let tmp = path.with_extension(format!(
         "{}.tmp",
-        path.extension()
-            .and_then(|s| s.to_str())
-            .unwrap_or("tmp")
+        path.extension().and_then(|s| s.to_str()).unwrap_or("tmp")
     ));
     tokio::fs::write(&tmp, content).await?;
     tokio::fs::rename(&tmp, path).await?;

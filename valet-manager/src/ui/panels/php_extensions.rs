@@ -3,7 +3,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
 use crate::state::app_state::AppState;
-use crate::ui::theme::{Colors, accent_button, divider, ghost_button};
+use crate::ui::theme::{accent_button, divider, ghost_button, Colors};
 
 #[allow(dead_code)]
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
@@ -59,8 +59,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                 };
 
                 if clicked {
-                    let _ = cmd_tx
-                        .try_send(AppCommand::LoadExtensions(version.version.clone()));
+                    let _ = cmd_tx.try_send(AppCommand::LoadExtensions(version.version.clone()));
                 }
             }
         });
@@ -95,7 +94,10 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         .iter()
         .filter(|ext| {
             search_query.is_empty()
-                || ext.name.to_lowercase().contains(&search_query.to_lowercase())
+                || ext
+                    .name
+                    .to_lowercase()
+                    .contains(&search_query.to_lowercase())
         })
         .collect();
 

@@ -83,13 +83,11 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                             Colors::TEXT_SECONDARY
                         };
                         let resp = ui.add(
-                            egui::Button::new(
-                                RichText::new(&sec.name).size(12.0).color(fg),
-                            )
-                            .fill(bg)
-                            .stroke(Stroke::NONE)
-                            .corner_radius(4.0)
-                            .min_size(egui::vec2(LEFT_PANE_WIDTH - 12.0, 26.0)),
+                            egui::Button::new(RichText::new(&sec.name).size(12.0).color(fg))
+                                .fill(bg)
+                                .stroke(Stroke::NONE)
+                                .corner_radius(4.0)
+                                .min_size(egui::vec2(LEFT_PANE_WIDTH - 12.0, 26.0)),
                         );
                         if resp.clicked() {
                             left_clicked = Some(idx);
@@ -120,15 +118,15 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 ui.set_min_width(avail.min(540.0) - 8.0);
 
                 // Resolve selected section
-                let sel = state.phpinfo_selected_section.min(state.phpinfo_sections.len() - 1);
+                let sel = state
+                    .phpinfo_selected_section
+                    .min(state.phpinfo_sections.len() - 1);
                 let section = &state.phpinfo_sections[sel];
 
                 // Header row
                 let header_w = ui.available_width();
-                let (hdr_rect, _) = ui.allocate_exact_size(
-                    egui::vec2(header_w, HEADER_HEIGHT),
-                    egui::Sense::hover(),
-                );
+                let (hdr_rect, _) = ui
+                    .allocate_exact_size(egui::vec2(header_w, HEADER_HEIGHT), egui::Sense::hover());
                 ui.painter().rect_filled(
                     hdr_rect,
                     CornerRadius::ZERO,
@@ -152,29 +150,20 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                         .color(Colors::TEXT_TERTIARY)
                 };
                 hdr_child.allocate_ui(egui::vec2(col_w, HEADER_HEIGHT), |ui| {
-                    ui.with_layout(
-                        egui::Layout::left_to_right(egui::Align::Center),
-                        |ui| {
-                            ui.add_space(8.0);
-                            ui.label(hdr_label("SETTING"));
-                        },
-                    );
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        ui.add_space(8.0);
+                        ui.label(hdr_label("SETTING"));
+                    });
                 });
                 hdr_child.allocate_ui(egui::vec2(col_w, HEADER_HEIGHT), |ui| {
-                    ui.with_layout(
-                        egui::Layout::left_to_right(egui::Align::Center),
-                        |ui| {
-                            ui.label(hdr_label("LOCAL VALUE"));
-                        },
-                    );
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        ui.label(hdr_label("LOCAL VALUE"));
+                    });
                 });
                 hdr_child.allocate_ui(egui::vec2(col_w, HEADER_HEIGHT), |ui| {
-                    ui.with_layout(
-                        egui::Layout::left_to_right(egui::Align::Center),
-                        |ui| {
-                            ui.label(hdr_label("MASTER VALUE"));
-                        },
-                    );
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        ui.label(hdr_label("MASTER VALUE"));
+                    });
                 });
 
                 // Body rows
@@ -292,7 +281,6 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                             });
                         }
                     });
-
             });
         });
     });

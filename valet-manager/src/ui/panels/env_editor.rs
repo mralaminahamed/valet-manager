@@ -95,12 +95,16 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         for group in GROUPS {
             let selected = state.env_active_group == *group;
             let resp = ui.add(
-                egui::Button::new(
-                    RichText::new(*group)
-                        .size(11.5)
-                        .color(if selected { Color32::WHITE } else { Colors::TEXT_SECONDARY }),
-                )
-                .fill(if selected { Colors::ACCENT_DARK } else { Colors::CARD })
+                egui::Button::new(RichText::new(*group).size(11.5).color(if selected {
+                    Color32::WHITE
+                } else {
+                    Colors::TEXT_SECONDARY
+                }))
+                .fill(if selected {
+                    Colors::ACCENT_DARK
+                } else {
+                    Colors::CARD
+                })
                 .stroke(Stroke::new(0.5, Colors::BORDER_MED))
                 .corner_radius(4.0)
                 .min_size(egui::vec2(0.0, 26.0)),
@@ -192,10 +196,6 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
 fn empty_state(ui: &mut egui::Ui, msg: &str) {
     ui.add_space(40.0);
     ui.vertical_centered(|ui| {
-        ui.label(
-            RichText::new(msg)
-                .size(13.0)
-                .color(Colors::TEXT_SECONDARY),
-        );
+        ui.label(RichText::new(msg).size(13.0).color(Colors::TEXT_SECONDARY));
     });
 }

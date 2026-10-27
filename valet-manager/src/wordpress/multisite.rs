@@ -40,13 +40,16 @@ pub async fn enable(
     // Step 2: Set WP_ALLOW_MULTISITE = true.
     let mut step2 = config.clone();
     step2.multisite_enabled = false; // first pass — only WP_ALLOW_MULTISITE
-    // We'll write a draft with just WP_ALLOW_MULTISITE flag set via extra_config.
+                                     // We'll write a draft with just WP_ALLOW_MULTISITE flag set via extra_config.
     step2.extra_config = format!(
         "{}\n{}",
         step2.extra_config.trim(),
         "define('WP_ALLOW_MULTISITE', true);"
     );
-    if super::config_editor::write_constants(&site.path, &step2).await.is_ok() {
+    if super::config_editor::write_constants(&site.path, &step2)
+        .await
+        .is_ok()
+    {
         result.constants_written = true;
         emit(&tx, "Wrote WP_ALLOW_MULTISITE = true");
     }
@@ -66,14 +69,19 @@ pub async fn enable(
     if step4.domain_current_site.is_none() {
         step4.domain_current_site = Some(site.domain.clone());
     }
-    if super::config_editor::write_constants(&site.path, &step4).await.is_ok() {
+    if super::config_editor::write_constants(&site.path, &step4)
+        .await
+        .is_ok()
+    {
         emit(&tx, "Wrote multisite constants to wp-config.php");
     }
 
     // Step 5: nginx rewrites (best-effort; needs ValetPaths from caller dispatcher).
     // The caller may also dispatch nginx update separately. We mark it pending here.
     result.nginx_updated = false;
-    result.next_steps.push("Reload Nginx after applying the multisite rewrites".to_string());
+    result
+        .next_steps
+        .push("Reload Nginx after applying the multisite rewrites".to_string());
     if multisite_type == MultisiteType::Subdomain {
         result
             .next_steps
@@ -101,7 +109,10 @@ pub async fn fetch_network_sites(site: &ValetSite) -> anyhow::Result<Vec<WpNetwo
         .output()
         .await?;
     if !output.status.success() {
-        anyhow::bail!("wp site list failed: {}", String::from_utf8_lossy(&output.stderr));
+        anyhow::bail!(
+            "wp site list failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
     parse_network_sites(&stdout)
@@ -109,22 +120,72 @@ pub async fn fetch_network_sites(site: &ValetSite) -> anyhow::Result<Vec<WpNetwo
 
 pub(crate) fn parse_network_sites(json: &str) -> anyhow::Result<Vec<WpNetworkSite>> {
     let value: serde_json::Value = serde_json::from_str(json.trim())?;
-    let arr = value.as_array().ok_or_else(|| anyhow::anyhow!("expected JSON array"))?;
+    let arr = value
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("expected JSON array"))?;
     let mut out = Vec::new();
     for item in arr {
-        let blog_id = item.get("blog_id").and_then(|v| v.as_str()).and_then(|s| s.parse().ok())
-            .or_else(|| item.get("blog_id").and_then(|v| v.as_u64()).map(|n| n as u32))
+        let blog_id = item
+            .get("blog_id")
+            .and_then(|v| v.as_str())
+            .and_then(|s| s.parse().ok())
+            .or_else(|| {
+                item.get("blog_id")
+                    .and_then(|v| v.as_u64())
+                    .map(|n| n as u32)
+            })
             .unwrap_or(0);
-        let url = item.get("url").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let title = item.get("title").or_else(|| item.get("blogname")).and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let registered = item.get("registered").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let last_updated = item.get("last_updated").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let public = item.get("public").and_then(|v| v.as_str()).map(|s| s == "1").unwrap_or(false);
-        let archived = item.get("archived").and_then(|v| v.as_str()).map(|s| s == "1").unwrap_or(false);
-        let spam = item.get("spam").and_then(|v| v.as_str()).map(|s| s == "1").unwrap_or(false);
-        let deleted = item.get("deleted").and_then(|v| v.as_str()).map(|s| s == "1").unwrap_or(false);
+        let url = item
+            .get("url")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let title = item
+            .get("title")
+            .or_else(|| item.get("blogname"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let registered = item
+            .get("registered")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let last_updated = item
+            .get("last_updated")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let public = item
+            .get("public")
+            .and_then(|v| v.as_str())
+            .map(|s| s == "1")
+            .unwrap_or(false);
+        let archived = item
+            .get("archived")
+            .and_then(|v| v.as_str())
+            .map(|s| s == "1")
+            .unwrap_or(false);
+        let spam = item
+            .get("spam")
+            .and_then(|v| v.as_str())
+            .map(|s| s == "1")
+            .unwrap_or(false);
+        let deleted = item
+            .get("deleted")
+            .and_then(|v| v.as_str())
+            .map(|s| s == "1")
+            .unwrap_or(false);
         out.push(WpNetworkSite {
-            blog_id, url, title, registered, last_updated, public, archived, spam, deleted,
+            blog_id,
+            url,
+            title,
+            registered,
+            last_updated,
+            public,
+            archived,
+            spam,
+            deleted,
         });
     }
     Ok(out)
@@ -139,7 +200,14 @@ pub async fn create_network_site(
     let url_arg = format!("--url={}", url);
     let title_arg = format!("--title={}", title);
     let (_c, cancel_rx) = tokio::sync::watch::channel(false);
-    let _ = stream_command("wp", &["site", "create", url_arg.as_str(), title_arg.as_str()], Some(&site.path), tx, cancel_rx).await;
+    let _ = stream_command(
+        "wp",
+        &["site", "create", url_arg.as_str(), title_arg.as_str()],
+        Some(&site.path),
+        tx,
+        cancel_rx,
+    )
+    .await;
     Ok(())
 }
 
@@ -150,7 +218,14 @@ pub async fn delete_network_site(
 ) -> anyhow::Result<()> {
     let id_arg = blog_id.to_string();
     let (_c, cancel_rx) = tokio::sync::watch::channel(false);
-    let _ = stream_command("wp", &["site", "delete", id_arg.as_str(), "--yes"], Some(&site.path), tx, cancel_rx).await;
+    let _ = stream_command(
+        "wp",
+        &["site", "delete", id_arg.as_str(), "--yes"],
+        Some(&site.path),
+        tx,
+        cancel_rx,
+    )
+    .await;
     Ok(())
 }
 

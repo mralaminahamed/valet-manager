@@ -1,5 +1,5 @@
+use crate::ui::theme::{with_alpha, Colors};
 use egui::{Color32, CornerRadius, Frame, Margin, RichText, Stroke};
-use crate::ui::theme::{Colors, with_alpha};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]

@@ -243,7 +243,9 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!(
             "vm-pma-perm-{}",
             std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         std::env::set_var("HOME", &tmp);
         let path = write_site_config("permsite", "<?php // x\n").await.unwrap();
@@ -262,7 +264,9 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!(
             "vm-pma-rm-{}",
             std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         std::env::set_var("HOME", &tmp);
         // Removing a nonexistent config must succeed.

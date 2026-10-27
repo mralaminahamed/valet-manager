@@ -4,7 +4,7 @@ use tokio::sync::mpsc::Sender;
 use crate::commands::AppCommand;
 use crate::state::app_state::AppState;
 use crate::ui::components::terminal_output;
-use crate::ui::theme::{Colors, accent_button, card_frame, ghost_button, section_label};
+use crate::ui::theme::{accent_button, card_frame, ghost_button, section_label, Colors};
 
 const TOTAL_STEPS: u8 = 5;
 
@@ -47,11 +47,13 @@ fn step_welcome(ui: &mut egui::Ui, state: &mut AppState) {
         section_label(ui, "step 1 · welcome");
         ui.add_space(4.0);
         ui.label(
-            RichText::new("Valet Manager is a native Linux GUI for Laravel Valet+. \
+            RichText::new(
+                "Valet Manager is a native Linux GUI for Laravel Valet+. \
                 We'll check that PHP and Valet are installed, then run \
-                `valet diagnose` to validate your setup.")
-                .size(12.5)
-                .color(Colors::TEXT_PRIMARY),
+                `valet diagnose` to validate your setup.",
+            )
+            .size(12.5)
+            .color(Colors::TEXT_PRIMARY),
         );
         ui.add_space(12.0);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -68,7 +70,15 @@ fn step_php(ui: &mut egui::Ui, state: &mut AppState) {
         ui.set_min_width(420.0);
         section_label(ui, "step 2 · php");
         ui.add_space(4.0);
-        check_row(ui, has_php, if has_php { "PHP is installed" } else { "PHP not found on PATH" });
+        check_row(
+            ui,
+            has_php,
+            if has_php {
+                "PHP is installed"
+            } else {
+                "PHP not found on PATH"
+            },
+        );
         if !has_php {
             ui.add_space(6.0);
             ui.label(
@@ -98,7 +108,15 @@ fn step_valet(ui: &mut egui::Ui, state: &mut AppState) {
         ui.set_min_width(420.0);
         section_label(ui, "step 3 · valet");
         ui.add_space(4.0);
-        check_row(ui, has_valet, if has_valet { "Valet detected" } else { "Valet not detected" });
+        check_row(
+            ui,
+            has_valet,
+            if has_valet {
+                "Valet detected"
+            } else {
+                "Valet not detected"
+            },
+        );
         if !has_valet {
             ui.add_space(6.0);
             ui.label(
@@ -210,7 +228,11 @@ fn check_row(ui: &mut egui::Ui, ok: bool, msg: &str) {
     ui.horizontal(|ui| {
         check_dot(ui, ok);
         ui.add_space(6.0);
-        let color = if ok { Colors::TEXT_PRIMARY } else { Colors::WARNING };
+        let color = if ok {
+            Colors::TEXT_PRIMARY
+        } else {
+            Colors::WARNING
+        };
         ui.label(RichText::new(msg).size(12.5).color(color));
     });
 }
@@ -237,7 +259,12 @@ fn code_hint(ui: &mut egui::Ui, code: &str) {
         .fill(Colors::DEEP_BG)
         .corner_radius(CornerRadius::same(4))
         .stroke(Stroke::new(0.5, Colors::BORDER_MED))
-        .inner_margin(Margin { left: 8, right: 8, top: 4, bottom: 4 })
+        .inner_margin(Margin {
+            left: 8,
+            right: 8,
+            top: 4,
+            bottom: 4,
+        })
         .show(ui, |ui| {
             ui.label(
                 RichText::new(code)

@@ -15,14 +15,30 @@ pub enum AppCommand {
     StopPhpFpm(String),
     RestartPhpFpm(String),
     // Phase 2 — Extensions
-    EnableExtension { version: String, extension: String },
-    DisableExtension { version: String, extension: String },
+    EnableExtension {
+        version: String,
+        extension: String,
+    },
+    DisableExtension {
+        version: String,
+        extension: String,
+    },
     LoadExtensions(String),
     // Phase 2 — INI
-    LoadIni { version: String, ini_type: IniType },
-    SaveIni { version: String, ini_type: IniType, content: String },
+    LoadIni {
+        version: String,
+        ini_type: IniType,
+    },
+    SaveIni {
+        version: String,
+        ini_type: IniType,
+        content: String,
+    },
     // Phase 2 — Site isolation
-    IsolateSite { site: String, version: String },
+    IsolateSite {
+        site: String,
+        version: String,
+    },
     UnisolateSite(String),
     // Phase 2 — PHP version management
     InstallPhpVersion(String),
@@ -31,7 +47,10 @@ pub enum AppCommand {
     RefreshSites,
     ParkDirectory(std::path::PathBuf),
     ForgetDirectory(std::path::PathBuf),
-    LinkSite { name: String, path: std::path::PathBuf },
+    LinkSite {
+        name: String,
+        path: std::path::PathBuf,
+    },
     UnlinkSite(String),
     SecureSite(String),
     UnsecureSite(String),
@@ -39,25 +58,41 @@ pub enum AppCommand {
     OpenSiteInBrowser(String),
     OpenSiteInEditor(String),
     // Phase 3 — Nginx
-    SaveNginxConfig { site: String, content: String },
+    SaveNginxConfig {
+        site: String,
+        content: String,
+    },
     ReloadNginx,
     // Phase 4 — App Creator
     CreateApp(AppCreationRequest),
     CancelCreation,
     CreatorStepBack,
-    CreatorSelectType { type_id: String },
-    CreatorUpdateField { key: String, value: String },
+    CreatorSelectType {
+        type_id: String,
+    },
+    CreatorUpdateField {
+        key: String,
+        value: String,
+    },
     CreatorNextStep,
     // Phase 5 — Proxies
     RefreshProxies,
-    AddProxy { domain: String, target: String, secure: bool },
+    AddProxy {
+        domain: String,
+        target: String,
+        secure: bool,
+    },
     RemoveProxy(String),
     TestProxy(String),
     // Phase 5 — Dnsmasq / TLD
     ChangeTld(String),
     TestDns(String),
     // Phase 5 — Sharing
-    StartSharing { site: String, tool: crate::valet::sharing::ShareTool, token: String },
+    StartSharing {
+        site: String,
+        tool: crate::valet::sharing::ShareTool,
+        token: String,
+    },
     StopSharing,
     // Phase 5 — Logs
     LoadLogs(crate::system::log_reader::LogSource),
@@ -82,14 +117,24 @@ pub enum AppCommand {
     OpenUpdatePage,
     // Phase 9 — .env editor
     LoadEnvFile(String),
-    SaveEnvFile { site: String, content: String },
+    SaveEnvFile {
+        site: String,
+        content: String,
+    },
     // Phase 9 — Artisan
     LoadArtisanCommands(String),
-    RunArtisan { site: String, command: String, args: String },
+    RunArtisan {
+        site: String,
+        command: String,
+        args: String,
+    },
     // Phase 9 — Database
     RefreshDatabases,
     SelectDatabase(String),
-    RunMigration { site: String, action: String },
+    RunMigration {
+        site: String,
+        action: String,
+    },
     // Phase 10 — SSL certs
     RefreshSslCerts,
     TrustValetCa,
@@ -97,9 +142,18 @@ pub enum AppCommand {
     // Phase 10 — Xdebug
     RefreshXdebug,
     InstallXdebug(String),
-    SetXdebugMode { version: String, mode: crate::php::xdebug::XdebugMode },
-    SetXdebugIdeKey { version: String, ide_key: String },
-    SetXdebugPort   { version: String, port: u16 },
+    SetXdebugMode {
+        version: String,
+        mode: crate::php::xdebug::XdebugMode,
+    },
+    SetXdebugIdeKey {
+        version: String,
+        ide_key: String,
+    },
+    SetXdebugPort {
+        version: String,
+        port: u16,
+    },
     // Phase 10 — Mail catcher
     StartMailCatcher,
     StopMailCatcher,
@@ -107,7 +161,12 @@ pub enum AppCommand {
     ApplyMailEnv(String),
     // Phase 10 — Queue workers
     RefreshQueueWorkers,
-    AddQueueWorker { site: String, connection: String, queue: String, start_on_boot: bool },
+    AddQueueWorker {
+        site: String,
+        connection: String,
+        queue: String,
+        start_on_boot: bool,
+    },
     StartQueueWorker(String),
     StopQueueWorker(String),
     RemoveQueueWorker(String),
@@ -122,8 +181,13 @@ pub enum AppCommand {
         config: crate::site_config::models::SiteConfig,
     },
     ResetSiteConfig(String),
-    ApplyPhpIniOverrides { site: String },
-    SetSitePhpVersion { site: String, version: Option<String> },
+    ApplyPhpIniOverrides {
+        site: String,
+    },
+    SetSitePhpVersion {
+        site: String,
+        version: Option<String>,
+    },
     EnableWpMultisite {
         site: String,
         multisite_type: crate::site_config::models::MultisiteType,
@@ -134,7 +198,10 @@ pub enum AppCommand {
         config: crate::site_config::models::WordPressConfig,
     },
     FetchWpNetworkSites(String),
-    SetLaravelOctane { site: String, enabled: bool },
+    SetLaravelOctane {
+        site: String,
+        enabled: bool,
+    },
     DetectInstalledServers,
     SetSiteHttpServer {
         site: String,
@@ -145,7 +212,10 @@ pub enum AppCommand {
         username: String,
         password: String,
     },
-    RemoveBasicAuth { site: String, username: String },
+    RemoveBasicAuth {
+        site: String,
+        username: String,
+    },
     DetectLaravelPackages(String),
     // Phase 12 — phpMyAdmin
     CheckPhpMyAdminInstalled,
@@ -183,7 +253,10 @@ pub enum AppCommand {
     OpenAddSiteModal,
     CloseAddSiteModal,
     // M1 — DNS aliases
-    AddDnsAlias { from: String, to: String },
+    AddDnsAlias {
+        from: String,
+        to: String,
+    },
     RemoveDnsAlias(String),
     // M1 — Service control (StartService/StopService/RestartService)
     StartService(String),

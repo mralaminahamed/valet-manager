@@ -2,20 +2,16 @@ use egui::{Color32, CornerRadius, Margin, RichText, Stroke};
 use tokio::sync::mpsc::Sender;
 
 use crate::commands::{AppCommand, AppCreationRequest};
-use crate::creator::project_types::{all_project_types, OptionType, ProjectGroup, ProjectOption, ProjectType};
+use crate::creator::project_types::{
+    all_project_types, OptionType, ProjectGroup, ProjectOption, ProjectType,
+};
 use crate::state::app_state::{AppState, Panel};
 use crate::state::creator_state::CreatorStep;
-use crate::ui::theme::{
-    accent_button, card_frame, danger_button, divider, ghost_button, Colors,
-};
+use crate::ui::theme::{accent_button, card_frame, danger_button, divider, ghost_button, Colors};
 
 // ── Public entry point ──────────────────────────────────────────────────────
 #[allow(dead_code)]
-pub fn render(
-    ui: &mut egui::Ui,
-    state: &mut AppState,
-    cmd_tx: &Sender<AppCommand>,
-) {
+pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     // ── Panel header (always) ───────────────────────────────────────────
     ui.horizontal(|ui| {
         ui.set_min_height(44.0);
@@ -34,12 +30,12 @@ pub fn render(
 
     let step = state.creator.step.clone();
     match step {
-        CreatorStep::SelectType  => render_step_select_type(ui, state, cmd_tx),
-        CreatorStep::Configure   => render_step_configure(ui, state, cmd_tx),
+        CreatorStep::SelectType => render_step_select_type(ui, state, cmd_tx),
+        CreatorStep::Configure => render_step_configure(ui, state, cmd_tx),
         CreatorStep::PostInstall => render_step_post_install(ui, state, cmd_tx),
-        CreatorStep::Progress    => render_step_progress(ui, state, cmd_tx),
-        CreatorStep::Complete    => render_step_complete(ui, state, cmd_tx),
-        CreatorStep::Error       => render_step_error(ui, state, cmd_tx),
+        CreatorStep::Progress => render_step_progress(ui, state, cmd_tx),
+        CreatorStep::Complete => render_step_complete(ui, state, cmd_tx),
+        CreatorStep::Error => render_step_error(ui, state, cmd_tx),
     }
 }
 
@@ -49,10 +45,7 @@ fn step_indicator(ui: &mut egui::Ui, current: u8) {
     ui.add_space(12.0);
     let avail_w = ui.available_width();
     let row_h = 36.0;
-    let (rect, _) = ui.allocate_exact_size(
-        egui::vec2(avail_w, row_h),
-        egui::Sense::hover(),
-    );
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(avail_w, row_h), egui::Sense::hover());
 
     if !ui.is_rect_visible(rect) {
         ui.add_space(20.0);
@@ -109,11 +102,7 @@ fn step_indicator(ui: &mut egui::Ui, current: u8) {
 
 // ── Step 1: SelectType ──────────────────────────────────────────────────────
 #[allow(dead_code)]
-fn render_step_select_type(
-    ui: &mut egui::Ui,
-    state: &mut AppState,
-    cmd_tx: &Sender<AppCommand>,
-) {
+fn render_step_select_type(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     step_indicator(ui, 1);
 
     // Section heading
@@ -134,11 +123,11 @@ fn render_step_select_type(
         ui.spacing_mut().item_spacing.x = 8.0;
 
         let tabs: &[(&str, ProjectGroup)] = &[
-            ("Laravel",   ProjectGroup::Laravel),
+            ("Laravel", ProjectGroup::Laravel),
             ("WordPress", ProjectGroup::WordPress),
-            ("PHP",       ProjectGroup::Php),
-            ("Node",      ProjectGroup::Node),
-            ("Static",    ProjectGroup::Static),
+            ("PHP", ProjectGroup::Php),
+            ("Node", ProjectGroup::Node),
+            ("Static", ProjectGroup::Static),
         ];
 
         for (label, group) in tabs {
@@ -161,11 +150,7 @@ fn render_step_select_type(
         .filter(|t| t.group == state.creator.active_group)
         .collect();
 
-    let selected_id = state
-        .creator
-        .selected_type
-        .as_ref()
-        .map(|t| t.id.clone());
+    let selected_id = state.creator.selected_type.as_ref().map(|t| t.id.clone());
 
     ui.horizontal(|ui| {
         ui.add_space(22.0);
@@ -238,7 +223,8 @@ fn render_step_select_type(
                         });
                         // Pre-fill form values with defaults
                         for opt in &pt.options {
-                            state.creator
+                            state
+                                .creator
                                 .form_values
                                 .entry(opt.key.clone())
                                 .or_insert_with(|| opt.default_value.clone());
@@ -264,10 +250,7 @@ fn render_type_card(
     state: &mut AppState,
 ) {
     let is_selected = selected_id.as_ref() == Some(&pt.id);
-    let (rect, resp) = ui.allocate_exact_size(
-        egui::vec2(card_w, card_h),
-        egui::Sense::click(),
-    );
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(card_w, card_h), egui::Sense::click());
 
     let (fill, stroke) = if is_selected {
         (Colors::ACCENT_DARK, Stroke::new(1.5, Colors::ACCENT))
@@ -301,15 +284,8 @@ fn render_type_card(
         let inner = rect.shrink2(egui::vec2(12.0, 12.0));
 
         // Icon box 28x28 in top-left
-        let icon_rect = egui::Rect::from_min_size(
-            inner.min,
-            egui::vec2(28.0, 28.0),
-        );
-        painter.rect_filled(
-            icon_rect,
-            CornerRadius::same(6),
-            Colors::ACCENT_DEEP,
-        );
+        let icon_rect = egui::Rect::from_min_size(inner.min, egui::vec2(28.0, 28.0));
+        painter.rect_filled(icon_rect, CornerRadius::same(6), Colors::ACCENT_DEEP);
         let monogram = pt
             .display_name
             .chars()
@@ -381,11 +357,8 @@ fn render_type_card(
             let badge_text = "Download required";
             let font = egui::FontId::proportional(10.0);
             // Measure text width — approximate via Galley measurement.
-            let galley = painter.layout_no_wrap(
-                badge_text.to_string(),
-                font.clone(),
-                Colors::WARNING,
-            );
+            let galley =
+                painter.layout_no_wrap(badge_text.to_string(), font.clone(), Colors::WARNING);
             let pad_h = 6.0;
             let pad_v = 2.0;
             let badge_w = galley.size().x + pad_h * 2.0;
@@ -416,11 +389,7 @@ fn render_type_card(
 
 // ── Step 2: Configure ───────────────────────────────────────────────────────
 #[allow(dead_code)]
-fn render_step_configure(
-    ui: &mut egui::Ui,
-    state: &mut AppState,
-    cmd_tx: &Sender<AppCommand>,
-) {
+fn render_step_configure(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     step_indicator(ui, 2);
 
     let pt = match state.creator.selected_type.clone() {
@@ -463,21 +432,18 @@ fn render_step_configure(
                 .fill(crate::ui::theme::with_alpha(Colors::WARNING, 30))
                 .corner_radius(egui::CornerRadius::same(6))
                 .stroke(egui::Stroke::new(0.5, Colors::WARNING))
-                .inner_margin(egui::Margin { left: 12, right: 12, top: 8, bottom: 8 })
+                .inner_margin(egui::Margin {
+                    left: 12,
+                    right: 12,
+                    top: 8,
+                    bottom: 8,
+                })
                 .show(ui, |ui| {
                     ui.set_min_width(avail);
                     ui.horizontal(|ui| {
-                        ui.label(
-                            RichText::new("⏱")
-                                .size(13.0)
-                                .color(Colors::WARNING),
-                        );
+                        ui.label(RichText::new("⏱").size(13.0).color(Colors::WARNING));
                         ui.add_space(6.0);
-                        ui.label(
-                            RichText::new(warning)
-                                .size(12.0)
-                                .color(Colors::WARNING),
-                        );
+                        ui.label(RichText::new(warning).size(12.0).color(Colors::WARNING));
                     });
                 });
         });
@@ -562,11 +528,7 @@ fn form_field(
                     .color(Colors::TEXT_TERTIARY),
             );
             if opt.required {
-                ui.label(
-                    RichText::new(" *")
-                        .size(11.0)
-                        .color(Colors::DANGER),
-                );
+                ui.label(RichText::new(" *").size(11.0).color(Colors::DANGER));
             }
         });
 
@@ -601,17 +563,18 @@ fn form_field(
             OptionType::Toggle => {
                 let mut is_on = value == "true";
                 if ui.checkbox(&mut is_on, "").changed() {
-                    *value = if is_on { "true".to_string() } else { "false".to_string() };
+                    *value = if is_on {
+                        "true".to_string()
+                    } else {
+                        "false".to_string()
+                    };
                 }
             }
             OptionType::Dir => {
                 ui.horizontal(|ui| {
                     let btn_w = 32.0;
                     let edit_w = (ui.available_width() - btn_w - 4.0).max(40.0);
-                    ui.add_sized(
-                        egui::vec2(edit_w, 28.0),
-                        egui::TextEdit::singleline(value),
-                    );
+                    ui.add_sized(egui::vec2(edit_w, 28.0), egui::TextEdit::singleline(value));
                     if ghost_button(ui, "…").clicked() {
                         if let Some(picked) = rfd::FileDialog::new().pick_folder() {
                             *value = picked.to_string_lossy().to_string();
@@ -629,11 +592,7 @@ fn form_field(
             } else {
                 format!("→ {}.{}", value, tld)
             };
-            ui.label(
-                RichText::new(preview)
-                    .size(11.0)
-                    .color(Colors::ACCENT),
-            );
+            ui.label(RichText::new(preview).size(11.0).color(Colors::ACCENT));
         } else {
             ui.add_space(2.0);
         }
@@ -642,11 +601,7 @@ fn form_field(
 
 // ── Step 3: PostInstall ─────────────────────────────────────────────────────
 #[allow(dead_code)]
-fn render_step_post_install(
-    ui: &mut egui::Ui,
-    state: &mut AppState,
-    cmd_tx: &Sender<AppCommand>,
-) {
+fn render_step_post_install(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     step_indicator(ui, 3);
 
     ui.horizontal(|ui| {
@@ -669,7 +624,11 @@ fn render_step_post_install(
             "8.4".to_string(),
         ]
     } else {
-        state.php_versions.iter().map(|v| v.version.clone()).collect()
+        state
+            .php_versions
+            .iter()
+            .map(|v| v.version.clone())
+            .collect()
     };
 
     // Link
@@ -689,7 +648,10 @@ fn render_step_post_install(
     // Isolate
     ui.horizontal(|ui| {
         ui.add_space(22.0);
-        ui.checkbox(&mut state.creator.post_install_isolate, "Isolate PHP version");
+        ui.checkbox(
+            &mut state.creator.post_install_isolate,
+            "Isolate PHP version",
+        );
         if state.creator.post_install_isolate {
             ui.add_space(6.0);
             let mut current = state
@@ -763,11 +725,7 @@ fn render_step_post_install(
 
 // ── Step 4: Progress ────────────────────────────────────────────────────────
 #[allow(dead_code)]
-fn render_step_progress(
-    ui: &mut egui::Ui,
-    state: &mut AppState,
-    cmd_tx: &Sender<AppCommand>,
-) {
+fn render_step_progress(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     let name = state
         .creator
         .form_values
@@ -790,11 +748,7 @@ fn render_step_progress(
                 .color(Colors::TEXT_PRIMARY)
                 .strong(),
         );
-        ui.label(
-            RichText::new(" · ")
-                .size(14.0)
-                .color(Colors::TEXT_TERTIARY),
-        );
+        ui.label(RichText::new(" · ").size(14.0).color(Colors::TEXT_TERTIARY));
         ui.label(
             RichText::new(&name)
                 .size(14.0)
@@ -821,11 +775,7 @@ fn render_step_progress(
     for label in steps_labels.iter() {
         ui.horizontal(|ui| {
             ui.add_space(22.0);
-            ui.label(
-                RichText::new("○")
-                    .size(12.0)
-                    .color(Colors::TEXT_TERTIARY),
-            );
+            ui.label(RichText::new("○").size(12.0).color(Colors::TEXT_TERTIARY));
             ui.add_space(6.0);
             ui.label(
                 RichText::new(*label)
@@ -842,22 +792,14 @@ fn render_step_progress(
         ui.add_space(22.0);
         let w = ui.available_width() - 22.0;
         ui.allocate_ui(egui::vec2(w, 0.0), |ui| {
-            crate::ui::components::terminal_output::render(
-                ui,
-                &state.creator.output_lines,
-                true,
-            );
+            crate::ui::components::terminal_output::render(ui, &state.creator.output_lines, true);
         });
     });
 }
 
 // ── Step 5: Complete ────────────────────────────────────────────────────────
 #[allow(dead_code)]
-fn render_step_complete(
-    ui: &mut egui::Ui,
-    state: &mut AppState,
-    cmd_tx: &Sender<AppCommand>,
-) {
+fn render_step_complete(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     let name = state
         .creator
         .form_values
@@ -875,10 +817,7 @@ fn render_step_complete(
     ui.add_space(40.0);
     ui.vertical_centered(|ui| {
         // Checkmark circle
-        let (rect, _) = ui.allocate_exact_size(
-            egui::vec2(56.0, 56.0),
-            egui::Sense::hover(),
-        );
+        let (rect, _) = ui.allocate_exact_size(egui::vec2(56.0, 56.0), egui::Sense::hover());
         if ui.is_rect_visible(rect) {
             let painter = ui.painter();
             painter.circle_filled(rect.center(), 24.0, Colors::ACCENT_DARK);
@@ -902,13 +841,9 @@ fn render_step_complete(
 
         // Domain link
         let resp = ui.add(
-            egui::Button::new(
-                RichText::new(&domain)
-                    .size(14.0)
-                    .color(Colors::ACCENT),
-            )
-            .fill(Color32::TRANSPARENT)
-            .stroke(Stroke::NONE),
+            egui::Button::new(RichText::new(&domain).size(14.0).color(Colors::ACCENT))
+                .fill(Color32::TRANSPARENT)
+                .stroke(Stroke::NONE),
         );
         if resp.clicked() {
             let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(domain.clone()));
@@ -959,11 +894,7 @@ fn render_step_complete(
                 .unwrap_or(false);
             if systemd_on {
                 ui.horizontal(|ui| {
-                    ui.label(
-                        RichText::new("✓")
-                            .size(12.0)
-                            .color(Colors::ACCENT),
-                    );
+                    ui.label(RichText::new("✓").size(12.0).color(Colors::ACCENT));
                     ui.add_space(4.0);
                     ui.label(
                         RichText::new("Systemd service created")
@@ -1006,20 +937,13 @@ fn render_step_complete(
 
 // ── Step 5b: Error ──────────────────────────────────────────────────────────
 #[allow(dead_code)]
-fn render_step_error(
-    ui: &mut egui::Ui,
-    state: &mut AppState,
-    cmd_tx: &Sender<AppCommand>,
-) {
+fn render_step_error(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     let err_msg = state.creator.error.clone().unwrap_or_default();
 
     ui.add_space(40.0);
     ui.vertical_centered(|ui| {
         // X circle
-        let (rect, _) = ui.allocate_exact_size(
-            egui::vec2(56.0, 56.0),
-            egui::Sense::hover(),
-        );
+        let (rect, _) = ui.allocate_exact_size(egui::vec2(56.0, 56.0), egui::Sense::hover());
         if ui.is_rect_visible(rect) {
             let painter = ui.painter();
             painter.circle_filled(rect.center(), 24.0, Colors::DANGER);

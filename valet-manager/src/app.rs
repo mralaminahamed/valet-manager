@@ -4,17 +4,17 @@ use tokio::sync::{mpsc, RwLock};
 
 use crate::commands::AppCommand;
 use crate::events::AppEvent;
+use crate::nginx::site_manager as nginx_manager;
 use crate::php::detector;
-use crate::php::{fpm_manager, extension_manager, ini_manager, switcher};
 use crate::php::types::IniType;
+use crate::php::{extension_manager, fpm_manager, ini_manager, switcher};
 use crate::services::monitor::ServiceStatus;
 use crate::state::app_state::AppState;
-use crate::ui::{sidebar, theme};
-use crate::valet::{config_reader, site_scanner, watcher, variant};
-use crate::nginx::site_manager as nginx_manager;
-use crate::ui::panels::{sites, logs, settings, onboarding};
 use crate::ui::command_palette;
 use crate::ui::components::toast::{self, ToastType};
+use crate::ui::panels::{logs, onboarding, settings, sites};
+use crate::ui::{sidebar, theme};
+use crate::valet::{config_reader, site_scanner, variant, watcher};
 
 pub struct ValetManagerApp {
     state: AppState,
@@ -30,7 +30,11 @@ impl ValetManagerApp {
     ) -> Self {
         theme::apply_dark(&cc.egui_ctx);
         load_symbol_fonts(&cc.egui_ctx);
-        Self { state: AppState::default(), cmd_tx, event_rx }
+        Self {
+            state: AppState::default(),
+            cmd_tx,
+            event_rx,
+        }
     }
 
     fn drain_events(&mut self) {
@@ -52,11 +56,19 @@ impl ValetManagerApp {
                 AppEvent::Error(msg) => {
                     self.state.ui.last_error = Some(msg);
                 }
-                AppEvent::IniLoaded { version: _, ini_type: _, sections, raw } => {
+                AppEvent::IniLoaded {
+                    version: _,
+                    ini_type: _,
+                    sections,
+                    raw,
+                } => {
                     self.state.ini_sections = sections;
                     self.state.ini_raw = raw;
                 }
-                AppEvent::ExtensionsLoaded { version: _, extensions } => {
+                AppEvent::ExtensionsLoaded {
+                    version: _,
+                    extensions,
+                } => {
                     self.state.extensions = extensions;
                 }
                 AppEvent::IniSaved => {
@@ -157,18 +169,17 @@ impl ValetManagerApp {
                     self.state.config_draft = cfg;
                 }
                 AppEvent::SettingsSaved => {
-                    toast::push_toast(
-                        &mut self.state.toasts,
-                        "Settings saved",
-                        ToastType::Success,
-                    );
+                    toast::push_toast(&mut self.state.toasts, "Settings saved", ToastType::Success);
                 }
                 AppEvent::OnboardingComplete => {
                     self.state.onboarding_complete = true;
                     self.state.onboarding_step = 0;
                 }
                 // Phase 7
-                AppEvent::PhpInfoLoaded { version: _, sections } => {
+                AppEvent::PhpInfoLoaded {
+                    version: _,
+                    sections,
+                } => {
                     self.state.phpinfo_sections = sections;
                     self.state.phpinfo_selected_section = 0;
                 }
@@ -182,20 +193,24 @@ impl ValetManagerApp {
                     self.state.update_info = Some(info);
                 }
                 // Phase 9 — .env editor
-                AppEvent::EnvFileLoaded { site, entries, example } => {
+                AppEvent::EnvFileLoaded {
+                    site,
+                    entries,
+                    example,
+                } => {
                     self.state.env_selected_site = Some(site);
                     self.state.env_entries = entries;
                     self.state.env_example_entries = example;
                 }
                 AppEvent::EnvFileSaved => {
-                    toast::push_toast(
-                        &mut self.state.toasts,
-                        ".env saved",
-                        ToastType::Success,
-                    );
+                    toast::push_toast(&mut self.state.toasts, ".env saved", ToastType::Success);
                 }
                 // Phase 9 — Artisan
-                AppEvent::ArtisanCommandsLoaded { site, tool, commands } => {
+                AppEvent::ArtisanCommandsLoaded {
+                    site,
+                    tool,
+                    commands,
+                } => {
                     self.state.artisan_site = Some(site);
                     self.state.artisan_tool = Some(tool);
                     self.state.artisan_commands = commands;
@@ -244,7 +259,9 @@ impl ValetManagerApp {
                     }
                 }
                 AppEvent::XdebugConfigUpdated(cfg) => {
-                    self.state.xdebug_configs.insert(cfg.php_version.clone(), cfg);
+                    self.state
+                        .xdebug_configs
+                        .insert(cfg.php_version.clone(), cfg);
                 }
                 // Phase 10 — Mail
                 AppEvent::MailStatusUpdated(status) => {
@@ -286,11 +303,7 @@ impl ValetManagerApp {
                     if self.state.site_config_selected.as_deref() == Some(site.as_str()) {
                         self.state.site_config_draft = Some(Default::default());
                     }
-                    toast::push_toast(
-                        &mut self.state.toasts,
-                        "Site config reset",
-                        ToastType::Info,
-                    );
+                    toast::push_toast(&mut self.state.toasts, "Site config reset", ToastType::Info);
                 }
                 AppEvent::WpMultisiteEnabled { .. } => {
                     toast::push_toast(
@@ -325,7 +338,11 @@ impl ValetManagerApp {
                 AppEvent::OctaneProcessUpdated(p) => {
                     self.state.octane_processes.insert(p.site.clone(), p);
                 }
-                AppEvent::PhpMyAdminInstalledCheck { installed, path, version } => {
+                AppEvent::PhpMyAdminInstalledCheck {
+                    installed,
+                    path,
+                    version,
+                } => {
                     self.state.pma_state.installed = installed;
                     self.state.pma_state.install_path = path;
                     self.state.pma_state.version = version;
@@ -438,7 +455,8 @@ impl eframe::App for ValetManagerApp {
                             ..Default::default()
                         },
                     );
-                    let screen_label = format!(" · {}", screen_display_name(&self.state.ui.active_screen));
+                    let screen_label =
+                        format!(" · {}", screen_display_name(&self.state.ui.active_screen));
                     job.append(
                         &screen_label,
                         0.0,
@@ -454,7 +472,8 @@ impl eframe::App for ValetManagerApp {
                         title_rect.center().x - galley_size.x / 2.0,
                         title_rect.center().y - galley_size.y / 2.0,
                     );
-                    ui.painter().galley(title_pos, galley, theme::Colors::TEXT_PRIMARY);
+                    ui.painter()
+                        .galley(title_pos, galley, theme::Colors::TEXT_PRIMARY);
 
                     // ── RIGHT: GNOME-style window controls ────────────────
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -475,9 +494,14 @@ impl eframe::App for ValetManagerApp {
             });
 
         // Decide sidebar mode based on viewport width.
-        let viewport_w = ctx.input(|i| i.viewport().outer_rect.map(|r| r.width()).unwrap_or_else(|| i.content_rect().width()));
+        let viewport_w = ctx.input(|i| {
+            i.viewport()
+                .outer_rect
+                .map(|r| r.width())
+                .unwrap_or_else(|| i.content_rect().width())
+        });
         let hide_sidebar = sidebar::should_hide(viewport_w);
-        let icon_only    = sidebar::should_show_icons(viewport_w);
+        let icon_only = sidebar::should_show_icons(viewport_w);
 
         // ── Sidebar (skip entirely if hidden / mobile mode) ─────────────────
         if !hide_sidebar {
@@ -514,7 +538,11 @@ impl eframe::App for ValetManagerApp {
                                 sites::render(ui, &mut self.state, &self.cmd_tx);
                             }
                             Screen::Services => {
-                                crate::ui::screens::services::render(ui, &mut self.state, &self.cmd_tx);
+                                crate::ui::screens::services::render(
+                                    ui,
+                                    &mut self.state,
+                                    &self.cmd_tx,
+                                );
                             }
                             Screen::Logs => {
                                 logs::render(ui, &mut self.state, &self.cmd_tx);
@@ -552,16 +580,28 @@ impl eframe::App for ValetManagerApp {
         if let Some(cmd) = command_palette::render(&ctx, &mut self.state.ui.palette) {
             use crate::state::app_state::Screen;
             match cmd {
-                AppCommand::OpenScreen(screen) => { self.state.ui.active_screen = screen; }
+                AppCommand::OpenScreen(screen) => {
+                    self.state.ui.active_screen = screen;
+                }
                 AppCommand::OpenSettings(section) => {
                     self.state.ui.active_screen = Screen::Settings;
                     self.state.ui.settings_section = section;
                 }
-                AppCommand::OpenShellWindow    => { self.state.ui.shell_open = true; }
-                AppCommand::OpenMailpitWindow  => { self.state.ui.mailpit_open = true; }
-                AppCommand::OpenPmaWindow      => { self.state.ui.pma_open = true; }
-                AppCommand::OpenAddSiteModal   => { self.state.ui.add_site_modal_open = true; }
-                other => { let _ = self.cmd_tx.try_send(other); }
+                AppCommand::OpenShellWindow => {
+                    self.state.ui.shell_open = true;
+                }
+                AppCommand::OpenMailpitWindow => {
+                    self.state.ui.mailpit_open = true;
+                }
+                AppCommand::OpenPmaWindow => {
+                    self.state.ui.pma_open = true;
+                }
+                AppCommand::OpenAddSiteModal => {
+                    self.state.ui.add_site_modal_open = true;
+                }
+                other => {
+                    let _ = self.cmd_tx.try_send(other);
+                }
             }
         }
 
@@ -605,7 +645,12 @@ fn render_mobile_hamburger(
                     .stroke(egui::Stroke::new(0.5, theme::Colors::BORDER_MED))
                     .show(ui, |ui| {
                         ui.set_min_width(196.0);
-                        let total_h = ctx.input(|i| i.viewport().outer_rect.map(|r| r.height()).unwrap_or_else(|| i.content_rect().height()));
+                        let total_h = ctx.input(|i| {
+                            i.viewport()
+                                .outer_rect
+                                .map(|r| r.height())
+                                .unwrap_or_else(|| i.content_rect().height())
+                        });
                         ui.set_min_height(total_h - 36.0);
                         sidebar::render(ui, state, cmd_tx, false);
                     });
@@ -613,14 +658,13 @@ fn render_mobile_hamburger(
     }
 }
 
-
 fn screen_display_name(screen: &crate::state::app_state::Screen) -> &'static str {
     use crate::state::app_state::Screen;
     match screen {
-        Screen::Sites    => "Sites",
+        Screen::Sites => "Sites",
         Screen::Services => "Services",
-        Screen::Logs     => "Logs",
-        Screen::Dns      => "DNS",
+        Screen::Logs => "Logs",
+        Screen::Dns => "DNS",
         Screen::Settings => "Settings",
     }
 }
@@ -637,16 +681,20 @@ fn titlebar_btn(ui: &mut egui::Ui, icon: &str, is_close: bool) -> egui::Response
                 theme::Colors::CLOSE_BTN_ICON,
             )
         } else if resp.hovered() {
-            (theme::Colors::CARD_HOVER, theme::Colors::BORDER_MED, theme::Colors::TEXT_SECONDARY)
+            (
+                theme::Colors::CARD_HOVER,
+                theme::Colors::BORDER_MED,
+                theme::Colors::TEXT_SECONDARY,
+            )
         } else {
-            (theme::Colors::CARD, theme::Colors::BORDER_MED, theme::Colors::TEXT_SECONDARY)
+            (
+                theme::Colors::CARD,
+                theme::Colors::BORDER_MED,
+                theme::Colors::TEXT_SECONDARY,
+            )
         };
         painter.circle_filled(rect.center(), size / 2.0, bg);
-        painter.circle_stroke(
-            rect.center(),
-            size / 2.0,
-            egui::Stroke::new(1.0, border),
-        );
+        painter.circle_stroke(rect.center(), size / 2.0, egui::Stroke::new(1.0, border));
         painter.text(
             rect.center(),
             egui::Align2::CENTER_CENTER,
@@ -708,11 +756,17 @@ pub async fn run_dispatcher(
                     };
                     if let Some(paths) = valet_paths {
                         match switcher::switch_global(&ver, &paths).await {
-                            Ok(()) => { let _ = tx.send(AppEvent::PhpSwitched(ver)).await; }
-                            Err(e) => { let _ = tx.send(AppEvent::Error(e.to_string())).await; }
+                            Ok(()) => {
+                                let _ = tx.send(AppEvent::PhpSwitched(ver)).await;
+                            }
+                            Err(e) => {
+                                let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                            }
                         }
                     } else {
-                        let _ = tx.send(AppEvent::Error("Valet not detected".to_string())).await;
+                        let _ = tx
+                            .send(AppEvent::Error("Valet not detected".to_string()))
+                            .await;
                     }
                 });
             }
@@ -727,12 +781,16 @@ pub async fn run_dispatcher(
                 tokio::spawn(async move {
                     match fpm_manager::start(&ver).await {
                         Ok(()) => {
-                            let _ = tx.send(AppEvent::PhpFpmStatusChanged {
-                                version: ver,
-                                status: ServiceStatus::Running,
-                            }).await;
+                            let _ = tx
+                                .send(AppEvent::PhpFpmStatusChanged {
+                                    version: ver,
+                                    status: ServiceStatus::Running,
+                                })
+                                .await;
                         }
-                        Err(e) => { let _ = tx.send(AppEvent::Error(e.to_string())).await; }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
                     }
                 });
             }
@@ -741,12 +799,16 @@ pub async fn run_dispatcher(
                 tokio::spawn(async move {
                     match fpm_manager::stop(&ver).await {
                         Ok(()) => {
-                            let _ = tx.send(AppEvent::PhpFpmStatusChanged {
-                                version: ver,
-                                status: ServiceStatus::Stopped,
-                            }).await;
+                            let _ = tx
+                                .send(AppEvent::PhpFpmStatusChanged {
+                                    version: ver,
+                                    status: ServiceStatus::Stopped,
+                                })
+                                .await;
                         }
-                        Err(e) => { let _ = tx.send(AppEvent::Error(e.to_string())).await; }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
                     }
                 });
             }
@@ -755,7 +817,9 @@ pub async fn run_dispatcher(
                 tokio::spawn(async move {
                     match fpm_manager::restart(&ver).await {
                         Ok(()) => {}
-                        Err(e) => { let _ = tx.send(AppEvent::Error(e.to_string())).await; }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
                     }
                 });
             }
@@ -779,10 +843,12 @@ pub async fn run_dispatcher(
                 let tx = tx.clone();
                 tokio::spawn(async move {
                     let exts = extension_manager::list(&ver).await;
-                    let _ = tx.send(AppEvent::ExtensionsLoaded {
-                        version: ver,
-                        extensions: exts,
-                    }).await;
+                    let _ = tx
+                        .send(AppEvent::ExtensionsLoaded {
+                            version: ver,
+                            extensions: exts,
+                        })
+                        .await;
                 });
             }
             AppCommand::LoadIni { version, ini_type } => {
@@ -795,23 +861,35 @@ pub async fn run_dispatcher(
                     match tokio::fs::read_to_string(&path).await {
                         Ok(raw) => {
                             let sections = ini_manager::parse(&raw);
-                            let _ = tx.send(AppEvent::IniLoaded {
-                                version,
-                                ini_type,
-                                sections,
-                                raw,
-                            }).await;
+                            let _ = tx
+                                .send(AppEvent::IniLoaded {
+                                    version,
+                                    ini_type,
+                                    sections,
+                                    raw,
+                                })
+                                .await;
                         }
-                        Err(e) => { let _ = tx.send(AppEvent::Error(e.to_string())).await; }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
                     }
                 });
             }
-            AppCommand::SaveIni { version, ini_type, content } => {
+            AppCommand::SaveIni {
+                version,
+                ini_type,
+                content,
+            } => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
                     match ini_manager::save(&version, &ini_type, &content).await {
-                        Ok(()) => { let _ = tx.send(AppEvent::IniSaved).await; }
-                        Err(e) => { let _ = tx.send(AppEvent::Error(e.to_string())).await; }
+                        Ok(()) => {
+                            let _ = tx.send(AppEvent::IniSaved).await;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                        }
                     }
                 });
             }
@@ -822,10 +900,12 @@ pub async fn run_dispatcher(
                     if let Err(e) = switcher::isolate_site(path, &version).await {
                         let _ = tx.send(AppEvent::Error(e.to_string())).await;
                     } else {
-                        let _ = tx.send(AppEvent::SiteIsolated {
-                            site: site.clone(),
-                            version,
-                        }).await;
+                        let _ = tx
+                            .send(AppEvent::SiteIsolated {
+                                site: site.clone(),
+                                version,
+                            })
+                            .await;
                     }
                 });
             }
@@ -841,16 +921,20 @@ pub async fn run_dispatcher(
                 });
             }
             AppCommand::InstallPhpVersion(ver) => {
-                let _ = tx.send(AppEvent::Error(format!(
-                    "Install PHP {} not yet implemented",
-                    ver
-                ))).await;
+                let _ = tx
+                    .send(AppEvent::Error(format!(
+                        "Install PHP {} not yet implemented",
+                        ver
+                    )))
+                    .await;
             }
             AppCommand::RemovePhpVersion(ver) => {
-                let _ = tx.send(AppEvent::Error(format!(
-                    "Remove PHP {} not yet implemented",
-                    ver
-                ))).await;
+                let _ = tx
+                    .send(AppEvent::Error(format!(
+                        "Remove PHP {} not yet implemented",
+                        ver
+                    )))
+                    .await;
             }
             // Phase 3 — Sites
             AppCommand::RefreshSites => {
@@ -878,37 +962,49 @@ pub async fn run_dispatcher(
                 });
             }
             AppCommand::ParkDirectory(path) => {
-                let _ = tx.send(AppEvent::Error(
-                    "ParkDirectory requires valet CLI — run 'valet park' manually".to_string(),
-                )).await;
+                let _ = tx
+                    .send(AppEvent::Error(
+                        "ParkDirectory requires valet CLI — run 'valet park' manually".to_string(),
+                    ))
+                    .await;
                 drop(path);
             }
             AppCommand::ForgetDirectory(path) => {
-                let _ = tx.send(AppEvent::Error(format!(
-                    "ForgetDirectory({}) not yet implemented",
-                    path.display()
-                ))).await;
+                let _ = tx
+                    .send(AppEvent::Error(format!(
+                        "ForgetDirectory({}) not yet implemented",
+                        path.display()
+                    )))
+                    .await;
             }
             AppCommand::LinkSite { name, path } => {
-                let _ = tx.send(AppEvent::Error(format!(
-                    "LinkSite({name}) not yet implemented"
-                ))).await;
+                let _ = tx
+                    .send(AppEvent::Error(format!(
+                        "LinkSite({name}) not yet implemented"
+                    )))
+                    .await;
                 drop(path);
             }
             AppCommand::UnlinkSite(name) => {
-                let _ = tx.send(AppEvent::Error(format!(
-                    "UnlinkSite({name}) not yet implemented"
-                ))).await;
+                let _ = tx
+                    .send(AppEvent::Error(format!(
+                        "UnlinkSite({name}) not yet implemented"
+                    )))
+                    .await;
             }
             AppCommand::SecureSite(name) => {
-                let _ = tx.send(AppEvent::Error(format!(
-                    "SecureSite({name}) not yet implemented"
-                ))).await;
+                let _ = tx
+                    .send(AppEvent::Error(format!(
+                        "SecureSite({name}) not yet implemented"
+                    )))
+                    .await;
             }
             AppCommand::UnsecureSite(name) => {
-                let _ = tx.send(AppEvent::Error(format!(
-                    "UnsecureSite({name}) not yet implemented"
-                ))).await;
+                let _ = tx
+                    .send(AppEvent::Error(format!(
+                        "UnsecureSite({name}) not yet implemented"
+                    )))
+                    .await;
             }
             AppCommand::ToggleFavoriteSite(name) => {
                 let mut s = state.write().await;
@@ -928,7 +1024,9 @@ pub async fn run_dispatcher(
                         name.clone()
                     }
                 };
-                let _ = tokio::process::Command::new("xdg-open").arg(&editor_path).spawn();
+                let _ = tokio::process::Command::new("xdg-open")
+                    .arg(&editor_path)
+                    .spawn();
             }
             AppCommand::SaveNginxConfig { site, content } => {
                 let tx = tx.clone();
@@ -941,7 +1039,8 @@ pub async fn run_dispatcher(
                     if let Some(paths) = valet_paths {
                         match nginx_manager::write_site_config(&site, &content, &paths).await {
                             Ok(()) => {
-                                let _ = tx.send(AppEvent::NginxConfigLoaded { site, content }).await;
+                                let _ =
+                                    tx.send(AppEvent::NginxConfigLoaded { site, content }).await;
                             }
                             Err(e) => {
                                 let _ = tx.send(AppEvent::Error(e.to_string())).await;
@@ -965,10 +1064,12 @@ pub async fn run_dispatcher(
             }
             // Phase 4 — App Creator
             AppCommand::CreateApp(req) => {
-                let _ = tx.send(AppEvent::Error(format!(
-                    "CreateApp({}) not yet implemented",
-                    req.type_id
-                ))).await;
+                let _ = tx
+                    .send(AppEvent::Error(format!(
+                        "CreateApp({}) not yet implemented",
+                        req.type_id
+                    )))
+                    .await;
             }
             AppCommand::CancelCreation => {}
             AppCommand::CreatorStepBack => {}
@@ -993,7 +1094,11 @@ pub async fn run_dispatcher(
                     }
                 });
             }
-            AppCommand::AddProxy { domain, target, secure } => {
+            AppCommand::AddProxy {
+                domain,
+                target,
+                secure,
+            } => {
                 let tx = tx.clone();
                 let state = Arc::clone(&state);
                 let cmd_tx_inner = cmd_tx.clone();
@@ -1048,9 +1153,7 @@ pub async fn run_dispatcher(
                 tokio::spawn(async move {
                     let url = format!("https://{}", domain);
                     let result = crate::nginx::proxy_manager::probe_http(url).await;
-                    let _ = tx
-                        .send(AppEvent::ProxyProbed { domain, result })
-                        .await;
+                    let _ = tx.send(AppEvent::ProxyProbed { domain, result }).await;
                 });
             }
             // Phase 5 — Dnsmasq
@@ -1074,7 +1177,8 @@ pub async fn run_dispatcher(
             AppCommand::TestDns(host) => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1096,7 +1200,8 @@ pub async fn run_dispatcher(
                         public_url: None,
                     };
                     let _ = tx.send(AppEvent::SharingStarted(session)).await;
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1104,7 +1209,8 @@ pub async fn run_dispatcher(
                             let _ = tx_lines.send(AppEvent::SharingOutputLine(line)).await;
                         }
                     });
-                    let _ = crate::valet::sharing::start(&site, tool, &token, out_tx, cancel_rx).await;
+                    let _ =
+                        crate::valet::sharing::start(&site, tool, &token, out_tx, cancel_rx).await;
                     let _ = forward.await;
                     let _ = tx.send(AppEvent::SharingStopped).await;
                 });
@@ -1133,7 +1239,8 @@ pub async fn run_dispatcher(
             AppCommand::RunDiagnostics => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1142,7 +1249,11 @@ pub async fn run_dispatcher(
                         }
                     });
                     let _ = crate::creator::output_streamer::stream_command(
-                        "valet", &["diagnose"], None, out_tx, cancel_rx,
+                        "valet",
+                        &["diagnose"],
+                        None,
+                        out_tx,
+                        cancel_rx,
                     )
                     .await;
                     let _ = forward.await;
@@ -1152,7 +1263,8 @@ pub async fn run_dispatcher(
             AppCommand::TrustValet => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1161,7 +1273,11 @@ pub async fn run_dispatcher(
                         }
                     });
                     let _ = crate::creator::output_streamer::stream_command(
-                        "valet", &["trust"], None, out_tx, cancel_rx,
+                        "valet",
+                        &["trust"],
+                        None,
+                        out_tx,
+                        cancel_rx,
                     )
                     .await;
                     let _ = forward.await;
@@ -1181,10 +1297,9 @@ pub async fn run_dispatcher(
                 let state_clone = Arc::clone(&state);
                 tokio::spawn(async move {
                     let cfg_for_save = cfg.clone();
-                    let result = tokio::task::spawn_blocking(move || {
-                        crate::config::save(&cfg_for_save)
-                    })
-                    .await;
+                    let result =
+                        tokio::task::spawn_blocking(move || crate::config::save(&cfg_for_save))
+                            .await;
                     match result {
                         Ok(Ok(())) => {
                             {
@@ -1223,7 +1338,8 @@ pub async fn run_dispatcher(
             AppCommand::RestartAllServices => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1232,7 +1348,11 @@ pub async fn run_dispatcher(
                         }
                     });
                     let _ = crate::creator::output_streamer::stream_command(
-                        "valet", &["restart"], None, out_tx, cancel_rx,
+                        "valet",
+                        &["restart"],
+                        None,
+                        out_tx,
+                        cancel_rx,
                     )
                     .await;
                     let _ = forward.await;
@@ -1246,7 +1366,10 @@ pub async fn run_dispatcher(
                         Ok(html) => {
                             let sections = crate::php::phpinfo_parser::parse(&html);
                             let _ = tx
-                                .send(AppEvent::PhpInfoLoaded { version: ver, sections })
+                                .send(AppEvent::PhpInfoLoaded {
+                                    version: ver,
+                                    sections,
+                                })
                                 .await;
                         }
                         Err(e) => {
@@ -1287,13 +1410,9 @@ pub async fn run_dispatcher(
             AppCommand::LoadHistory => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
-                    let entries = tokio::task::spawn_blocking(|| {
-                        match crate::history::open() {
-                            Ok(conn) => {
-                                crate::history::list_recent(&conn, 500).unwrap_or_default()
-                            }
-                            Err(_) => Vec::new(),
-                        }
+                    let entries = tokio::task::spawn_blocking(|| match crate::history::open() {
+                        Ok(conn) => crate::history::list_recent(&conn, 500).unwrap_or_default(),
+                        Err(_) => Vec::new(),
                     })
                     .await
                     .unwrap_or_default();
@@ -1322,9 +1441,7 @@ pub async fn run_dispatcher(
                     };
                     match crate::updater::check().await {
                         Ok(info) => {
-                            if info.is_newer
-                                && skip.as_deref() != Some(info.latest.as_str())
-                            {
+                            if info.is_newer && skip.as_deref() != Some(info.latest.as_str()) {
                                 let _ = tx.send(AppEvent::UpdateAvailable(info)).await;
                             }
                         }
@@ -1375,8 +1492,10 @@ pub async fn run_dispatcher(
                         return;
                     };
                     let result = tokio::task::spawn_blocking(move || {
-                        let env_text = std::fs::read_to_string(path.join(".env")).unwrap_or_default();
-                        let example_text = std::fs::read_to_string(path.join(".env.example")).unwrap_or_default();
+                        let env_text =
+                            std::fs::read_to_string(path.join(".env")).unwrap_or_default();
+                        let example_text =
+                            std::fs::read_to_string(path.join(".env.example")).unwrap_or_default();
                         (
                             crate::env_file::parse(&env_text),
                             crate::env_file::parse(&example_text),
@@ -1386,7 +1505,11 @@ pub async fn run_dispatcher(
                     match result {
                         Ok((entries, example)) => {
                             let _ = tx
-                                .send(AppEvent::EnvFileLoaded { site, entries, example })
+                                .send(AppEvent::EnvFileLoaded {
+                                    site,
+                                    entries,
+                                    example,
+                                })
                                 .await;
                         }
                         Err(e) => {
@@ -1472,7 +1595,11 @@ pub async fn run_dispatcher(
                     }
                 });
             }
-            AppCommand::RunArtisan { site, command, args } => {
+            AppCommand::RunArtisan {
+                site,
+                command,
+                args,
+            } => {
                 let tx = tx.clone();
                 let state_clone = Arc::clone(&state);
                 tokio::spawn(async move {
@@ -1545,7 +1672,10 @@ pub async fn run_dispatcher(
                         .await
                         .unwrap_or_default();
                     let _ = tx
-                        .send(AppEvent::TablesLoaded { database: name, tables })
+                        .send(AppEvent::TablesLoaded {
+                            database: name,
+                            tables,
+                        })
                         .await;
                 });
             }
@@ -1571,10 +1701,10 @@ pub async fn run_dispatcher(
                         s.db_migration_running = true;
                     }
                     let argv: Vec<&str> = match action.as_str() {
-                        "fresh"    => vec!["artisan", "migrate:fresh", "--force"],
-                        "seed"     => vec!["artisan", "db:seed", "--force"],
+                        "fresh" => vec!["artisan", "migrate:fresh", "--force"],
+                        "seed" => vec!["artisan", "db:seed", "--force"],
                         "rollback" => vec!["artisan", "migrate:rollback", "--force"],
-                        _           => vec!["artisan", "migrate", "--force"],
+                        _ => vec!["artisan", "migrate", "--force"],
                     };
                     let (out_tx, mut out_rx) =
                         mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
@@ -1620,7 +1750,8 @@ pub async fn run_dispatcher(
             AppCommand::TrustValetCa => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1629,7 +1760,11 @@ pub async fn run_dispatcher(
                         }
                     });
                     let _ = crate::creator::output_streamer::stream_command(
-                        "valet", &["trust"], None, out_tx, cancel_rx,
+                        "valet",
+                        &["trust"],
+                        None,
+                        out_tx,
+                        cancel_rx,
                     )
                     .await;
                     let _ = forward.await;
@@ -1639,7 +1774,8 @@ pub async fn run_dispatcher(
                 let tx = tx.clone();
                 let cmd_tx_inner = cmd_tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1648,7 +1784,11 @@ pub async fn run_dispatcher(
                         }
                     });
                     let _ = crate::creator::output_streamer::stream_command(
-                        "valet", &["unsecure", &site], None, out_tx, cancel_rx,
+                        "valet",
+                        &["unsecure", &site],
+                        None,
+                        out_tx,
+                        cancel_rx,
                     )
                     .await;
                     let _ = forward.await;
@@ -1691,7 +1831,8 @@ pub async fn run_dispatcher(
             AppCommand::InstallXdebug(version) => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1767,12 +1908,17 @@ pub async fn run_dispatcher(
                 let tx = tx.clone();
                 let state = Arc::clone(&state);
                 tokio::spawn(async move {
-                    let (out_tx, _out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, _out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     // Fire-and-forget background spawn.
                     tokio::spawn(async move {
                         let _ = crate::creator::output_streamer::stream_command(
-                            "mailpit", &[], None, out_tx, cancel_rx,
+                            "mailpit",
+                            &[],
+                            None,
+                            out_tx,
+                            cancel_rx,
                         )
                         .await;
                     });
@@ -1788,10 +1934,15 @@ pub async fn run_dispatcher(
                 let tx = tx.clone();
                 let state = Arc::clone(&state);
                 tokio::spawn(async move {
-                    let (out_tx, _out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, _out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let _ = crate::creator::output_streamer::stream_command(
-                        "pkill", &["-f", "mailpit"], None, out_tx, cancel_rx,
+                        "pkill",
+                        &["-f", "mailpit"],
+                        None,
+                        out_tx,
+                        cancel_rx,
                     )
                     .await;
                     let new_status = {
@@ -1811,7 +1962,9 @@ pub async fn run_dispatcher(
                         let s = state.read().await;
                         (s.mail_status.http_port, s.mail_status.clone())
                     };
-                    let unread = crate::mail::mailpit::fetch_unread(http_port).await.unwrap_or(0);
+                    let unread = crate::mail::mailpit::fetch_unread(http_port)
+                        .await
+                        .unwrap_or(0);
                     let mut updated = current;
                     updated.unread = unread;
                     let _ = tx.send(AppEvent::MailStatusUpdated(updated)).await;
@@ -1832,11 +1985,17 @@ pub async fn run_dispatcher(
                     let _ = tx.send(AppEvent::QueueWorkersLoaded(workers)).await;
                 });
             }
-            AppCommand::AddQueueWorker { site, connection, queue, start_on_boot } => {
+            AppCommand::AddQueueWorker {
+                site,
+                connection,
+                queue,
+                start_on_boot,
+            } => {
                 let tx = tx.clone();
                 let cmd_tx_inner = cmd_tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let tx_lines = tx.clone();
                     let forward = tokio::spawn(async move {
@@ -1863,7 +2022,8 @@ pub async fn run_dispatcher(
                 let tx = tx.clone();
                 let cmd_tx_inner = cmd_tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, _out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, _out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let svc = format!("valet-queue-{}.service", id);
                     let _ = crate::creator::output_streamer::stream_command(
@@ -1882,7 +2042,8 @@ pub async fn run_dispatcher(
                 let tx = tx.clone();
                 let cmd_tx_inner = cmd_tx.clone();
                 tokio::spawn(async move {
-                    let (out_tx, _out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                    let (out_tx, _out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                     let (_cancel, cancel_rx) = tokio::sync::watch::channel(false);
                     let svc = format!("valet-queue-{}.service", id);
                     let _ = crate::creator::output_streamer::stream_command(
@@ -1918,7 +2079,9 @@ pub async fn run_dispatcher(
                     };
                     if let Some(site) = site {
                         let config = crate::site_config::reader::load(&name, &site.path).await;
-                        let _ = tx.send(AppEvent::SiteConfigLoaded { site: name, config }).await;
+                        let _ = tx
+                            .send(AppEvent::SiteConfigLoaded { site: name, config })
+                            .await;
                     }
                 });
             }
@@ -1950,7 +2113,9 @@ pub async fn run_dispatcher(
                         s.sites.iter().find(|x| x.name == site).cloned()
                     };
                     if let Some(s) = site_obj {
-                        if let Err(e) = crate::site_config::writer::save_to_site_root(&s.path, &config).await {
+                        if let Err(e) =
+                            crate::site_config::writer::save_to_site_root(&s.path, &config).await
+                        {
                             let _ = tx.send(AppEvent::Error(e.to_string())).await;
                             return;
                         }
@@ -1972,7 +2137,9 @@ pub async fn run_dispatcher(
                     let (site_obj, overrides) = {
                         let s = state_c.read().await;
                         let site_obj = s.sites.iter().find(|x| x.name == site).cloned();
-                        let overrides = s.site_configs.get(&site)
+                        let overrides = s
+                            .site_configs
+                            .get(&site)
                             .map(|c| c.php.ini_overrides.clone())
                             .unwrap_or_default();
                         (site_obj, overrides)
@@ -1990,7 +2157,10 @@ pub async fn run_dispatcher(
                 tokio::spawn(async move {
                     let site_path = {
                         let s = state_c.read().await;
-                        s.sites.iter().find(|x| x.name == site).map(|x| x.path.clone())
+                        s.sites
+                            .iter()
+                            .find(|x| x.name == site)
+                            .map(|x| x.path.clone())
                     };
                     if let Some(p) = site_path {
                         match version {
@@ -1998,7 +2168,12 @@ pub async fn run_dispatcher(
                                 if let Err(e) = crate::php::switcher::isolate_site(&p, v).await {
                                     let _ = tx.send(AppEvent::Error(e.to_string())).await;
                                 } else {
-                                    let _ = tx.send(AppEvent::SiteIsolated { site: site.clone(), version: v.clone() }).await;
+                                    let _ = tx
+                                        .send(AppEvent::SiteIsolated {
+                                            site: site.clone(),
+                                            version: v.clone(),
+                                        })
+                                        .await;
                                 }
                             }
                             None => {
@@ -2012,29 +2187,46 @@ pub async fn run_dispatcher(
                     }
                 });
             }
-            AppCommand::EnableWpMultisite { site, multisite_type } => {
+            AppCommand::EnableWpMultisite {
+                site,
+                multisite_type,
+            } => {
                 let state_c = Arc::clone(&state);
                 let tx = tx.clone();
                 tokio::spawn(async move {
                     let (site_obj, wp_cfg) = {
                         let s = state_c.read().await;
                         let so = s.sites.iter().find(|x| x.name == site).cloned();
-                        let cfg = s.site_configs.get(&site)
+                        let cfg = s
+                            .site_configs
+                            .get(&site)
                             .and_then(|c| c.wordpress.clone())
                             .unwrap_or_default();
                         (so, cfg)
                     };
                     if let Some(s_obj) = site_obj {
-                        let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                        let (out_tx, mut out_rx) =
+                            mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                         let tx_lines = tx.clone();
                         let forward = tokio::spawn(async move {
                             while let Some(line) = out_rx.recv().await {
                                 let _ = tx_lines.send(AppEvent::SiteConfigOutputLine(line)).await;
                             }
                         });
-                        let _ = crate::wordpress::multisite::enable(&s_obj, multisite_type, &wp_cfg, out_tx).await;
+                        let _ = crate::wordpress::multisite::enable(
+                            &s_obj,
+                            multisite_type,
+                            &wp_cfg,
+                            out_tx,
+                        )
+                        .await;
                         let _ = forward.await;
-                        let _ = tx.send(AppEvent::WpMultisiteEnabled { site, output: Vec::new() }).await;
+                        let _ = tx
+                            .send(AppEvent::WpMultisiteEnabled {
+                                site,
+                                output: Vec::new(),
+                            })
+                            .await;
                     }
                 });
             }
@@ -2047,7 +2239,8 @@ pub async fn run_dispatcher(
                         s.sites.iter().find(|x| x.name == site).cloned()
                     };
                     if let Some(s_obj) = site_obj {
-                        let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
+                        let (out_tx, mut out_rx) =
+                            mpsc::channel::<crate::creator::output_streamer::OutputLine>(128);
                         let tx_lines = tx.clone();
                         let forward = tokio::spawn(async move {
                             while let Some(line) = out_rx.recv().await {
@@ -2066,10 +2259,15 @@ pub async fn run_dispatcher(
                 tokio::spawn(async move {
                     let site_path = {
                         let s = state_c.read().await;
-                        s.sites.iter().find(|x| x.name == site).map(|x| x.path.clone())
+                        s.sites
+                            .iter()
+                            .find(|x| x.name == site)
+                            .map(|x| x.path.clone())
                     };
                     if let Some(p) = site_path {
-                        if let Err(e) = crate::wordpress::config_editor::write_constants(&p, &config).await {
+                        if let Err(e) =
+                            crate::wordpress::config_editor::write_constants(&p, &config).await
+                        {
                             let _ = tx.send(AppEvent::Error(e.to_string())).await;
                         }
                     }
@@ -2086,7 +2284,9 @@ pub async fn run_dispatcher(
                     if let Some(s_obj) = site_obj {
                         match crate::wordpress::multisite::fetch_network_sites(&s_obj).await {
                             Ok(sites) => {
-                                let _ = tx.send(AppEvent::WpNetworkSitesLoaded { site, sites }).await;
+                                let _ = tx
+                                    .send(AppEvent::WpNetworkSitesLoaded { site, sites })
+                                    .await;
                             }
                             Err(e) => {
                                 let _ = tx.send(AppEvent::Error(e.to_string())).await;
@@ -2102,7 +2302,9 @@ pub async fn run_dispatcher(
                     let (site_obj, laravel_cfg) = {
                         let s = state_c.read().await;
                         let so = s.sites.iter().find(|x| x.name == site).cloned();
-                        let lc = s.site_configs.get(&site)
+                        let lc = s
+                            .site_configs
+                            .get(&site)
                             .and_then(|c| c.laravel.clone())
                             .unwrap_or_default();
                         (so, lc)
@@ -2110,8 +2312,12 @@ pub async fn run_dispatcher(
                     if let Some(s_obj) = site_obj {
                         if enabled {
                             match crate::laravel::octane::start(&s_obj, &laravel_cfg, "php").await {
-                                Ok(p) => { let _ = tx.send(AppEvent::OctaneProcessUpdated(p)).await; }
-                                Err(e) => { let _ = tx.send(AppEvent::Error(e.to_string())).await; }
+                                Ok(p) => {
+                                    let _ = tx.send(AppEvent::OctaneProcessUpdated(p)).await;
+                                }
+                                Err(e) => {
+                                    let _ = tx.send(AppEvent::Error(e.to_string())).await;
+                                }
                             }
                         } else {
                             let mut p = crate::site_config::models::OctaneProcess::default();
@@ -2141,11 +2347,20 @@ pub async fn run_dispatcher(
                     if let Err(e) = crate::site_config::writer::save(&site, &new_cfg).await {
                         let _ = tx.send(AppEvent::Error(e.to_string())).await;
                     } else {
-                        let _ = tx.send(AppEvent::SiteConfigLoaded { site, config: new_cfg }).await;
+                        let _ = tx
+                            .send(AppEvent::SiteConfigLoaded {
+                                site,
+                                config: new_cfg,
+                            })
+                            .await;
                     }
                 });
             }
-            AppCommand::AddBasicAuth { site, username, password } => {
+            AppCommand::AddBasicAuth {
+                site,
+                username,
+                password,
+            } => {
                 let state_c = Arc::clone(&state);
                 let tx = tx.clone();
                 tokio::spawn(async move {
@@ -2172,8 +2387,11 @@ pub async fn run_dispatcher(
                     let _ = crate::http_servers::basic_auth::write_htpasswd(
                         &site,
                         &cfg.server.basic_auth.users,
-                    ).await;
-                    let _ = tx.send(AppEvent::SiteConfigLoaded { site, config: cfg }).await;
+                    )
+                    .await;
+                    let _ = tx
+                        .send(AppEvent::SiteConfigLoaded { site, config: cfg })
+                        .await;
                 });
             }
             AppCommand::RemoveBasicAuth { site, username } => {
@@ -2184,7 +2402,10 @@ pub async fn run_dispatcher(
                         let s = state_c.read().await;
                         s.site_configs.get(&site).cloned().unwrap_or_default()
                     };
-                    cfg.server.basic_auth.users.retain(|u| u.username != username);
+                    cfg.server
+                        .basic_auth
+                        .users
+                        .retain(|u| u.username != username);
                     if let Err(e) = crate::site_config::writer::save(&site, &cfg).await {
                         let _ = tx.send(AppEvent::Error(e.to_string())).await;
                         return;
@@ -2192,8 +2413,11 @@ pub async fn run_dispatcher(
                     let _ = crate::http_servers::basic_auth::write_htpasswd(
                         &site,
                         &cfg.server.basic_auth.users,
-                    ).await;
-                    let _ = tx.send(AppEvent::SiteConfigLoaded { site, config: cfg }).await;
+                    )
+                    .await;
+                    let _ = tx
+                        .send(AppEvent::SiteConfigLoaded { site, config: cfg })
+                        .await;
                 });
             }
             AppCommand::DetectLaravelPackages(site) => {
@@ -2202,11 +2426,21 @@ pub async fn run_dispatcher(
                 tokio::spawn(async move {
                     let site_path = {
                         let s = state_c.read().await;
-                        s.sites.iter().find(|x| x.name == site).map(|x| x.path.clone())
+                        s.sites
+                            .iter()
+                            .find(|x| x.name == site)
+                            .map(|x| x.path.clone())
                     };
                     if let Some(p) = site_path {
-                        let pkg = crate::laravel::packages::detect(&p).await.unwrap_or_default();
-                        let _ = tx.send(AppEvent::LaravelPackagesDetected { site, packages: pkg }).await;
+                        let pkg = crate::laravel::packages::detect(&p)
+                            .await
+                            .unwrap_or_default();
+                        let _ = tx
+                            .send(AppEvent::LaravelPackagesDetected {
+                                site,
+                                packages: pkg,
+                            })
+                            .await;
                     }
                 });
             }
@@ -2219,18 +2453,28 @@ pub async fn run_dispatcher(
                         Some(i) => (true, Some(i.path), i.version),
                         None => (false, None, None),
                     };
-                    let _ = tx.send(AppEvent::PhpMyAdminInstalledCheck { installed, path, version }).await;
+                    let _ = tx
+                        .send(AppEvent::PhpMyAdminInstalledCheck {
+                            installed,
+                            path,
+                            version,
+                        })
+                        .await;
                 });
             }
             AppCommand::InstallPhpMyAdmin => {
                 let tx = tx.clone();
                 tokio::spawn(async move {
                     for line in crate::phpmyadmin::installer::install_command_hint().lines() {
-                        let _ = tx.send(AppEvent::PhpMyAdminOutputLine(crate::creator::output_streamer::OutputLine {
-                            text: line.to_string(),
-                            stream: crate::creator::output_streamer::Stream::Stdout,
-                            timestamp: chrono::Local::now(),
-                        })).await;
+                        let _ = tx
+                            .send(AppEvent::PhpMyAdminOutputLine(
+                                crate::creator::output_streamer::OutputLine {
+                                    text: line.to_string(),
+                                    stream: crate::creator::output_streamer::Stream::Stdout,
+                                    timestamp: chrono::Local::now(),
+                                },
+                            ))
+                            .await;
                     }
                 });
             }
@@ -2248,50 +2492,85 @@ pub async fn run_dispatcher(
                 let state_c = Arc::clone(&state);
                 let tx = tx.clone();
                 tokio::spawn(async move {
-                    let (site, site_config, mut app_config, valet_paths, tld, pma_install, blowfish) = {
+                    let (
+                        site,
+                        site_config,
+                        mut app_config,
+                        valet_paths,
+                        tld,
+                        pma_install,
+                        blowfish,
+                    ) = {
                         let s = state_c.read().await;
                         let site = s.sites.iter().find(|x| x.name == site_name).cloned();
-                        let site_config = s.site_configs.get(&site_name).cloned().unwrap_or_default();
+                        let site_config =
+                            s.site_configs.get(&site_name).cloned().unwrap_or_default();
                         let app_config = s.config.clone();
                         let valet_paths = s.valet_paths.clone();
                         let tld = s.tld.clone();
                         let pma_install = s.pma_state.install_path.clone();
                         let blowfish = app_config.blowfish_secret.clone();
-                        (site, site_config, app_config, valet_paths, tld, pma_install, blowfish)
+                        (
+                            site,
+                            site_config,
+                            app_config,
+                            valet_paths,
+                            tld,
+                            pma_install,
+                            blowfish,
+                        )
                     };
                     let Some(site) = site else {
-                        let _ = tx.send(AppEvent::Error(format!("Site '{site_name}' not found"))).await;
+                        let _ = tx
+                            .send(AppEvent::Error(format!("Site '{site_name}' not found")))
+                            .await;
                         return;
                     };
                     let Some(valet_paths) = valet_paths else {
-                        let _ = tx.send(AppEvent::Error("Valet paths not detected yet".to_string())).await;
+                        let _ = tx
+                            .send(AppEvent::Error("Valet paths not detected yet".to_string()))
+                            .await;
                         return;
                     };
                     // Ensure blowfish_secret persists.
                     let blowfish_secret = match blowfish {
                         Some(b) if !b.is_empty() => b,
                         _ => {
-                            let new = crate::phpmyadmin::config_generator::generate_blowfish_secret();
+                            let new =
+                                crate::phpmyadmin::config_generator::generate_blowfish_secret();
                             app_config.blowfish_secret = Some(new.clone());
                             let _ = tokio::task::spawn_blocking({
                                 let cfg = app_config.clone();
                                 move || crate::config::save(&cfg)
-                            }).await;
+                            })
+                            .await;
                             // Mirror into shared state.
                             state_c.write().await.config = app_config.clone();
                             new
                         }
                     };
-                    let pma_install_path = pma_install.unwrap_or_else(|| std::path::PathBuf::from("/usr/share/phpmyadmin"));
-                    let php_ver = site.php_version.clone().unwrap_or_else(|| "8.3".to_string());
-                    let php_fpm_socket = std::path::PathBuf::from(format!("/run/php/php{}-fpm.sock", php_ver));
+                    let pma_install_path = pma_install
+                        .unwrap_or_else(|| std::path::PathBuf::from("/usr/share/phpmyadmin"));
+                    let php_ver = site
+                        .php_version
+                        .clone()
+                        .unwrap_or_else(|| "8.3".to_string());
+                    let php_fpm_socket =
+                        std::path::PathBuf::from(format!("/run/php/php{}-fpm.sock", php_ver));
 
                     // Stream output lines via a channel; forward as events.
-                    let (out_tx, mut out_rx) = mpsc::channel::<crate::creator::output_streamer::OutputLine>(64);
+                    let (out_tx, mut out_rx) =
+                        mpsc::channel::<crate::creator::output_streamer::OutputLine>(64);
                     let tx_fwd = tx.clone();
                     let fwd = tokio::spawn(async move {
                         while let Some(line) = out_rx.recv().await {
-                            if tx_fwd.send(AppEvent::PhpMyAdminOutputLine(line)).await.is_err() { break; }
+                            if tx_fwd
+                                .send(AppEvent::PhpMyAdminOutputLine(line))
+                                .await
+                                .is_err()
+                            {
+                                break;
+                            }
                         }
                     });
 
@@ -2309,9 +2588,18 @@ pub async fn run_dispatcher(
                     let _ = fwd.await;
                     match result {
                         Ok(status) => {
-                            let _ = tx.send(AppEvent::PhpMyAdminConfigured { site: site_name, status }).await;
+                            let _ = tx
+                                .send(AppEvent::PhpMyAdminConfigured {
+                                    site: site_name,
+                                    status,
+                                })
+                                .await;
                         }
-                        Err(e) => { let _ = tx.send(AppEvent::Error(format!("phpMyAdmin configure failed: {e}"))).await; }
+                        Err(e) => {
+                            let _ = tx
+                                .send(AppEvent::Error(format!("phpMyAdmin configure failed: {e}")))
+                                .await;
+                        }
                     }
                 });
             }
@@ -2325,11 +2613,16 @@ pub async fn run_dispatcher(
                         let valet_paths = s.valet_paths.clone();
                         (site, valet_paths)
                     };
-                    let _ = crate::phpmyadmin::config_generator::remove_site_config(&site_name).await;
+                    let _ =
+                        crate::phpmyadmin::config_generator::remove_site_config(&site_name).await;
                     if let (Some(site), Some(valet_paths)) = (site, valet_paths) {
-                        let nginx_path = crate::phpmyadmin::nginx_integration::nginx_config_path(&site, &valet_paths);
+                        let nginx_path = crate::phpmyadmin::nginx_integration::nginx_config_path(
+                            &site,
+                            &valet_paths,
+                        );
                         if let Ok(content) = tokio::fs::read_to_string(&nginx_path).await {
-                            let stripped = crate::phpmyadmin::nginx_integration::remove_block(&content);
+                            let stripped =
+                                crate::phpmyadmin::nginx_integration::remove_block(&content);
                             let _ = tokio::fs::write(&nginx_path, stripped).await;
                         }
                     }
@@ -2346,9 +2639,13 @@ pub async fn run_dispatcher(
                                 crate::phpmyadmin::global_site::global_url(&s.tld)
                             }
                             crate::site_config::models::PmaDbScope::SiteOnly => s
-                                .pma_state.sites.get(&site)
+                                .pma_state
+                                .sites
+                                .get(&site)
                                 .map(|st| st.access_url.clone())
-                                .unwrap_or_else(|| crate::phpmyadmin::global_site::global_url(&s.tld)),
+                                .unwrap_or_else(|| {
+                                    crate::phpmyadmin::global_site::global_url(&s.tld)
+                                }),
                         }
                     };
                     let _ = tokio::process::Command::new("xdg-open").arg(&url).spawn();
@@ -2399,7 +2696,11 @@ pub async fn run_dispatcher(
             // M8 — Logs export
             AppCommand::RevealInFiles(path) => {
                 let _ = tokio::process::Command::new("xdg-open")
-                    .arg(std::path::Path::new(&path).parent().unwrap_or(std::path::Path::new("/tmp")))
+                    .arg(
+                        std::path::Path::new(&path)
+                            .parent()
+                            .unwrap_or(std::path::Path::new("/tmp")),
+                    )
                     .spawn();
             }
             AppCommand::ToggleLogsTail => {
@@ -2436,19 +2737,44 @@ pub async fn run_dispatcher(
                 s.ui.settings_section = section;
             }
             // M1 — Floating windows
-            AppCommand::OpenShellWindow => { let mut s = state.write().await; s.ui.shell_open = true; }
-            AppCommand::CloseShellWindow => { let mut s = state.write().await; s.ui.shell_open = false; }
-            AppCommand::OpenMailpitWindow => { let mut s = state.write().await; s.ui.mailpit_open = true; }
-            AppCommand::CloseMailpitWindow => { let mut s = state.write().await; s.ui.mailpit_open = false; }
-            AppCommand::OpenPmaWindow => { let mut s = state.write().await; s.ui.pma_open = true; }
-            AppCommand::ClosePmaWindow => { let mut s = state.write().await; s.ui.pma_open = false; }
+            AppCommand::OpenShellWindow => {
+                let mut s = state.write().await;
+                s.ui.shell_open = true;
+            }
+            AppCommand::CloseShellWindow => {
+                let mut s = state.write().await;
+                s.ui.shell_open = false;
+            }
+            AppCommand::OpenMailpitWindow => {
+                let mut s = state.write().await;
+                s.ui.mailpit_open = true;
+            }
+            AppCommand::CloseMailpitWindow => {
+                let mut s = state.write().await;
+                s.ui.mailpit_open = false;
+            }
+            AppCommand::OpenPmaWindow => {
+                let mut s = state.write().await;
+                s.ui.pma_open = true;
+            }
+            AppCommand::ClosePmaWindow => {
+                let mut s = state.write().await;
+                s.ui.pma_open = false;
+            }
             // M1 — Add-site modal
-            AppCommand::OpenAddSiteModal => { let mut s = state.write().await; s.ui.add_site_modal_open = true; }
-            AppCommand::CloseAddSiteModal => { let mut s = state.write().await; s.ui.add_site_modal_open = false; }
+            AppCommand::OpenAddSiteModal => {
+                let mut s = state.write().await;
+                s.ui.add_site_modal_open = true;
+            }
+            AppCommand::CloseAddSiteModal => {
+                let mut s = state.write().await;
+                s.ui.add_site_modal_open = false;
+            }
             // M1 — DNS aliases
             AppCommand::AddDnsAlias { from, to } => {
                 let mut s = state.write().await;
-                s.dns_aliases.push(crate::state::app_state::DnsAlias { from, to });
+                s.dns_aliases
+                    .push(crate::state::app_state::DnsAlias { from, to });
             }
             AppCommand::RemoveDnsAlias(from) => {
                 let mut s = state.write().await;
@@ -2472,7 +2798,9 @@ pub async fn run_dispatcher(
                                 crate::ui::components::toast::ToastType::Success,
                             );
                             let new_status = crate::services::monitor::ServiceStatus::Running;
-                            if let Some(svc) = s.services.iter_mut().find(|svc| svc.name == name_clone) {
+                            if let Some(svc) =
+                                s.services.iter_mut().find(|svc| svc.name == name_clone)
+                            {
                                 svc.status = new_status;
                             }
                         }
@@ -2502,7 +2830,9 @@ pub async fn run_dispatcher(
                                 &format!("{} stopped", name_clone),
                                 crate::ui::components::toast::ToastType::Warning,
                             );
-                            if let Some(svc) = s.services.iter_mut().find(|svc| svc.name == name_clone) {
+                            if let Some(svc) =
+                                s.services.iter_mut().find(|svc| svc.name == name_clone)
+                            {
                                 svc.status = crate::services::monitor::ServiceStatus::Stopped;
                             }
                         }
@@ -2532,7 +2862,9 @@ pub async fn run_dispatcher(
                                 &format!("{} restarted", name_clone),
                                 crate::ui::components::toast::ToastType::Success,
                             );
-                            if let Some(svc) = s.services.iter_mut().find(|svc| svc.name == name_clone) {
+                            if let Some(svc) =
+                                s.services.iter_mut().find(|svc| svc.name == name_clone)
+                            {
                                 svc.status = crate::services::monitor::ServiceStatus::Running;
                             }
                         }
@@ -2569,10 +2901,19 @@ pub async fn run_dispatcher(
             AppCommand::RunShellCommand(cmd_str) => {
                 let event_tx_sh = tx.clone();
                 let state_r = state.read().await;
-                let cwd = state_r.shell_site
+                let cwd = state_r
+                    .shell_site
                     .as_ref()
-                    .and_then(|name| state_r.sites.iter().find(|s| s.name == *name).map(|s| s.path.clone()))
-                    .unwrap_or_else(|| std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default()));
+                    .and_then(|name| {
+                        state_r
+                            .sites
+                            .iter()
+                            .find(|s| s.name == *name)
+                            .map(|s| s.path.clone())
+                    })
+                    .unwrap_or_else(|| {
+                        std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                    });
                 drop(state_r);
                 tokio::spawn(async move {
                     let output = tokio::process::Command::new("bash")
@@ -2586,14 +2927,20 @@ pub async fn run_dispatcher(
                             let stdout = String::from_utf8_lossy(&out.stdout);
                             let stderr = String::from_utf8_lossy(&out.stderr);
                             for line in stdout.lines() {
-                                let _ = event_tx_sh.send(AppEvent::ShellOutput(line.to_string())).await;
+                                let _ = event_tx_sh
+                                    .send(AppEvent::ShellOutput(line.to_string()))
+                                    .await;
                             }
                             for line in stderr.lines() {
-                                let _ = event_tx_sh.send(AppEvent::ShellOutput(format!("[err] {}", line))).await;
+                                let _ = event_tx_sh
+                                    .send(AppEvent::ShellOutput(format!("[err] {}", line)))
+                                    .await;
                             }
                         }
                         Err(e) => {
-                            let _ = event_tx_sh.send(AppEvent::ShellOutput(format!("error: {}", e))).await;
+                            let _ = event_tx_sh
+                                .send(AppEvent::ShellOutput(format!("error: {}", e)))
+                                .await;
                         }
                     }
                 });
@@ -2616,19 +2963,25 @@ pub async fn run_dispatcher(
                     if let Ok(resp) = reqwest::get("http://localhost:8025/api/v1/messages").await {
                         if let Ok(json) = resp.json::<serde_json::Value>().await {
                             let empty = vec![];
-                            let msgs: Vec<crate::state::app_state::MailpitMessage> = json["messages"]
+                            let msgs: Vec<crate::state::app_state::MailpitMessage> = json
+                                ["messages"]
                                 .as_array()
                                 .unwrap_or(&empty)
                                 .iter()
                                 .map(|m| crate::state::app_state::MailpitMessage {
                                     id: m["ID"].as_str().unwrap_or("").to_string(),
                                     from: m["From"]["Address"].as_str().unwrap_or("").to_string(),
-                                    subject: m["Subject"].as_str().unwrap_or("(no subject)").to_string(),
+                                    subject: m["Subject"]
+                                        .as_str()
+                                        .unwrap_or("(no subject)")
+                                        .to_string(),
                                     received: m["Created"].as_str().unwrap_or("").to_string(),
                                     read: m["Read"].as_bool().unwrap_or(false),
                                 })
                                 .collect();
-                            let _ = event_tx_mp.send(AppEvent::MailpitMessagesLoaded(msgs)).await;
+                            let _ = event_tx_mp
+                                .send(AppEvent::MailpitMessagesLoaded(msgs))
+                                .await;
                         }
                     }
                 });
@@ -2694,10 +3047,14 @@ fn load_symbol_fonts(ctx: &egui::Context) {
                 egui::FontData::from_owned(data).into(),
             );
             // Add as last-resort fallback for both proportional and monospace families.
-            fonts.families.entry(egui::FontFamily::Proportional)
+            fonts
+                .families
+                .entry(egui::FontFamily::Proportional)
                 .or_default()
                 .push("NotoSansSymbols2".to_owned());
-            fonts.families.entry(egui::FontFamily::Monospace)
+            fonts
+                .families
+                .entry(egui::FontFamily::Monospace)
                 .or_default()
                 .push("NotoSansSymbols2".to_owned());
             break;

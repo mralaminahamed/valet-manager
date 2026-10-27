@@ -4,9 +4,9 @@ use crate::cli_tools::registry::CliTool;
 pub enum OptionType {
     Text,
     Password,
-    Select(Vec<String>),  // list of options
+    Select(Vec<String>), // list of options
     Toggle,
-    Dir,  // directory picker
+    Dir, // directory picker
 }
 
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ pub struct ProjectOption {
     pub key: String,
     pub label: String,
     pub option_type: OptionType,
-    pub default_value: String,   // empty string if no default
+    pub default_value: String, // empty string if no default
     pub required: bool,
 }
 
@@ -108,7 +108,11 @@ fn wordpress_bedrock() -> ProjectType {
         display_name: "Bedrock".to_string(),
         description: "Modern WordPress stack with Composer".to_string(),
         group: ProjectGroup::WordPress,
-        required_tools: vec![CliTool::WpCli, CliTool::WpCliValetCommand, CliTool::Composer],
+        required_tools: vec![
+            CliTool::WpCli,
+            CliTool::WpCliValetCommand,
+            CliTool::Composer,
+        ],
         options: wordpress_common_options(),
         duration_warning: None,
         show_manual_download: false,
@@ -204,7 +208,7 @@ fn wordpress_common_options() -> Vec<ProjectOption> {
             key: "db_name".to_string(),
             label: "Database Name".to_string(),
             option_type: OptionType::Text,
-            default_value: "{name}".to_string(),  // placeholder for name
+            default_value: "{name}".to_string(), // placeholder for name
             required: false,
         },
         // 5. db_user
@@ -592,10 +596,7 @@ fn cakephp() -> ProjectType {
             ProjectOption {
                 key: "version".to_string(),
                 label: "Version".to_string(),
-                option_type: OptionType::Select(vec![
-                    "5.*".to_string(),
-                    "4.*".to_string(),
-                ]),
+                option_type: OptionType::Select(vec!["5.*".to_string(), "4.*".to_string()]),
                 default_value: "5.*".to_string(),
                 required: false,
             },
@@ -873,10 +874,7 @@ fn expressionengine() -> ProjectType {
         description: "License-required CMS — manual download required".to_string(),
         group: ProjectGroup::Php,
         required_tools: vec![],
-        options: vec![
-            php_name_option(),
-            php_directory_option(),
-        ],
+        options: vec![php_name_option(), php_directory_option()],
         duration_warning: None,
         show_manual_download: true,
         post_install_note: None,
@@ -886,12 +884,7 @@ fn expressionengine() -> ProjectType {
 
 // ── Node.js frameworks ──────────────────────────────────────────────────────
 
-fn node_type(
-    id: &str,
-    display_name: &str,
-    description: &str,
-    default_port: u16,
-) -> ProjectType {
+fn node_type(id: &str, display_name: &str, description: &str, default_port: u16) -> ProjectType {
     ProjectType {
         id: id.to_string(),
         display_name: display_name.to_string(),
@@ -1034,27 +1027,40 @@ mod tests {
     #[test]
     fn all_project_types_returns_at_least_25_types() {
         let types = all_project_types();
-        assert!(types.len() >= 25, "expected >=25 types, got {}", types.len());
+        assert!(
+            types.len() >= 25,
+            "expected >=25 types, got {}",
+            types.len()
+        );
     }
 
     #[test]
     fn wordpress_blank_has_14_options() {
         let types = all_project_types();
-        let wp = types.iter().find(|t| t.id == "wordpress-blank").expect("wordpress-blank exists");
+        let wp = types
+            .iter()
+            .find(|t| t.id == "wordpress-blank")
+            .expect("wordpress-blank exists");
         assert_eq!(wp.options.len(), 14);
     }
 
     #[test]
     fn laravel_blank_required_tools_contains_composer() {
         let types = all_project_types();
-        let la = types.iter().find(|t| t.id == "laravel-blank").expect("laravel-blank exists");
+        let la = types
+            .iter()
+            .find(|t| t.id == "laravel-blank")
+            .expect("laravel-blank exists");
         assert!(la.required_tools.contains(&CliTool::Composer));
     }
 
     #[test]
     fn laravel_blank_has_no_starter_kit_option() {
         let types = all_project_types();
-        let la = types.iter().find(|t| t.id == "laravel-blank").expect("laravel-blank exists");
+        let la = types
+            .iter()
+            .find(|t| t.id == "laravel-blank")
+            .expect("laravel-blank exists");
         assert!(!la.options.iter().any(|o| o.key == "starter_kit"));
     }
 
@@ -1080,14 +1086,20 @@ mod tests {
     #[test]
     fn wordpress_variants_count() {
         let types = all_project_types();
-        let wp_count = types.iter().filter(|t| t.group == ProjectGroup::WordPress).count();
+        let wp_count = types
+            .iter()
+            .filter(|t| t.group == ProjectGroup::WordPress)
+            .count();
         assert_eq!(wp_count, 5);
     }
 
     #[test]
     fn laravel_variants_count() {
         let types = all_project_types();
-        let la_count = types.iter().filter(|t| t.group == ProjectGroup::Laravel).count();
+        let la_count = types
+            .iter()
+            .filter(|t| t.group == ProjectGroup::Laravel)
+            .count();
         assert_eq!(la_count, 4);
     }
 
@@ -1111,14 +1123,22 @@ mod tests {
     #[test]
     fn wordpress_blank_php_version_defaults_to_8_3() {
         let wp = wordpress_blank();
-        let php_opt = wp.options.iter().find(|o| o.key == "php_version").expect("php_version exists");
+        let php_opt = wp
+            .options
+            .iter()
+            .find(|o| o.key == "php_version")
+            .expect("php_version exists");
         assert_eq!(php_opt.default_value, "8.3");
     }
 
     #[test]
     fn wordpress_blank_locale_has_8_options() {
         let wp = wordpress_blank();
-        let locale_opt = wp.options.iter().find(|o| o.key == "locale").expect("locale exists");
+        let locale_opt = wp
+            .options
+            .iter()
+            .find(|o| o.key == "locale")
+            .expect("locale exists");
         if let OptionType::Select(opts) = &locale_opt.option_type {
             assert_eq!(opts.len(), 8);
         } else {
@@ -1141,7 +1161,11 @@ mod tests {
     #[test]
     fn laravel_breeze_starter_kit_options() {
         let la = laravel_breeze();
-        let sk_opt = la.options.iter().find(|o| o.key == "starter_kit").expect("starter_kit exists");
+        let sk_opt = la
+            .options
+            .iter()
+            .find(|o| o.key == "starter_kit")
+            .expect("starter_kit exists");
         if let OptionType::Select(opts) = &sk_opt.option_type {
             assert_eq!(opts.len(), 3);
             assert!(opts.contains(&"breeze-blade".to_string()));
@@ -1155,7 +1179,11 @@ mod tests {
     #[test]
     fn laravel_jetstream_starter_kit_options() {
         let la = laravel_jetstream();
-        let sk_opt = la.options.iter().find(|o| o.key == "starter_kit").expect("starter_kit exists");
+        let sk_opt = la
+            .options
+            .iter()
+            .find(|o| o.key == "starter_kit")
+            .expect("starter_kit exists");
         if let OptionType::Select(opts) = &sk_opt.option_type {
             assert_eq!(opts.len(), 2);
             assert!(opts.contains(&"jetstream-livewire".to_string()));
@@ -1168,7 +1196,10 @@ mod tests {
     #[test]
     fn wordpress_sage_has_composer_and_npm() {
         let types = all_project_types();
-        let wp = types.iter().find(|t| t.id == "wordpress-sage").expect("wordpress-sage exists");
+        let wp = types
+            .iter()
+            .find(|t| t.id == "wordpress-sage")
+            .expect("wordpress-sage exists");
         assert!(wp.required_tools.contains(&CliTool::Composer));
         assert!(wp.required_tools.contains(&CliTool::Npm));
     }
@@ -1183,21 +1214,33 @@ mod tests {
     #[test]
     fn laravel_blank_git_default_is_true() {
         let la = laravel_blank();
-        let git_opt = la.options.iter().find(|o| o.key == "with_git").expect("with_git exists");
+        let git_opt = la
+            .options
+            .iter()
+            .find(|o| o.key == "with_git")
+            .expect("with_git exists");
         assert_eq!(git_opt.default_value, "true");
     }
 
     #[test]
     fn laravel_blank_pest_default_is_false() {
         let la = laravel_blank();
-        let pest_opt = la.options.iter().find(|o| o.key == "with_pest").expect("with_pest exists");
+        let pest_opt = la
+            .options
+            .iter()
+            .find(|o| o.key == "with_pest")
+            .expect("with_pest exists");
         assert_eq!(pest_opt.default_value, "false");
     }
 
     #[test]
     fn wordpress_multisite_toggle_option() {
         let wp = wordpress_multisite();
-        let ms_opt = wp.options.iter().find(|o| o.key == "multisite").expect("multisite exists");
+        let ms_opt = wp
+            .options
+            .iter()
+            .find(|o| o.key == "multisite")
+            .expect("multisite exists");
         assert!(matches!(ms_opt.option_type, OptionType::Toggle));
         assert_eq!(ms_opt.default_value, "false");
     }
@@ -1207,61 +1250,96 @@ mod tests {
     #[test]
     fn php_group_contains_symfony_full() {
         let types = all_project_types();
-        let pt = types.iter().find(|t| t.id == "symfony-full").expect("symfony-full exists");
+        let pt = types
+            .iter()
+            .find(|t| t.id == "symfony-full")
+            .expect("symfony-full exists");
         assert_eq!(pt.group, ProjectGroup::Php);
     }
 
     #[test]
     fn node_group_contains_nextjs() {
         let types = all_project_types();
-        let pt = types.iter().find(|t| t.id == "nextjs").expect("nextjs exists");
+        let pt = types
+            .iter()
+            .find(|t| t.id == "nextjs")
+            .expect("nextjs exists");
         assert_eq!(pt.group, ProjectGroup::Node);
     }
 
     #[test]
     fn static_group_contains_static_html() {
         let types = all_project_types();
-        let pt = types.iter().find(|t| t.id == "static-html").expect("static-html exists");
+        let pt = types
+            .iter()
+            .find(|t| t.id == "static-html")
+            .expect("static-html exists");
         assert_eq!(pt.group, ProjectGroup::Static);
     }
 
     #[test]
     fn expressionengine_show_manual_download_is_true() {
         let types = all_project_types();
-        let pt = types.iter().find(|t| t.id == "expressionengine").expect("expressionengine exists");
+        let pt = types
+            .iter()
+            .find(|t| t.id == "expressionengine")
+            .expect("expressionengine exists");
         assert!(pt.show_manual_download);
     }
 
     #[test]
     fn magento_has_duration_warning() {
         let types = all_project_types();
-        let pt = types.iter().find(|t| t.id == "magento").expect("magento exists");
+        let pt = types
+            .iter()
+            .find(|t| t.id == "magento")
+            .expect("magento exists");
         assert!(pt.duration_warning.is_some());
-        assert!(pt.duration_warning.as_ref().expect("warning set").contains("5"));
+        assert!(pt
+            .duration_warning
+            .as_ref()
+            .expect("warning set")
+            .contains("5"));
     }
 
     #[test]
     fn drupal_has_post_install_note() {
         let types = all_project_types();
-        let pt = types.iter().find(|t| t.id == "drupal").expect("drupal exists");
+        let pt = types
+            .iter()
+            .find(|t| t.id == "drupal")
+            .expect("drupal exists");
         assert!(pt.post_install_note.is_some());
-        assert!(pt.post_install_note.as_ref().expect("note set").contains("install.php"));
+        assert!(pt
+            .post_install_note
+            .as_ref()
+            .expect("note set")
+            .contains("install.php"));
     }
 
     #[test]
     fn nextjs_default_port_is_3000() {
         let types = all_project_types();
-        let pt = types.iter().find(|t| t.id == "nextjs").expect("nextjs exists");
+        let pt = types
+            .iter()
+            .find(|t| t.id == "nextjs")
+            .expect("nextjs exists");
         assert_eq!(pt.default_port, Some(3000));
     }
 
     #[test]
     fn node_types_have_with_systemd_toggle() {
         let types = all_project_types();
-        let node_types: Vec<_> = types.iter().filter(|t| t.group == ProjectGroup::Node).collect();
+        let node_types: Vec<_> = types
+            .iter()
+            .filter(|t| t.group == ProjectGroup::Node)
+            .collect();
         assert!(!node_types.is_empty());
         for pt in node_types {
-            let opt = pt.options.iter().find(|o| o.key == "with_systemd")
+            let opt = pt
+                .options
+                .iter()
+                .find(|o| o.key == "with_systemd")
                 .unwrap_or_else(|| panic!("{} missing with_systemd", pt.id));
             assert!(matches!(opt.option_type, OptionType::Toggle));
         }
@@ -1270,8 +1348,15 @@ mod tests {
     #[test]
     fn static_html_template_has_three_choices() {
         let types = all_project_types();
-        let pt = types.iter().find(|t| t.id == "static-html").expect("static-html exists");
-        let tpl = pt.options.iter().find(|o| o.key == "template").expect("template exists");
+        let pt = types
+            .iter()
+            .find(|t| t.id == "static-html")
+            .expect("static-html exists");
+        let tpl = pt
+            .options
+            .iter()
+            .find(|o| o.key == "template")
+            .expect("template exists");
         if let OptionType::Select(opts) = &tpl.option_type {
             assert_eq!(opts.len(), 3);
             assert!(opts.contains(&"blank".to_string()));

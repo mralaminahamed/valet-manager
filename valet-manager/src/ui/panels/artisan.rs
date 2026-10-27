@@ -68,25 +68,28 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                     .find(|s| s.domain == *dom)
                     .and_then(|s| artisan::framework_cli::detect_cli(s).map(|c| c.label()))
             })
-            .or_else(|| state.artisan_tool.map(|tool| match tool {
-                artisan::ArtisanTool::Artisan    => "Artisan",
-                artisan::ArtisanTool::BinConsole => "bin/console",
-                artisan::ArtisanTool::BinMagento => "bin/magento",
-                artisan::ArtisanTool::Drush      => "drush",
-            }));
+            .or_else(|| {
+                state.artisan_tool.map(|tool| match tool {
+                    artisan::ArtisanTool::Artisan => "Artisan",
+                    artisan::ArtisanTool::BinConsole => "bin/console",
+                    artisan::ArtisanTool::BinMagento => "bin/magento",
+                    artisan::ArtisanTool::Drush => "drush",
+                })
+            });
         if let Some(label) = cli_label_opt {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 ui.add_space(8.0);
                 Frame::NONE
                     .fill(with_alpha(Colors::PURPLE, 30))
                     .corner_radius(CornerRadius::same(10))
-                    .inner_margin(Margin { left: 8, right: 8, top: 2, bottom: 2 })
+                    .inner_margin(Margin {
+                        left: 8,
+                        right: 8,
+                        top: 2,
+                        bottom: 2,
+                    })
                     .show(ui, |ui| {
-                        ui.label(
-                            RichText::new(label)
-                                .size(10.5)
-                                .color(Colors::PURPLE),
-                        );
+                        ui.label(RichText::new(label).size(10.5).color(Colors::PURPLE));
                     });
             });
         }
@@ -95,7 +98,10 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
     ui.add_space(8.0);
 
     if state.artisan_site.is_none() {
-        empty_state(ui, "Select a site with artisan/bin-console/bin-magento detected");
+        empty_state(
+            ui,
+            "Select a site with artisan/bin-console/bin-magento detected",
+        );
         return;
     }
 
@@ -144,8 +150,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 }
                 if i.key_pressed(egui::Key::ArrowUp) && !filtered.is_empty() {
                     state.artisan_autocomplete_selected =
-                        (state.artisan_autocomplete_selected + filtered.len() - 1)
-                            % filtered.len();
+                        (state.artisan_autocomplete_selected + filtered.len() - 1) % filtered.len();
                 }
                 if i.key_pressed(egui::Key::Tab) {
                     if let Some(c) = filtered.get(state.artisan_autocomplete_selected) {
@@ -168,24 +173,40 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                         .fill(Colors::DEEP_BG)
                         .corner_radius(CornerRadius::same(6))
                         .stroke(Stroke::new(0.5, Colors::BORDER_MED))
-                        .inner_margin(Margin { left: 0, right: 0, top: 4, bottom: 4 })
+                        .inner_margin(Margin {
+                            left: 0,
+                            right: 0,
+                            top: 4,
+                            bottom: 4,
+                        })
                         .show(ui, |ui| {
                             for (i, c) in filtered.iter().enumerate() {
                                 let selected = i == state.artisan_autocomplete_selected;
-                                let bg = if selected { Colors::CARD_HOVER } else { egui::Color32::TRANSPARENT };
+                                let bg = if selected {
+                                    Colors::CARD_HOVER
+                                } else {
+                                    egui::Color32::TRANSPARENT
+                                };
                                 Frame::NONE
                                     .fill(bg)
-                                    .inner_margin(Margin { left: 12, right: 12, top: 4, bottom: 4 })
+                                    .inner_margin(Margin {
+                                        left: 12,
+                                        right: 12,
+                                        top: 4,
+                                        bottom: 4,
+                                    })
                                     .show(ui, |ui| {
-                                        let resp = ui
-                                            .allocate_response(egui::vec2(ui.available_width(), 22.0), egui::Sense::click());
+                                        let resp = ui.allocate_response(
+                                            egui::vec2(ui.available_width(), 22.0),
+                                            egui::Sense::click(),
+                                        );
                                         if resp.clicked() {
                                             state.artisan_input = c.name.clone();
                                         }
                                         let mut child = ui.new_child(
-                                            egui::UiBuilder::new()
-                                                .max_rect(resp.rect)
-                                                .layout(egui::Layout::left_to_right(egui::Align::Center)),
+                                            egui::UiBuilder::new().max_rect(resp.rect).layout(
+                                                egui::Layout::left_to_right(egui::Align::Center),
+                                            ),
                                         );
                                         child.label(
                                             RichText::new(&c.name)
@@ -194,13 +215,16 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                                                 .color(Colors::TEXT_PRIMARY),
                                         );
                                         if !c.description.is_empty() {
-                                            child.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                                ui.label(
-                                                    RichText::new(&c.description)
-                                                        .size(10.5)
-                                                        .color(Colors::TEXT_TERTIARY),
-                                                );
-                                            });
+                                            child.with_layout(
+                                                egui::Layout::right_to_left(egui::Align::Center),
+                                                |ui| {
+                                                    ui.label(
+                                                        RichText::new(&c.description)
+                                                            .size(10.5)
+                                                            .color(Colors::TEXT_TERTIARY),
+                                                    );
+                                                },
+                                            );
                                         }
                                     });
                             }
@@ -246,10 +270,6 @@ fn exact_match(items: &[ArtisanCommand], q: &str) -> bool {
 fn empty_state(ui: &mut egui::Ui, msg: &str) {
     ui.add_space(40.0);
     ui.vertical_centered(|ui| {
-        ui.label(
-            RichText::new(msg)
-                .size(13.0)
-                .color(Colors::TEXT_SECONDARY),
-        );
+        ui.label(RichText::new(msg).size(13.0).color(Colors::TEXT_SECONDARY));
     });
 }

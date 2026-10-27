@@ -1,9 +1,14 @@
-use std::path::{Path, PathBuf};
 use chrono::{Local, NaiveDate};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
-pub enum CertStatus { Ok, Warning, Critical, Expired }
+pub enum CertStatus {
+    Ok,
+    Warning,
+    Critical,
+    Expired,
+}
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -17,10 +22,15 @@ pub struct CertInfo {
 }
 
 pub fn status_from_days(days: i64) -> CertStatus {
-    if days < 0       { CertStatus::Expired }
-    else if days < 7  { CertStatus::Critical }
-    else if days < 30 { CertStatus::Warning }
-    else              { CertStatus::Ok }
+    if days < 0 {
+        CertStatus::Expired
+    } else if days < 7 {
+        CertStatus::Critical
+    } else if days < 30 {
+        CertStatus::Warning
+    } else {
+        CertStatus::Ok
+    }
 }
 
 /// Parse `openssl x509 -enddate -noout -in {path}` output line "notAfter=Jan 12 23:59:59 2026 GMT"
@@ -57,13 +67,16 @@ pub async fn read_cert(domain: &str, pem_path: &Path) -> anyhow::Result<CertInfo
     let path_s = pem_path.to_string_lossy().to_string();
     let enddate = tokio::process::Command::new("openssl")
         .args(["x509", "-enddate", "-noout", "-in", &path_s])
-        .output().await?;
+        .output()
+        .await?;
     let issuer = tokio::process::Command::new("openssl")
         .args(["x509", "-issuer", "-noout", "-in", &path_s])
-        .output().await?;
+        .output()
+        .await?;
     let enddate_s = String::from_utf8_lossy(&enddate.stdout);
     let issuer_s = String::from_utf8_lossy(&issuer.stdout);
-    let expires_at = parse_enddate_line(&enddate_s).ok_or_else(|| anyhow::anyhow!("cannot parse notAfter"))?;
+    let expires_at =
+        parse_enddate_line(&enddate_s).ok_or_else(|| anyhow::anyhow!("cannot parse notAfter"))?;
     let issuer_str = parse_issuer_line(&issuer_s);
     let today = Local::now().date_naive();
     let days = expires_at.signed_duration_since(today).num_days();
@@ -81,13 +94,21 @@ pub async fn read_cert(domain: &str, pem_path: &Path) -> anyhow::Result<CertInfo
 #[allow(dead_code)]
 pub async fn scan(certificates_dir: &Path) -> Vec<CertInfo> {
     let mut out = Vec::new();
-    let Ok(mut rd) = tokio::fs::read_dir(certificates_dir).await else { return out; };
+    let Ok(mut rd) = tokio::fs::read_dir(certificates_dir).await else {
+        return out;
+    };
     while let Ok(Some(entry)) = rd.next_entry().await {
         let path = entry.path();
         let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
         if ext == "crt" || ext == "pem" {
-            let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
-            if stem.is_empty() { continue; }
+            let stem = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_string();
+            if stem.is_empty() {
+                continue;
+            }
             if let Ok(info) = read_cert(&stem, &path).await {
                 out.push(info);
             }
@@ -102,12 +123,16 @@ pub fn sort_by_status_priority(certs: &mut Vec<CertInfo>) {
     fn rank(s: CertStatus) -> i32 {
         match s {
             CertStatus::Critical => 0,
-            CertStatus::Warning  => 1,
-            CertStatus::Ok       => 2,
-            CertStatus::Expired  => 3,
+            CertStatus::Warning => 1,
+            CertStatus::Ok => 2,
+            CertStatus::Expired => 3,
         }
     }
-    certs.sort_by(|a, b| rank(a.status).cmp(&rank(b.status)).then(a.days_remaining.cmp(&b.days_remaining)));
+    certs.sort_by(|a, b| {
+        rank(a.status)
+            .cmp(&rank(b.status))
+            .then(a.days_remaining.cmp(&b.days_remaining))
+    });
 }
 
 #[cfg(test)]
@@ -116,9 +141,9 @@ mod tests {
     #[test]
     fn status_thresholds() {
         assert_eq!(status_from_days(-1), CertStatus::Expired);
-        assert_eq!(status_from_days(0),  CertStatus::Critical);
-        assert_eq!(status_from_days(6),  CertStatus::Critical);
-        assert_eq!(status_from_days(7),  CertStatus::Warning);
+        assert_eq!(status_from_days(0), CertStatus::Critical);
+        assert_eq!(status_from_days(6), CertStatus::Critical);
+        assert_eq!(status_from_days(7), CertStatus::Warning);
         assert_eq!(status_from_days(29), CertStatus::Warning);
         assert_eq!(status_from_days(30), CertStatus::Ok);
         assert_eq!(status_from_days(365), CertStatus::Ok);
@@ -130,7 +155,10 @@ mod tests {
     }
     #[test]
     fn parses_issuer_cn() {
-        assert_eq!(parse_issuer_line("issuer=O = Valet+ CA, CN = Valet+ CA Self Signed"), "Valet+ CA Self Signed");
+        assert_eq!(
+            parse_issuer_line("issuer=O = Valet+ CA, CN = Valet+ CA Self Signed"),
+            "Valet+ CA Self Signed"
+        );
         // No CN — keep the rest
         let s = parse_issuer_line("issuer=O = Anonymous");
         assert!(s.contains("Anonymous"));
@@ -138,7 +166,14 @@ mod tests {
     #[test]
     fn sort_priority() {
         fn mk(name: &str, status: CertStatus, days: i64) -> CertInfo {
-            CertInfo { domain: name.into(), issuer: "x".into(), expires_at: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(), days_remaining: days, status, pem_path: PathBuf::new() }
+            CertInfo {
+                domain: name.into(),
+                issuer: "x".into(),
+                expires_at: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+                days_remaining: days,
+                status,
+                pem_path: PathBuf::new(),
+            }
         }
         let mut v = vec![
             mk("ok", CertStatus::Ok, 100),

@@ -1,7 +1,7 @@
+use crate::creator::output_streamer::{OutputLine, Stream};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::sync::mpsc::Sender;
-use crate::creator::output_streamer::{OutputLine, Stream};
 
 /// Template choice for the in-process static-site generator.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,7 +40,10 @@ impl StaticHtmlConfig {
             name: values.get("name").cloned().unwrap_or_default(),
             directory: PathBuf::from(values.get("directory").cloned().unwrap_or_default()),
             template: StaticTemplate::from_str(
-                values.get("template").map(|s| s.as_str()).unwrap_or("blank"),
+                values
+                    .get("template")
+                    .map(|s| s.as_str())
+                    .unwrap_or("blank"),
             ),
         }
     }
@@ -70,10 +73,7 @@ impl StaticHtmlConfig {
 /// Generate the static site files in-process. No subprocess.
 /// Streams synthetic OutputLine messages to `tx`.
 #[allow(dead_code)]
-pub async fn run(
-    config: &StaticHtmlConfig,
-    tx: Sender<OutputLine>,
-) -> anyhow::Result<bool> {
+pub async fn run(config: &StaticHtmlConfig, tx: Sender<OutputLine>) -> anyhow::Result<bool> {
     let dir = config.site_dir();
 
     let _ = tx
@@ -122,12 +122,18 @@ mod tests {
 
     #[test]
     fn template_from_str_tailwind() {
-        assert_eq!(StaticTemplate::from_str("tailwind"), StaticTemplate::Tailwind);
+        assert_eq!(
+            StaticTemplate::from_str("tailwind"),
+            StaticTemplate::Tailwind
+        );
     }
 
     #[test]
     fn template_from_str_bootstrap() {
-        assert_eq!(StaticTemplate::from_str("bootstrap"), StaticTemplate::Bootstrap);
+        assert_eq!(
+            StaticTemplate::from_str("bootstrap"),
+            StaticTemplate::Bootstrap
+        );
     }
 
     #[test]

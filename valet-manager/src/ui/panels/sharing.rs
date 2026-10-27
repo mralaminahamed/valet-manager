@@ -11,8 +11,16 @@ use crate::valet::sharing::ShareTool;
 
 const TOOLS: &[(ShareTool, &str, &str)] = &[
     (ShareTool::Ngrok, "ngrok", "Tunnel via ngrok.io"),
-    (ShareTool::Expose, "expose", "Self-hosted via beyondco/expose"),
-    (ShareTool::Cloudflared, "cloudflared", "Cloudflare quick tunnels"),
+    (
+        ShareTool::Expose,
+        "expose",
+        "Self-hosted via beyondco/expose",
+    ),
+    (
+        ShareTool::Cloudflared,
+        "cloudflared",
+        "Cloudflare quick tunnels",
+    ),
 ];
 
 fn render_tool_card(
@@ -22,8 +30,7 @@ fn render_tool_card(
     desc: &str,
     selected: bool,
 ) -> bool {
-    let (rect, resp) =
-        ui.allocate_exact_size(egui::vec2(200.0, 80.0), egui::Sense::click());
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(200.0, 80.0), egui::Sense::click());
     let (fill, stroke) = if selected {
         (Colors::ACCENT_DARK, Stroke::new(1.5, Colors::ACCENT))
     } else if resp.hovered() {
@@ -47,7 +54,11 @@ fn render_tool_card(
             egui::Align2::LEFT_TOP,
             name,
             egui::FontId::proportional(13.0),
-            if selected { Color32::WHITE } else { Colors::TEXT_PRIMARY },
+            if selected {
+                Color32::WHITE
+            } else {
+                Colors::TEXT_PRIMARY
+            },
         );
         painter.text(
             egui::pos2(inner.min.x, inner.min.y + 22.0),
@@ -179,14 +190,9 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 ui.add_space(22.0);
                 let url_clone = url.clone();
                 let resp = ui.add(
-                    egui::Button::new(
-                        RichText::new(url)
-                            .size(14.0)
-                            .color(Colors::ACCENT)
-                            .strong(),
-                    )
-                    .fill(Color32::TRANSPARENT)
-                    .stroke(Stroke::NONE),
+                    egui::Button::new(RichText::new(url).size(14.0).color(Colors::ACCENT).strong())
+                        .fill(Color32::TRANSPARENT)
+                        .stroke(Stroke::NONE),
                 );
                 if resp.clicked() {
                     let _ = cmd_tx.try_send(AppCommand::OpenSiteInBrowser(url_clone));

@@ -5,17 +5,15 @@ use crate::commands::AppCommand;
 use crate::ssl::cert_reader::{CertInfo, CertStatus};
 use crate::state::app_state::AppState;
 use crate::ui::components::banner::{alert_banner_with_actions, BannerLevel};
-use crate::ui::theme::{
-    accent_button, divider, ghost_button, with_alpha, Colors,
-};
+use crate::ui::theme::{accent_button, divider, ghost_button, with_alpha, Colors};
 
-const COL_ISSUER:  f32 = 160.0;
+const COL_ISSUER: f32 = 160.0;
 const COL_EXPIRES: f32 = 110.0;
-const COL_DAYS:    f32 = 60.0;
-const COL_STATUS:  f32 = 90.0;
-const COL_ACTION:  f32 = 60.0;
-const ROW_HEIGHT:  f32 = 36.0;
-const HEADER_H:    f32 = 32.0;
+const COL_DAYS: f32 = 60.0;
+const COL_STATUS: f32 = 90.0;
+const COL_ACTION: f32 = 60.0;
+const ROW_HEIGHT: f32 = 36.0;
+const HEADER_H: f32 = 32.0;
 
 fn status_color_for(status: CertStatus) -> Color32 {
     match status {
@@ -39,7 +37,8 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
     let border = Stroke::new(0.5, Colors::BORDER);
     let avail = ui.available_width();
     let (rect, _) = ui.allocate_exact_size(egui::vec2(avail, HEADER_H), egui::Sense::hover());
-    ui.painter().rect_filled(rect, CornerRadius::ZERO, header_bg);
+    ui.painter()
+        .rect_filled(rect, CornerRadius::ZERO, header_bg);
     ui.painter().hline(rect.x_range(), rect.bottom(), border);
 
     let mut child = ui.new_child(
@@ -49,7 +48,10 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
     );
 
     let hdr = |text: &str| {
-        RichText::new(text).size(10.5).strong().color(Colors::TEXT_TERTIARY)
+        RichText::new(text)
+            .size(10.5)
+            .strong()
+            .color(Colors::TEXT_TERTIARY)
     };
 
     child.add_space(10.0);
@@ -83,16 +85,12 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
     child.allocate_ui(egui::vec2(COL_ACTION, HEADER_H), |_| {});
 }
 
-fn render_row(
-    ui: &mut egui::Ui,
-    cert: &CertInfo,
-    flex_width: f32,
-    cmd_tx: &Sender<AppCommand>,
-) {
+fn render_row(ui: &mut egui::Ui, cert: &CertInfo, flex_width: f32, cmd_tx: &Sender<AppCommand>) {
     let avail = ui.available_width();
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(avail, ROW_HEIGHT), egui::Sense::hover());
     if resp.hovered() {
-        ui.painter().rect_filled(rect, CornerRadius::ZERO, Colors::CARD_HOVER);
+        ui.painter()
+            .rect_filled(rect, CornerRadius::ZERO, Colors::CARD_HOVER);
     }
     ui.painter().hline(
         rect.x_range(),
@@ -167,7 +165,12 @@ fn render_row(
             Frame::NONE
                 .fill(with_alpha(sc, 30))
                 .corner_radius(CornerRadius::same(10))
-                .inner_margin(Margin { left: 8, right: 8, top: 2, bottom: 2 })
+                .inner_margin(Margin {
+                    left: 8,
+                    right: 8,
+                    top: 2,
+                    bottom: 2,
+                })
                 .show(ui, |ui| {
                     ui.label(
                         RichText::new(status_label(cert.status))
@@ -182,12 +185,10 @@ fn render_row(
     child.allocate_ui(egui::vec2(COL_ACTION, ROW_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             let btn = ui.add(
-                egui::Button::new(
-                    RichText::new("⋮").size(16.0).color(Colors::TEXT_SECONDARY),
-                )
-                .min_size(egui::vec2(24.0, 24.0))
-                .fill(Color32::TRANSPARENT)
-                .stroke(Stroke::NONE),
+                egui::Button::new(RichText::new("⋮").size(16.0).color(Colors::TEXT_SECONDARY))
+                    .min_size(egui::vec2(24.0, 24.0))
+                    .fill(Color32::TRANSPARENT)
+                    .stroke(Stroke::NONE),
             );
             let domain = cert.domain.clone();
             egui::Popup::menu(&btn).show(|ui| {

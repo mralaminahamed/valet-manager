@@ -1,10 +1,10 @@
-pub mod theme;
-pub mod sidebar;
-pub mod screens;
-pub mod panels;
-pub mod components;
 pub mod command_palette;
+pub mod components;
 pub mod modals;
+pub mod panels;
+pub mod screens;
+pub mod sidebar;
+pub mod theme;
 pub mod windows;
 
 #[allow(dead_code)]
@@ -40,9 +40,28 @@ impl DetectedFramework {
     pub fn all_variants() -> [DetectedFramework; 22] {
         use DetectedFramework::*;
         [
-            Laravel, WordPress, Bedrock, CakePHP, ConcreteCms, Contao, Craft, Drupal,
-            ExpressionEngine, Jigsaw, Joomla, Katana, Kirby, Magento, OctoberCms,
-            Sculpin, Slim, Statamic, StaticHtml, Symfony, Zend, Unknown,
+            Laravel,
+            WordPress,
+            Bedrock,
+            CakePHP,
+            ConcreteCms,
+            Contao,
+            Craft,
+            Drupal,
+            ExpressionEngine,
+            Jigsaw,
+            Joomla,
+            Katana,
+            Kirby,
+            Magento,
+            OctoberCms,
+            Sculpin,
+            Slim,
+            Statamic,
+            StaticHtml,
+            Symfony,
+            Zend,
+            Unknown,
         ]
     }
 }

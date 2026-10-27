@@ -5,7 +5,7 @@ use crate::commands::AppCommand;
 use crate::php::ini_manager;
 use crate::php::types::IniType;
 use crate::state::app_state::AppState;
-use crate::ui::theme::{Colors, accent_button, card_frame, divider, ghost_button};
+use crate::ui::theme::{accent_button, card_frame, divider, ghost_button, Colors};
 
 #[allow(dead_code)]
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
@@ -171,13 +171,16 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                                 .fill(bg)
                                 .corner_radius(4.0)
                                 .stroke(Stroke::new(0.5, Colors::BORDER))
-                                .inner_margin(Margin { left: 8, right: 8, top: 6, bottom: 6 })
+                                .inner_margin(Margin {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6,
+                                })
                                 .show(ui, |ui| {
                                     ui.set_min_width(left_width - 8.0);
                                     ui.label(
-                                        RichText::new(&section.name)
-                                            .size(12.0)
-                                            .color(text_color),
+                                        RichText::new(&section.name).size(12.0).color(text_color),
                                     );
                                 });
                             ui.add_space(2.0);
@@ -212,35 +215,29 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                                             let key_width = right_width * 0.40 - 14.0;
                                             let val_width = right_width * 0.60 - 14.0;
 
-                                            ui.allocate_ui(
-                                                egui::vec2(key_width, 20.0),
-                                                |ui| {
-                                                    ui.label(
-                                                        RichText::new(&entry.key)
-                                                            .size(12.0)
-                                                            .color(if has_error {
-                                                                Colors::DANGER
-                                                            } else {
-                                                                Colors::TEXT_SECONDARY
-                                                            }),
-                                                    );
-                                                },
-                                            );
+                                            ui.allocate_ui(egui::vec2(key_width, 20.0), |ui| {
+                                                ui.label(
+                                                    RichText::new(&entry.key).size(12.0).color(
+                                                        if has_error {
+                                                            Colors::DANGER
+                                                        } else {
+                                                            Colors::TEXT_SECONDARY
+                                                        },
+                                                    ),
+                                                );
+                                            });
 
-                                            ui.allocate_ui(
-                                                egui::vec2(val_width, 20.0),
-                                                |ui| {
-                                                    ui.label(
-                                                        RichText::new(&entry.value)
-                                                            .size(12.0)
-                                                            .color(if has_error {
-                                                                Colors::DANGER
-                                                            } else {
-                                                                Colors::TEXT_PRIMARY
-                                                            }),
-                                                    );
-                                                },
-                                            );
+                                            ui.allocate_ui(egui::vec2(val_width, 20.0), |ui| {
+                                                ui.label(
+                                                    RichText::new(&entry.value).size(12.0).color(
+                                                        if has_error {
+                                                            Colors::DANGER
+                                                        } else {
+                                                            Colors::TEXT_PRIMARY
+                                                        },
+                                                    ),
+                                                );
+                                            });
                                         });
                                         ui.add_space(2.0);
                                     }

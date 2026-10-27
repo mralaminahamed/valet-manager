@@ -45,23 +45,27 @@ pub fn user_ini_path(site: &ValetSite) -> PathBuf {
     use DetectedFramework as F;
     match &site.framework {
         // public/ docroot
-        F::Laravel | F::Statamic | F::Slim | F::Symfony | F::Zend
-            => site.path.join("public/.user.ini"),
+        F::Laravel | F::Statamic | F::Slim | F::Symfony | F::Zend => {
+            site.path.join("public/.user.ini")
+        }
         // web/ docroot
-        F::Bedrock | F::Craft | F::Drupal | F::Contao
-            => site.path.join("web/.user.ini"),
+        F::Bedrock | F::Craft | F::Drupal | F::Contao => site.path.join("web/.user.ini"),
         // webroot/ (CakePHP)
-        F::CakePHP
-            => site.path.join("webroot/.user.ini"),
+        F::CakePHP => site.path.join("webroot/.user.ini"),
         // root docroot
-        F::WordPress | F::Joomla | F::Kirby | F::ConcreteCms
-        | F::Magento | F::OctoberCms | F::ExpressionEngine
-        | F::StaticHtml | F::Unknown
-            => site.path.join(".user.ini"),
+        F::WordPress
+        | F::Joomla
+        | F::Kirby
+        | F::ConcreteCms
+        | F::Magento
+        | F::OctoberCms
+        | F::ExpressionEngine
+        | F::StaticHtml
+        | F::Unknown => site.path.join(".user.ini"),
         // static site generator output dirs
-        F::Jigsaw  => site.path.join("build_local/.user.ini"),
+        F::Jigsaw => site.path.join("build_local/.user.ini"),
         F::Sculpin => site.path.join("output_dev/.user.ini"),
-        F::Katana  => site.path.join("_output/.user.ini"),
+        F::Katana => site.path.join("_output/.user.ini"),
     }
 }
 
@@ -102,10 +106,14 @@ pub fn validate_ini_value(key: &str, value: &str) -> Option<String> {
     }
     match key {
         "memory_limit" | "upload_max_filesize" | "post_max_size" => {
-            if v == "-1" { return None; }
+            if v == "-1" {
+                return None;
+            }
             // Match `\d+(K|M|G)$`
             let bytes = v.as_bytes();
-            if bytes.len() < 2 { return Some("expected like 512M or -1".into()); }
+            if bytes.len() < 2 {
+                return Some("expected like 512M or -1".into());
+            }
             let suffix = bytes[bytes.len() - 1];
             if !matches!(suffix, b'K' | b'M' | b'G') {
                 return Some("expected like 512M or -1".into());
@@ -161,7 +169,10 @@ mod tests {
     #[test]
     fn user_ini_path_for_laravel_goes_under_public() {
         let s = fixture_site(DetectedFramework::Laravel, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/public/.user.ini")
+        );
     }
 
     #[test]
@@ -186,25 +197,37 @@ mod tests {
     #[test]
     fn user_ini_path_for_symfony_is_public() {
         let s = fixture_site(DetectedFramework::Symfony, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/public/.user.ini")
+        );
     }
 
     #[test]
     fn user_ini_path_for_statamic_is_public() {
         let s = fixture_site(DetectedFramework::Statamic, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/public/.user.ini")
+        );
     }
 
     #[test]
     fn user_ini_path_for_slim_is_public() {
         let s = fixture_site(DetectedFramework::Slim, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/public/.user.ini")
+        );
     }
 
     #[test]
     fn user_ini_path_for_zend_is_public() {
         let s = fixture_site(DetectedFramework::Zend, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/public/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/public/.user.ini")
+        );
     }
 
     #[test]
@@ -228,7 +251,10 @@ mod tests {
     #[test]
     fn user_ini_path_for_cakephp_is_webroot() {
         let s = fixture_site(DetectedFramework::CakePHP, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/webroot/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/webroot/.user.ini")
+        );
     }
 
     #[test]
@@ -246,19 +272,28 @@ mod tests {
     #[test]
     fn user_ini_path_for_jigsaw_is_build_local() {
         let s = fixture_site(DetectedFramework::Jigsaw, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/build_local/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/build_local/.user.ini")
+        );
     }
 
     #[test]
     fn user_ini_path_for_sculpin_is_output_dev() {
         let s = fixture_site(DetectedFramework::Sculpin, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/output_dev/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/output_dev/.user.ini")
+        );
     }
 
     #[test]
     fn user_ini_path_for_katana_is_output() {
         let s = fixture_site(DetectedFramework::Katana, PathBuf::from("/srv/app"));
-        assert_eq!(user_ini_path(&s), PathBuf::from("/srv/app/_output/.user.ini"));
+        assert_eq!(
+            user_ini_path(&s),
+            PathBuf::from("/srv/app/_output/.user.ini")
+        );
     }
 
     #[test]
@@ -266,8 +301,12 @@ mod tests {
         for fw in DetectedFramework::all_variants() {
             let s = fixture_site(fw.clone(), PathBuf::from("/srv/app"));
             let p = user_ini_path(&s);
-            assert!(p.to_string_lossy().ends_with(".user.ini"),
-                    "{:?} produced {:?}", fw, p);
+            assert!(
+                p.to_string_lossy().ends_with(".user.ini"),
+                "{:?} produced {:?}",
+                fw,
+                p
+            );
         }
     }
 
@@ -320,10 +359,14 @@ mod tests {
             ..Default::default()
         };
         apply(&s, &o).await.unwrap();
-        let written = tokio::fs::read_to_string(tmp.join("public/.user.ini")).await.unwrap();
+        let written = tokio::fs::read_to_string(tmp.join("public/.user.ini"))
+            .await
+            .unwrap();
         assert!(written.contains("memory_limit = 512M"));
         remove(&s).await.unwrap();
-        assert!(tokio::fs::metadata(tmp.join("public/.user.ini")).await.is_err());
+        assert!(tokio::fs::metadata(tmp.join("public/.user.ini"))
+            .await
+            .is_err());
         let _ = tokio::fs::remove_dir_all(&tmp).await;
     }
 
@@ -334,7 +377,9 @@ mod tests {
         tokio::fs::create_dir_all(tmp.join("public")).await.unwrap();
         let s = fixture_site(DetectedFramework::Laravel, tmp.clone());
         apply(&s, &PhpIniOverrides::default()).await.unwrap();
-        assert!(tokio::fs::metadata(tmp.join("public/.user.ini")).await.is_err());
+        assert!(tokio::fs::metadata(tmp.join("public/.user.ini"))
+            .await
+            .is_err());
         let _ = tokio::fs::remove_dir_all(&tmp).await;
     }
 }

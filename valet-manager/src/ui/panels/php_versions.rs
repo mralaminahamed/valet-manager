@@ -4,7 +4,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
 use crate::state::app_state::AppState;
-use crate::ui::theme::{Colors, accent_button, card_frame, divider, ghost_button};
+use crate::ui::theme::{accent_button, card_frame, divider, ghost_button, Colors};
 
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
     // ── Panel header ────────────────────────────────────────────────────
@@ -56,11 +56,15 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                                 .size(14.0)
                                 .color(Colors::TEXT_PRIMARY),
                         );
-                        if let Some(info) =
-                            state.version_registry.php.iter().find(|p| p.minor == version.version)
+                        if let Some(info) = state
+                            .version_registry
+                            .php
+                            .iter()
+                            .find(|p| p.minor == version.version)
                         {
                             use semver::Version;
-                            let installed = Version::parse(&extend_three(&version.full_version)).ok();
+                            let installed =
+                                Version::parse(&extend_three(&version.full_version)).ok();
                             let latest = Version::parse(&extend_three(&info.latest_patch)).ok();
                             if let (Some(inst), Some(lat)) = (installed, latest) {
                                 if lat > inst {
@@ -79,17 +83,16 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
 
                     // Row 2: FPM status with dot
                     ui.horizontal(|ui| {
-                        let dot_rect = ui.allocate_exact_size(
-                            egui::vec2(7.0, 7.0),
-                            egui::Sense::hover(),
-                        );
+                        let dot_rect =
+                            ui.allocate_exact_size(egui::vec2(7.0, 7.0), egui::Sense::hover());
                         if ui.is_rect_visible(dot_rect.0) {
                             let dot_color = if version.fpm_running {
                                 Colors::ACCENT
                             } else {
                                 Colors::DANGER
                             };
-                            ui.painter().circle_filled(dot_rect.0.center(), 3.5, dot_color);
+                            ui.painter()
+                                .circle_filled(dot_rect.0.center(), 3.5, dot_color);
                         }
                         ui.add_space(4.0);
                         let fpm_label = format!("FPM: {}", version.fpm_status.label());

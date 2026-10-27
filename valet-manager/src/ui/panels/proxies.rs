@@ -4,9 +4,7 @@ use tokio::sync::mpsc::Sender;
 use crate::commands::AppCommand;
 use crate::nginx::proxy_manager::{HttpProbe, ValetProxy};
 use crate::state::app_state::AppState;
-use crate::ui::theme::{
-    accent_button, divider, ghost_button, with_alpha, Colors,
-};
+use crate::ui::theme::{accent_button, divider, ghost_button, with_alpha, Colors};
 
 const COL_DOT: f32 = 28.0;
 const COL_TARGET: f32 = 160.0;
@@ -22,8 +20,12 @@ fn input_state(ui: &mut egui::Ui) -> (String, String, bool) {
     let id_domain = ui.id().with("proxy_add_domain");
     let id_target = ui.id().with("proxy_add_target");
     let id_secure = ui.id().with("proxy_add_secure");
-    let domain = ui.data(|d| d.get_temp::<String>(id_domain)).unwrap_or_default();
-    let target = ui.data(|d| d.get_temp::<String>(id_target)).unwrap_or_default();
+    let domain = ui
+        .data(|d| d.get_temp::<String>(id_domain))
+        .unwrap_or_default();
+    let target = ui
+        .data(|d| d.get_temp::<String>(id_target))
+        .unwrap_or_default();
     let secure = ui.data(|d| d.get_temp::<bool>(id_secure)).unwrap_or(false);
     (domain, target, secure)
 }
@@ -61,8 +63,10 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
     let header_bg = with_alpha(Color32::BLACK, 38);
     let border = Stroke::new(0.5, Colors::BORDER);
     let avail_w = ui.available_width();
-    let (rect, _) = ui.allocate_exact_size(egui::vec2(avail_w, HEADER_HEIGHT), egui::Sense::hover());
-    ui.painter().rect_filled(rect, CornerRadius::ZERO, header_bg);
+    let (rect, _) =
+        ui.allocate_exact_size(egui::vec2(avail_w, HEADER_HEIGHT), egui::Sense::hover());
+    ui.painter()
+        .rect_filled(rect, CornerRadius::ZERO, header_bg);
     ui.painter().hline(rect.x_range(), rect.bottom(), border);
 
     let mut child = ui.new_child(
@@ -109,9 +113,11 @@ fn render_row(
     cmd_tx: &Sender<AppCommand>,
 ) {
     let avail_w = ui.available_width();
-    let (row_rect, resp) = ui.allocate_exact_size(egui::vec2(avail_w, ROW_HEIGHT), egui::Sense::hover());
+    let (row_rect, resp) =
+        ui.allocate_exact_size(egui::vec2(avail_w, ROW_HEIGHT), egui::Sense::hover());
     if resp.hovered() {
-        ui.painter().rect_filled(row_rect, CornerRadius::ZERO, Colors::CARD_HOVER);
+        ui.painter()
+            .rect_filled(row_rect, CornerRadius::ZERO, Colors::CARD_HOVER);
     }
     ui.painter().hline(
         row_rect.x_range(),
@@ -130,8 +136,7 @@ fn render_row(
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.add_space(10.0);
             let color = status_dot_color(status);
-            let (dot_rect, _) =
-                ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
+            let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
             ui.painter().circle_filled(dot_rect.center(), 4.0, color);
         });
     });
@@ -171,11 +176,7 @@ fn render_row(
                         .color(Colors::ACCENT),
                 );
             } else {
-                ui.label(
-                    RichText::new("—")
-                        .size(11.0)
-                        .color(Colors::TEXT_TERTIARY),
-                );
+                ui.label(RichText::new("—").size(11.0).color(Colors::TEXT_TERTIARY));
             }
         });
     });
@@ -184,12 +185,7 @@ fn render_row(
     child.allocate_ui(egui::vec2(COL_HTTP, ROW_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             let (text, color) = http_text(status);
-            ui.label(
-                RichText::new(text)
-                    .size(11.0)
-                    .monospace()
-                    .color(color),
-            );
+            ui.label(RichText::new(text).size(11.0).monospace().color(color));
         });
     });
 
@@ -197,14 +193,10 @@ fn render_row(
     child.allocate_ui(egui::vec2(COL_ACTION, ROW_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             let btn = ui.add(
-                egui::Button::new(
-                    RichText::new("⋮")
-                        .size(16.0)
-                        .color(Colors::TEXT_SECONDARY),
-                )
-                .min_size(egui::vec2(24.0, 24.0))
-                .fill(Color32::TRANSPARENT)
-                .stroke(Stroke::NONE),
+                egui::Button::new(RichText::new("⋮").size(16.0).color(Colors::TEXT_SECONDARY))
+                    .min_size(egui::vec2(24.0, 24.0))
+                    .fill(Color32::TRANSPARENT)
+                    .stroke(Stroke::NONE),
             );
             let domain = proxy.domain.clone();
             egui::Popup::menu(&btn).show(|ui| {

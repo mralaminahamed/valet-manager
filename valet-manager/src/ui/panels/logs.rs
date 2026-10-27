@@ -61,17 +61,30 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
 
         // Pulse dot
         let (dot_rect, _) = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
-        ui.painter().circle_filled(dot_rect.center(), 5.0, Colors::ACCENT);
+        ui.painter()
+            .circle_filled(dot_rect.center(), 5.0, Colors::ACCENT);
         ui.add_space(4.0);
-        let tail_label = if state.logs_tail { "Tailing live" } else { "Paused" };
-        ui.label(RichText::new(tail_label).size(11.5).color(Colors::TEXT_SECONDARY));
-        if ui.small_button(if state.logs_tail { "⏸" } else { "▶" }).clicked() {
+        let tail_label = if state.logs_tail {
+            "Tailing live"
+        } else {
+            "Paused"
+        };
+        ui.label(
+            RichText::new(tail_label)
+                .size(11.5)
+                .color(Colors::TEXT_SECONDARY),
+        );
+        if ui
+            .small_button(if state.logs_tail { "⏸" } else { "▶" })
+            .clicked()
+        {
             state.logs_tail = !state.logs_tail;
         }
         ui.add_space(8.0);
         // Thin vertical separator
         let (sep, _) = ui.allocate_exact_size(egui::vec2(1.0, 16.0), egui::Sense::hover());
-        ui.painter().rect_filled(sep, CornerRadius::ZERO, Colors::BORDER);
+        ui.painter()
+            .rect_filled(sep, CornerRadius::ZERO, Colors::BORDER);
         ui.add_space(8.0);
 
         for src in SOURCES.iter() {
@@ -97,7 +110,12 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 .fill(Colors::DEEP_BG)
                 .corner_radius(CornerRadius::same(6))
                 .stroke(Stroke::new(0.5, Colors::BORDER))
-                .inner_margin(egui::Margin { left: 10, right: 10, top: 8, bottom: 8 })
+                .inner_margin(egui::Margin {
+                    left: 10,
+                    right: 10,
+                    top: 8,
+                    bottom: 8,
+                })
                 .show(ui, |ui| {
                     ui.set_min_height(200.0);
                     let avail_w = ui.available_width();

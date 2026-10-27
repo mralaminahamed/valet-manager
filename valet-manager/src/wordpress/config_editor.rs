@@ -143,7 +143,9 @@ pub(crate) fn merge_into_content(content: &str, constants: &[(&str, String)]) ->
             out.insert_str(idx, &insertion);
         } else {
             // Append at end, with newline.
-            if !out.ends_with('\n') { out.push('\n'); }
+            if !out.ends_with('\n') {
+                out.push('\n');
+            }
             out.push_str(&line);
             out.push('\n');
         }
@@ -166,7 +168,11 @@ pub async fn write_constants(wp_path: &Path, config: &WordPressConfig) -> anyhow
             s.insert_str(idx, &block);
             s
         } else {
-            format!("{}\n{}\n", new_content.trim_end(), config.extra_config.trim())
+            format!(
+                "{}\n{}\n",
+                new_content.trim_end(),
+                config.extra_config.trim()
+            )
         }
     } else {
         new_content
@@ -199,18 +205,30 @@ define('WP_MEMORY_LIMIT', '256M');
 
     #[test]
     fn format_constant_bool_unquoted() {
-        assert_eq!(format_constant("WP_DEBUG", "true"), "define('WP_DEBUG', true);");
-        assert_eq!(format_constant("WP_DEBUG", "false"), "define('WP_DEBUG', false);");
+        assert_eq!(
+            format_constant("WP_DEBUG", "true"),
+            "define('WP_DEBUG', true);"
+        );
+        assert_eq!(
+            format_constant("WP_DEBUG", "false"),
+            "define('WP_DEBUG', false);"
+        );
     }
 
     #[test]
     fn format_constant_int_unquoted() {
-        assert_eq!(format_constant("SITE_ID_CURRENT_SITE", "1"), "define('SITE_ID_CURRENT_SITE', 1);");
+        assert_eq!(
+            format_constant("SITE_ID_CURRENT_SITE", "1"),
+            "define('SITE_ID_CURRENT_SITE', 1);"
+        );
     }
 
     #[test]
     fn format_constant_string_quoted() {
-        assert_eq!(format_constant("WP_HOME", "https://x.test"), "define('WP_HOME', 'https://x.test');");
+        assert_eq!(
+            format_constant("WP_HOME", "https://x.test"),
+            "define('WP_HOME', 'https://x.test');"
+        );
     }
 
     #[test]
@@ -223,7 +241,8 @@ define('WP_MEMORY_LIMIT', '256M');
 
     #[test]
     fn merge_inserts_new_define_before_stop_marker() {
-        let content = "<?php\ndefine('DB_NAME', 'mydb');\n/* That's all, stop editing! Happy publishing. */";
+        let content =
+            "<?php\ndefine('DB_NAME', 'mydb');\n/* That's all, stop editing! Happy publishing. */";
         let out = merge_into_content(content, &[("WP_DEBUG", "true".into())]);
         let idx_debug = out.find("define('WP_DEBUG', true);").unwrap();
         let idx_marker = out.find("/* That's all").unwrap();
@@ -258,7 +277,11 @@ define('WP_MEMORY_LIMIT', '256M');
         let src = tmp.join("wp-config.php");
         tokio::fs::write(&src, "<?php // hello").await.unwrap();
         let bak = backup(&tmp).await.unwrap();
-        assert!(bak.file_name().unwrap().to_string_lossy().starts_with("wp-config.php.bak."));
+        assert!(bak
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("wp-config.php.bak."));
         let content = tokio::fs::read_to_string(&bak).await.unwrap();
         assert_eq!(content, "<?php // hello");
         let _ = tokio::fs::remove_dir_all(&tmp).await;
@@ -270,7 +293,12 @@ define('WP_MEMORY_LIMIT', '256M');
         let _ = tokio::fs::remove_dir_all(&tmp).await;
         tokio::fs::create_dir_all(&tmp).await.unwrap();
         let src = tmp.join("wp-config.php");
-        tokio::fs::write(&src, "<?php\ndefine('DB_NAME', 'mydb');\n/* That's all, stop editing! */\n").await.unwrap();
+        tokio::fs::write(
+            &src,
+            "<?php\ndefine('DB_NAME', 'mydb');\n/* That's all, stop editing! */\n",
+        )
+        .await
+        .unwrap();
         let mut wp = WordPressConfig::default();
         wp.wp_debug = true;
         write_constants(&tmp, &wp).await.unwrap();
@@ -280,11 +308,17 @@ define('WP_MEMORY_LIMIT', '256M');
         let mut entries = tokio::fs::read_dir(&tmp).await.unwrap();
         let mut found_backup = false;
         while let Some(e) = entries.next_entry().await.unwrap() {
-            if e.file_name().to_string_lossy().starts_with("wp-config.php.bak.") {
+            if e.file_name()
+                .to_string_lossy()
+                .starts_with("wp-config.php.bak.")
+            {
                 found_backup = true;
             }
         }
-        assert!(found_backup, "expected at least one wp-config.php.bak.* file");
+        assert!(
+            found_backup,
+            "expected at least one wp-config.php.bak.* file"
+        );
         let _ = tokio::fs::remove_dir_all(&tmp).await;
     }
 }
