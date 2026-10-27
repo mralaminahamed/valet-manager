@@ -31,7 +31,10 @@ fn main() {
         };
         let response = match serde_json::from_str::<HelperRequest>(&line) {
             Ok(req) => handle_request(req),
-            Err(e) => HelperResponse { success: false, message: format!("parse error: {}", e) },
+            Err(e) => HelperResponse {
+                success: false,
+                message: format!("parse error: {}", e),
+            },
         };
         let json = serde_json::to_string(&response).unwrap_or_default();
         let _ = writeln!(stdout, "{}", json);
@@ -61,8 +64,14 @@ fn handle_request(req: HelperRequest) -> HelperResponse {
             run_cmd("phpdismod", &["-v", &version, &extension])
         }
         HelperRequest::SaveIni { path, content } => match fs::write(&path, content) {
-            Ok(_) => HelperResponse { success: true, message: "OK".to_string() },
-            Err(e) => HelperResponse { success: false, message: e.to_string() },
+            Ok(_) => HelperResponse {
+                success: true,
+                message: "OK".to_string(),
+            },
+            Err(e) => HelperResponse {
+                success: false,
+                message: e.to_string(),
+            },
         },
     }
 }
@@ -77,7 +86,10 @@ fn run_cmd(cmd: &str, args: &[&str]) -> HelperResponse {
             success: false,
             message: String::from_utf8_lossy(&out.stderr).to_string(),
         },
-        Err(e) => HelperResponse { success: false, message: e.to_string() },
+        Err(e) => HelperResponse {
+            success: false,
+            message: e.to_string(),
+        },
     }
 }
 
