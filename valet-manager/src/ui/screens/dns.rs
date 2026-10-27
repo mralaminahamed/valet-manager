@@ -209,7 +209,7 @@ fn stat_card(ui: &mut egui::Ui, label: &str, value: &str, value_color: Color32) 
             top: 10,
             bottom: 10,
         })
-        .stroke(Stroke::new(0.5, Colors::BORDER))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER))
         .show(ui, |ui| {
             ui.label(RichText::new(label).size(10.0).color(Colors::TEXT_TERTIARY));
             ui.add_space(4.0);
@@ -233,7 +233,7 @@ fn section_card(
             top: 12,
             bottom: 12,
         })
-        .stroke(Stroke::new(0.5, Colors::BORDER))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.label(RichText::new(icon).size(14.0).color(Colors::ACCENT));

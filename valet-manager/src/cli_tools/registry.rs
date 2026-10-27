@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn all_tools_detected_returns_all_keys() {
-        let tools = vec![
+        let tools = [
             CliTool::WpCli,
             CliTool::WpCliValetCommand,
             CliTool::LaravelInstaller,

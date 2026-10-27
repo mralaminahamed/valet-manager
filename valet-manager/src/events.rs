@@ -5,6 +5,8 @@ use crate::valet::variant::{ValetPaths, ValetVariant};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
+// Boxing the large variants would change every send and match site.
+#[allow(clippy::large_enum_variant)]
 pub enum AppEvent {
     // Phase 1
     ServiceStatusUpdated(Vec<ManagedService>),

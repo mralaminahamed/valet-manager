@@ -33,12 +33,12 @@ pub fn alert_banner(ui: &mut egui::Ui, level: BannerLevel, icon: &str, message: 
             top: 10,
             bottom: 10,
         })
-        .stroke(Stroke::new(0.5, Colors::BORDER))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER))
         .show(ui, |ui| {
             let rect = ui.max_rect();
             ui.painter().line_segment(
                 [rect.left_top(), rect.left_bottom()],
-                Stroke::new(3.0, color),
+                Stroke::new(3.0_f32, color),
             );
             ui.horizontal(|ui| {
                 ui.label(RichText::new(icon).size(16.0).color(color));
@@ -71,12 +71,12 @@ pub fn alert_banner_with_actions(
             top: 10,
             bottom: 10,
         })
-        .stroke(Stroke::new(0.5, Colors::BORDER))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER))
         .show(ui, |ui| {
             let rect = ui.max_rect();
             ui.painter().line_segment(
                 [rect.left_top(), rect.left_bottom()],
-                Stroke::new(3.0, color),
+                Stroke::new(3.0_f32, color),
             );
             ui.horizontal(|ui| {
                 ui.label(RichText::new(icon).size(16.0).color(color));

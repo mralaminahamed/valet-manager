@@ -79,7 +79,7 @@ pub fn render_toasts(ctx: &egui::Context, toasts: &mut Vec<Toast>) {
                     Frame::NONE
                         .fill(with_alpha(Colors::CARD, alpha))
                         .corner_radius(CornerRadius::same(6))
-                        .stroke(Stroke::new(0.5, Colors::BORDER_MED))
+                        .stroke(Stroke::new(0.5_f32, Colors::BORDER_MED))
                         .inner_margin(Margin {
                             left: 0,
                             right: 12,
@@ -167,6 +167,6 @@ mod tests {
         // Just verify that opacity stays in [0,1] for any reasonable elapsed
         let t = Toast::new("x", ToastType::Info);
         let o = t.opacity();
-        assert!(o >= 0.0 && o <= 1.0);
+        assert!((0.0..=1.0).contains(&o));
     }
 }

@@ -119,7 +119,7 @@ pub async fn scan(certificates_dir: &Path) -> Vec<CertInfo> {
 
 /// Sort by status priority: Critical, Warning, Ok, Expired.
 #[allow(dead_code)]
-pub fn sort_by_status_priority(certs: &mut Vec<CertInfo>) {
+pub fn sort_by_status_priority(certs: &mut [CertInfo]) {
     fn rank(s: CertStatus) -> i32 {
         match s {
             CertStatus::Critical => 0,

@@ -13,7 +13,7 @@ pub fn should_show_full(viewport_width: f32) -> bool {
 
 /// 800 px ≤ viewport < 1000 px → narrow icon-only rail.
 pub fn should_show_icons(viewport_width: f32) -> bool {
-    viewport_width >= 800.0 && viewport_width < 1000.0
+    (800.0..1000.0).contains(&viewport_width)
 }
 
 /// Viewport < 800 px → hide sidebar; caller renders a hamburger overlay instead.
@@ -42,7 +42,7 @@ pub fn render(
                 painter.rect_stroke(
                     icon_rect,
                     egui::CornerRadius::same(7),
-                    egui::Stroke::new(0.5, with_alpha(Colors::ACCENT, 38)),
+                    egui::Stroke::new(0.5_f32, with_alpha(Colors::ACCENT, 38)),
                     egui::StrokeKind::Inside,
                 );
                 paint_v_mark(painter, icon_rect);
@@ -227,7 +227,7 @@ fn screen_nav_item(
             ui.painter().rect_stroke(
                 rect,
                 egui::CornerRadius::same(4),
-                Stroke::new(1.0, with_alpha(Colors::ACCENT, 51)),
+                Stroke::new(1.0_f32, with_alpha(Colors::ACCENT, 51)),
                 egui::StrokeKind::Inside,
             );
         } else if resp.hovered() {

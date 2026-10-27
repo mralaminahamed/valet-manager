@@ -35,16 +35,15 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             .width(280.0)
             .show_ui(ui, |ui| {
                 for site in &state.sites {
-                    if artisan::framework_cli::detect_cli(site).is_some() {
-                        if ui
+                    if artisan::framework_cli::detect_cli(site).is_some()
+                        && ui
                             .selectable_label(
                                 state.artisan_site.as_deref() == Some(site.domain.as_str()),
                                 &site.domain,
                             )
                             .clicked()
-                        {
-                            new_pick = Some(site.domain.clone());
-                        }
+                    {
+                        new_pick = Some(site.domain.clone());
                     }
                 }
             });
@@ -172,7 +171,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                     Frame::NONE
                         .fill(Colors::DEEP_BG)
                         .corner_radius(CornerRadius::same(6))
-                        .stroke(Stroke::new(0.5, Colors::BORDER_MED))
+                        .stroke(Stroke::new(0.5_f32, Colors::BORDER_MED))
                         .inner_margin(Margin {
                             left: 0,
                             right: 0,

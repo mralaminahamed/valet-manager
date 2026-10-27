@@ -109,7 +109,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             Frame::NONE
                 .fill(Colors::DEEP_BG)
                 .corner_radius(CornerRadius::same(6))
-                .stroke(Stroke::new(0.5, Colors::BORDER))
+                .stroke(Stroke::new(0.5_f32, Colors::BORDER))
                 .inner_margin(egui::Margin {
                     left: 10,
                     right: 10,

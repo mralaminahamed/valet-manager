@@ -64,7 +64,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         Frame::NONE
             .fill(Colors::CARD)
             .corner_radius(CornerRadius::same(6))
-            .stroke(Stroke::new(0.5, Colors::BORDER))
+            .stroke(Stroke::new(0.5_f32, Colors::BORDER))
             .show(ui, |ui| {
                 ui.set_min_width(LEFT_PANE_WIDTH);
                 ui.set_max_width(LEFT_PANE_WIDTH);
@@ -135,7 +135,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 ui.painter().hline(
                     hdr_rect.x_range(),
                     hdr_rect.bottom(),
-                    Stroke::new(0.5, Colors::BORDER),
+                    Stroke::new(0.5_f32, Colors::BORDER),
                 );
                 let mut hdr_child = ui.new_child(
                     egui::UiBuilder::new()
@@ -197,7 +197,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                             ui.painter().hline(
                                 row_rect.x_range(),
                                 row_rect.bottom(),
-                                Stroke::new(0.5, Colors::BORDER),
+                                Stroke::new(0.5_f32, Colors::BORDER),
                             );
 
                             let mut child = ui.new_child(

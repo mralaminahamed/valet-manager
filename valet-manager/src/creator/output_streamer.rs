@@ -63,11 +63,11 @@ pub async fn stream_command(
     let stdout = child
         .stdout
         .take()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "failed to pipe stdout"))?;
+        .ok_or_else(|| std::io::Error::other("failed to pipe stdout"))?;
     let stderr = child
         .stderr
         .take()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "failed to pipe stderr"))?;
+        .ok_or_else(|| std::io::Error::other("failed to pipe stderr"))?;
 
     let tx_stdout = tx.clone();
     let stdout_task = tokio::spawn(async move {

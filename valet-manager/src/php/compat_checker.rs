@@ -43,7 +43,7 @@ pub fn matches(version: &str, constraint: &str) -> CompatStatus {
     };
     // Split alternatives on "|" or "||"
     let parts: Vec<&str> = constraint
-        .split(|c: char| c == '|')
+        .split('|')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
         .collect();

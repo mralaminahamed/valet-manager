@@ -42,26 +42,26 @@ pub fn apply_dark(ctx: &egui::Context) {
     v.faint_bg_color = Colors::CARD;
     v.code_bg_color = Colors::CARD;
     v.override_text_color = Some(Colors::TEXT_PRIMARY);
-    v.window_stroke = Stroke::new(0.5, Colors::BORDER);
+    v.window_stroke = Stroke::new(0.5_f32, Colors::BORDER);
     v.hyperlink_color = Colors::ACCENT;
     v.warn_fg_color = Colors::WARNING;
     v.error_fg_color = Colors::DANGER;
 
     v.widgets.noninteractive.bg_fill = Colors::CARD;
-    v.widgets.noninteractive.fg_stroke = Stroke::new(0.5, Colors::TEXT_TERTIARY);
-    v.widgets.noninteractive.bg_stroke = Stroke::new(0.5, Colors::BORDER);
+    v.widgets.noninteractive.fg_stroke = Stroke::new(0.5_f32, Colors::TEXT_TERTIARY);
+    v.widgets.noninteractive.bg_stroke = Stroke::new(0.5_f32, Colors::BORDER);
 
     v.widgets.inactive.bg_fill = Colors::CARD;
-    v.widgets.inactive.fg_stroke = Stroke::new(1.0, Colors::TEXT_SECONDARY);
-    v.widgets.inactive.bg_stroke = Stroke::new(0.5, Colors::BORDER_MED);
+    v.widgets.inactive.fg_stroke = Stroke::new(1.0_f32, Colors::TEXT_SECONDARY);
+    v.widgets.inactive.bg_stroke = Stroke::new(0.5_f32, Colors::BORDER_MED);
 
     v.widgets.hovered.bg_fill = Colors::CARD_HOVER;
-    v.widgets.hovered.fg_stroke = Stroke::new(1.0, Colors::TEXT_PRIMARY);
-    v.widgets.hovered.bg_stroke = Stroke::new(0.5, Colors::BORDER_MED);
+    v.widgets.hovered.fg_stroke = Stroke::new(1.0_f32, Colors::TEXT_PRIMARY);
+    v.widgets.hovered.bg_stroke = Stroke::new(0.5_f32, Colors::BORDER_MED);
 
     v.widgets.active.bg_fill = Colors::ACCENT_DARK;
-    v.widgets.active.fg_stroke = Stroke::new(1.5, Color32::WHITE);
-    v.widgets.active.bg_stroke = Stroke::new(0.5, Color32::WHITE);
+    v.widgets.active.fg_stroke = Stroke::new(1.5_f32, Color32::WHITE);
+    v.widgets.active.bg_stroke = Stroke::new(0.5_f32, Color32::WHITE);
 
     v.widgets.open.bg_fill = Colors::CARD_HOVER;
 
@@ -71,7 +71,7 @@ pub fn apply_dark(ctx: &egui::Context) {
         Colors::ACCENT.b(),
         40,
     );
-    v.selection.stroke = Stroke::new(1.0, Colors::ACCENT);
+    v.selection.stroke = Stroke::new(1.0_f32, Colors::ACCENT);
 
     ctx.set_visuals(v);
 }
@@ -183,7 +183,7 @@ pub fn accent_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
     ui.add(
         egui::Button::new(RichText::new(label.into()).color(Color32::WHITE).size(12.0))
             .fill(Colors::ACCENT_DARK)
-            .stroke(Stroke::new(0.5, with_alpha(Colors::ACCENT, 77)))
+            .stroke(Stroke::new(0.5_f32, with_alpha(Colors::ACCENT, 77)))
             .corner_radius(4.0)
             .min_size(egui::vec2(0.0, 28.0)),
     )
@@ -197,7 +197,7 @@ pub fn ghost_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
                 .size(12.0),
         )
         .fill(Colors::CARD)
-        .stroke(Stroke::new(0.5, Colors::BORDER_MED))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER_MED))
         .corner_radius(4.0)
         .min_size(egui::vec2(0.0, 28.0)),
     )
@@ -208,7 +208,7 @@ pub fn danger_button(ui: &mut egui::Ui, label: impl Into<String>) -> Response {
     ui.add(
         egui::Button::new(RichText::new(label.into()).color(Colors::DANGER).size(12.0))
             .fill(Color32::TRANSPARENT)
-            .stroke(Stroke::new(0.5, Colors::DANGER))
+            .stroke(Stroke::new(0.5_f32, Colors::DANGER))
             .corner_radius(4.0)
             .min_size(egui::vec2(0.0, 28.0)),
     )
@@ -260,7 +260,7 @@ pub fn divider(ui: &mut egui::Ui) {
         ui.painter().hline(
             rect.x_range(),
             rect.center().y,
-            Stroke::new(0.5, Colors::BORDER),
+            Stroke::new(0.5_f32, Colors::BORDER),
         );
     }
 }

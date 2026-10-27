@@ -128,7 +128,7 @@ fn modal_tab(ui: &mut egui::Ui, label: &str, tab: AddSiteTab, state: &mut AppSta
                     egui::pos2(rect.left(), rect.bottom()),
                     egui::pos2(rect.right(), rect.bottom()),
                 ],
-                egui::Stroke::new(2.0, Colors::ACCENT),
+                egui::Stroke::new(2.0_f32, Colors::ACCENT),
             );
         }
         ui.painter().text(
@@ -410,13 +410,13 @@ fn render_create_tab(ui: &mut egui::Ui, state: &mut AppState, _cmd_tx: &Sender<A
                     ui.painter().rect_stroke(
                         rect,
                         CornerRadius::same(6),
-                        Stroke::new(0.5, border),
+                        Stroke::new(0.5_f32, border),
                         egui::StrokeKind::Inside,
                     );
                     ui.painter().text(
                         egui::pos2(rect.left() + 10.0, rect.center().y - 7.0),
                         egui::Align2::LEFT_CENTER,
-                        &format!("{} {}", name, ver),
+                        format!("{} {}", name, ver),
                         egui::FontId::proportional(11.5),
                         if is_active {
                             Colors::ACCENT
@@ -661,7 +661,7 @@ fn summary_pane(ui: &mut egui::Ui, url: &str, serves: &str, stack: &str, db: Opt
             top: 8,
             bottom: 8,
         })
-        .stroke(Stroke::new(0.5, with_alpha(Colors::ACCENT, 30)))
+        .stroke(Stroke::new(0.5_f32, with_alpha(Colors::ACCENT, 30)))
         .show(ui, |ui| {
             summary_line(ui, "URL", url);
             summary_line(ui, "Serves", serves);

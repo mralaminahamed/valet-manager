@@ -131,7 +131,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                                         .color(Colors::TEXT_TERTIARY),
                                 )
                                 .fill(Colors::CARD)
-                                .stroke(egui::Stroke::new(0.5, Colors::BORDER_MED))
+                                .stroke(egui::Stroke::new(0.5_f32, Colors::BORDER_MED))
                                 .corner_radius(4.0),
                             );
                         } else if accent_button(ui, "Switch").clicked() {

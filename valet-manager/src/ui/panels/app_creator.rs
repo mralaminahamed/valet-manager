@@ -70,7 +70,7 @@ fn step_indicator(ui: &mut egui::Ui, current: u8) {
         let x1 = track_left + step_gap * (i + 1) as f32 - circle_r;
         painter.line_segment(
             [egui::pos2(x0, y), egui::pos2(x1, y)],
-            Stroke::new(0.5, Colors::BORDER),
+            Stroke::new(0.5_f32, Colors::BORDER),
         );
     }
 
@@ -253,11 +253,11 @@ fn render_type_card(
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(card_w, card_h), egui::Sense::click());
 
     let (fill, stroke) = if is_selected {
-        (Colors::ACCENT_DARK, Stroke::new(1.5, Colors::ACCENT))
+        (Colors::ACCENT_DARK, Stroke::new(1.5_f32, Colors::ACCENT))
     } else if resp.hovered() {
-        (Colors::CARD_HOVER, Stroke::new(0.5, Colors::BORDER_MED))
+        (Colors::CARD_HOVER, Stroke::new(0.5_f32, Colors::BORDER_MED))
     } else {
-        (Colors::CARD, Stroke::new(0.5, Colors::BORDER_MED))
+        (Colors::CARD, Stroke::new(0.5_f32, Colors::BORDER_MED))
     };
 
     if ui.is_rect_visible(rect) {
@@ -431,7 +431,7 @@ fn render_step_configure(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sende
             egui::Frame::NONE
                 .fill(crate::ui::theme::with_alpha(Colors::WARNING, 30))
                 .corner_radius(egui::CornerRadius::same(6))
-                .stroke(egui::Stroke::new(0.5, Colors::WARNING))
+                .stroke(egui::Stroke::new(0.5_f32, Colors::WARNING))
                 .inner_margin(egui::Margin {
                     left: 12,
                     right: 12,

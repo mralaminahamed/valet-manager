@@ -5,10 +5,13 @@ use std::path::{Path, PathBuf};
 use super::merger::merge;
 use super::models::SiteConfig;
 
-pub fn centralized_path(site_name: &str) -> PathBuf {
+pub fn centralized_dir() -> PathBuf {
     let base = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
     base.join(".config/valet-manager/sites")
-        .join(format!("{site_name}.toml"))
+}
+
+pub fn centralized_path(site_name: &str) -> PathBuf {
+    centralized_dir().join(format!("{site_name}.toml"))
 }
 
 pub fn site_root_path(site_path: &Path) -> PathBuf {

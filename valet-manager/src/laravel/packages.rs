@@ -14,7 +14,9 @@ pub struct LaravelPackages {
     pub inertia: bool,
 }
 
-const PACKAGES: &[(&str, fn(&mut LaravelPackages))] = &[
+type PackageSetter = fn(&mut LaravelPackages);
+
+const PACKAGES: &[(&str, PackageSetter)] = &[
     ("laravel/horizon", |p: &mut LaravelPackages| {
         p.horizon = true
     }),

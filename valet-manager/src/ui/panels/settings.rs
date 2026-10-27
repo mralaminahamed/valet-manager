@@ -179,7 +179,7 @@ fn render_appearance(ui: &mut egui::Ui, state: &mut AppState, _cmd_tx: &Sender<A
                                 ui.painter().rect_stroke(
                                     rect,
                                     egui::CornerRadius::same(4),
-                                    egui::Stroke::new(2.0, Colors::ACCENT),
+                                    egui::Stroke::new(2.0_f32, Colors::ACCENT),
                                     egui::StrokeKind::Outside,
                                 );
                             }
@@ -543,7 +543,7 @@ fn chip_row(ui: &mut egui::Ui, options: &[&str], active: usize, mut on_change: i
                     ui.painter().rect_stroke(
                         rect,
                         CornerRadius::same(5),
-                        egui::Stroke::new(0.5, Colors::ACCENT),
+                        egui::Stroke::new(0.5_f32, Colors::ACCENT),
                         egui::StrokeKind::Inside,
                     );
                 }

@@ -259,7 +259,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                     let rect = ui.max_rect();
                     ui.painter().line_segment(
                         [rect.left_top(), rect.left_bottom()],
-                        Stroke::new(2.0, status_color(&svc.status)),
+                        Stroke::new(2.0_f32, status_color(&svc.status)),
                     );
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
@@ -321,7 +321,7 @@ fn legacy_alert_banner(
             let rect = ui.max_rect();
             ui.painter().line_segment(
                 [rect.left_top(), rect.left_bottom()],
-                Stroke::new(3.0, color),
+                Stroke::new(3.0_f32, color),
             );
             ui.horizontal(|ui| {
                 ui.label(RichText::new(icon).size(15.0).color(color));

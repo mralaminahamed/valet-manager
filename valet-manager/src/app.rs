@@ -429,7 +429,7 @@ impl eframe::App for ValetManagerApp {
             .frame(
                 egui::Frame::NONE
                     .fill(theme::Colors::DEEP_BG)
-                    .stroke(egui::Stroke::new(0.5, theme::Colors::BORDER)),
+                    .stroke(egui::Stroke::new(0.5_f32, theme::Colors::BORDER)),
             )
             .show_inside(ui, |ui| {
                 // Enable window drag from titlebar
@@ -626,7 +626,7 @@ fn render_mobile_hamburger(
                         .color(theme::Colors::TEXT_PRIMARY),
                 )
                 .fill(theme::Colors::CARD)
-                .stroke(egui::Stroke::new(0.5, theme::Colors::BORDER_MED))
+                .stroke(egui::Stroke::new(0.5_f32, theme::Colors::BORDER_MED))
                 .corner_radius(4.0)
                 .min_size(egui::vec2(32.0, 32.0)),
             );
@@ -642,7 +642,7 @@ fn render_mobile_hamburger(
             .show(ctx, |ui| {
                 egui::Frame::NONE
                     .fill(theme::Colors::DEEP_BG)
-                    .stroke(egui::Stroke::new(0.5, theme::Colors::BORDER_MED))
+                    .stroke(egui::Stroke::new(0.5_f32, theme::Colors::BORDER_MED))
                     .show(ui, |ui| {
                         ui.set_min_width(196.0);
                         let total_h = ctx.input(|i| {
@@ -694,7 +694,11 @@ fn titlebar_btn(ui: &mut egui::Ui, icon: &str, is_close: bool) -> egui::Response
             )
         };
         painter.circle_filled(rect.center(), size / 2.0, bg);
-        painter.circle_stroke(rect.center(), size / 2.0, egui::Stroke::new(1.0, border));
+        painter.circle_stroke(
+            rect.center(),
+            size / 2.0,
+            egui::Stroke::new(1.0_f32, border),
+        );
         painter.text(
             rect.center(),
             egui::Align2::CENTER_CENTER,
@@ -2794,7 +2798,7 @@ pub async fn run_dispatcher(
                         Ok(out) if out.status.success() => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("{} started", name_clone),
+                                format!("{} started", name_clone),
                                 crate::ui::components::toast::ToastType::Success,
                             );
                             let new_status = crate::services::monitor::ServiceStatus::Running;
@@ -2807,7 +2811,7 @@ pub async fn run_dispatcher(
                         _ => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("Failed to start {}", name_clone),
+                                format!("Failed to start {}", name_clone),
                                 crate::ui::components::toast::ToastType::Error,
                             );
                         }
@@ -2827,7 +2831,7 @@ pub async fn run_dispatcher(
                         Ok(out) if out.status.success() => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("{} stopped", name_clone),
+                                format!("{} stopped", name_clone),
                                 crate::ui::components::toast::ToastType::Warning,
                             );
                             if let Some(svc) =
@@ -2839,7 +2843,7 @@ pub async fn run_dispatcher(
                         _ => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("Failed to stop {}", name_clone),
+                                format!("Failed to stop {}", name_clone),
                                 crate::ui::components::toast::ToastType::Error,
                             );
                         }
@@ -2859,7 +2863,7 @@ pub async fn run_dispatcher(
                         Ok(out) if out.status.success() => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("{} restarted", name_clone),
+                                format!("{} restarted", name_clone),
                                 crate::ui::components::toast::ToastType::Success,
                             );
                             if let Some(svc) =
@@ -2871,7 +2875,7 @@ pub async fn run_dispatcher(
                         _ => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("Failed to restart {}", name_clone),
+                                format!("Failed to restart {}", name_clone),
                                 crate::ui::components::toast::ToastType::Error,
                             );
                         }

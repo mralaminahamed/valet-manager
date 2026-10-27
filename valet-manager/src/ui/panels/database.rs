@@ -2,7 +2,7 @@ use egui::{Color32, CornerRadius, FontFamily, Frame, Margin, RichText, ScrollAre
 use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
-use crate::database::{self, format_thousands, DbEngine};
+use crate::database::{format_thousands, DbEngine};
 use crate::state::app_state::AppState;
 use crate::ui::components::terminal_output;
 use crate::ui::components::toast::{push_toast, ToastType};
@@ -189,7 +189,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 Frame::NONE
                     .fill(Colors::CARD)
                     .corner_radius(CornerRadius::same(8))
-                    .stroke(Stroke::new(0.5, Colors::BORDER))
+                    .stroke(Stroke::new(0.5_f32, Colors::BORDER))
                     .inner_margin(Margin {
                         left: 0,
                         right: 0,
@@ -230,7 +230,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         ui.painter().hline(
             line_rect.x_range(),
             line_rect.center().y,
-            Stroke::new(0.5, Colors::BORDER),
+            Stroke::new(0.5_f32, Colors::BORDER),
         );
         ui.add_space(10.0);
 
@@ -301,7 +301,6 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             });
         }
     }
-    let _ = database::DbEngine::MySql; // keep import used
 }
 
 fn table_header_row(ui: &mut egui::Ui) {
@@ -312,7 +311,7 @@ fn table_header_row(ui: &mut egui::Ui) {
     p.hline(
         rect.x_range(),
         rect.bottom(),
-        Stroke::new(0.5, Colors::BORDER),
+        Stroke::new(0.5_f32, Colors::BORDER),
     );
     let hdr = |text: &str, pos: egui::Pos2, align: egui::Align2| {
         ui.painter().text(
@@ -347,7 +346,7 @@ fn table_row(ui: &mut egui::Ui, name: &str, rows: u64, engine: &str) {
     p.hline(
         rect.x_range(),
         rect.bottom(),
-        Stroke::new(0.5, Colors::BORDER),
+        Stroke::new(0.5_f32, Colors::BORDER),
     );
     p.text(
         egui::pos2(rect.min.x + 12.0, rect.center().y),

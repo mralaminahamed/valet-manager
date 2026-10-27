@@ -129,7 +129,7 @@ fn stat_card(ui: &mut egui::Ui, icon: &str, value: &str, label: &str) {
             top: 10,
             bottom: 10,
         })
-        .stroke(Stroke::new(0.5, Colors::BORDER))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 let (icon_rect, _) =
@@ -171,7 +171,7 @@ fn service_card(
         let rect = ui.max_rect();
         ui.painter().line_segment(
             [rect.left_top(), rect.left_bottom()],
-            Stroke::new(2.0, status_color(&svc.status)),
+            Stroke::new(2.0_f32, status_color(&svc.status)),
         );
 
         ui.horizontal(|ui| {
@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn service_running_count() {
-        let svcs = vec![
+        let svcs = [
             make_svc("nginx", ServiceStatus::Running),
             make_svc("mysql", ServiceStatus::Running),
             make_svc("php-fpm", ServiceStatus::Stopped),

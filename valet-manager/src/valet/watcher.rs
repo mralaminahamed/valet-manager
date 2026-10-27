@@ -25,10 +25,8 @@ pub async fn start_watcher(valet_paths: ValetPaths, cmd_tx: Sender<AppCommand>) 
 
     let debounce = Duration::from_millis(500);
 
-    loop {
-        // Block on first event
-        let Ok(_) = rx.recv() else { break };
-
+    // Block on first event
+    while rx.recv().is_ok() {
         // Drain any additional events within debounce window
         let deadline = std::time::Instant::now() + debounce;
         loop {

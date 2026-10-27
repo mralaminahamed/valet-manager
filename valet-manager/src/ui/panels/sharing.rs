@@ -32,11 +32,11 @@ fn render_tool_card(
 ) -> bool {
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(200.0, 80.0), egui::Sense::click());
     let (fill, stroke) = if selected {
-        (Colors::ACCENT_DARK, Stroke::new(1.5, Colors::ACCENT))
+        (Colors::ACCENT_DARK, Stroke::new(1.5_f32, Colors::ACCENT))
     } else if resp.hovered() {
-        (Colors::CARD_HOVER, Stroke::new(0.5, Colors::BORDER_MED))
+        (Colors::CARD_HOVER, Stroke::new(0.5_f32, Colors::BORDER_MED))
     } else {
-        (Colors::CARD, Stroke::new(0.5, Colors::BORDER_MED))
+        (Colors::CARD, Stroke::new(0.5_f32, Colors::BORDER_MED))
     };
 
     if ui.is_rect_visible(rect) {
@@ -114,10 +114,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
     // ── Auth token ──────────────────────────────────────────────────────
     section_label(ui, "Auth token (optional)");
     let tool_label = state.share_tool.label().to_string();
-    let token_entry = state
-        .share_tokens
-        .entry(tool_label.clone())
-        .or_insert_with(String::new);
+    let token_entry = state.share_tokens.entry(tool_label.clone()).or_default();
     ui.horizontal(|ui| {
         ui.add_space(22.0);
         let avail = ui.available_width() - 22.0;

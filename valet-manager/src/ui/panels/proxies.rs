@@ -61,7 +61,7 @@ fn http_text(probe: Option<&HttpProbe>) -> (String, Color32) {
 
 fn table_header(ui: &mut egui::Ui, flex_width: f32) {
     let header_bg = with_alpha(Color32::BLACK, 38);
-    let border = Stroke::new(0.5, Colors::BORDER);
+    let border = Stroke::new(0.5_f32, Colors::BORDER);
     let avail_w = ui.available_width();
     let (rect, _) =
         ui.allocate_exact_size(egui::vec2(avail_w, HEADER_HEIGHT), egui::Sense::hover());
@@ -122,7 +122,7 @@ fn render_row(
     ui.painter().hline(
         row_rect.x_range(),
         row_rect.bottom(),
-        Stroke::new(0.5, Colors::BORDER),
+        Stroke::new(0.5_f32, Colors::BORDER),
     );
 
     let mut child = ui.new_child(
@@ -294,7 +294,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         Frame::NONE
             .fill(Colors::CARD)
             .corner_radius(CornerRadius::same(6))
-            .stroke(Stroke::new(0.5, Colors::BORDER))
+            .stroke(Stroke::new(0.5_f32, Colors::BORDER))
             .show(ui, |ui| {
                 ui.set_clip_rect(ui.max_rect());
                 ui.set_width(table_w);

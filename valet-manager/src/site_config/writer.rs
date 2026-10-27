@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use super::models::SiteConfig;
-use super::reader::{centralized_path, site_root_path};
+use super::reader::{centralized_dir, site_root_path};
 
 async fn atomic_write(path: &Path, content: &str) -> anyhow::Result<()> {
     if let Some(parent) = path.parent() {
@@ -20,7 +20,11 @@ async fn atomic_write(path: &Path, content: &str) -> anyhow::Result<()> {
 
 /// Save to the centralized config (under ~/.config/valet-manager/sites).
 pub async fn save(site_name: &str, config: &SiteConfig) -> anyhow::Result<()> {
-    let path = centralized_path(site_name);
+    save_in(&centralized_dir(), site_name, config).await
+}
+
+async fn save_in(dir: &Path, site_name: &str, config: &SiteConfig) -> anyhow::Result<()> {
+    let path = dir.join(format!("{site_name}.toml"));
     let serialized = toml::to_string_pretty(config)?;
     atomic_write(&path, &serialized).await
 }
@@ -34,7 +38,11 @@ pub async fn save_to_site_root(site_path: &Path, config: &SiteConfig) -> anyhow:
 
 /// Delete the centralized config file (if any). Does not touch site root.
 pub async fn reset(site_name: &str) -> anyhow::Result<()> {
-    let path = centralized_path(site_name);
+    reset_in(&centralized_dir(), site_name).await
+}
+
+async fn reset_in(dir: &Path, site_name: &str) -> anyhow::Result<()> {
+    let path = dir.join(format!("{site_name}.toml"));
     if tokio::fs::metadata(&path).await.is_ok() {
         tokio::fs::remove_file(&path).await?;
     }
@@ -60,21 +68,22 @@ mod tests {
 
     #[tokio::test]
     async fn reset_removes_file_when_present() {
-        // Use a unique site name to isolate from real configs.
-        let site_name = format!("vm-reset-test-{}", std::process::id());
+        let dir = std::env::temp_dir().join(format!("vm-reset-test-{}", std::process::id()));
+        let site_name = "site";
         let mut cfg = SiteConfig::default();
         cfg.php.version = Some("8.3".into());
-        save(&site_name, &cfg).await.unwrap();
-        let path = centralized_path(&site_name);
+        save_in(&dir, site_name, &cfg).await.unwrap();
+        let path = dir.join("site.toml");
         assert!(tokio::fs::metadata(&path).await.is_ok());
-        reset(&site_name).await.unwrap();
+        reset_in(&dir, site_name).await.unwrap();
         assert!(tokio::fs::metadata(&path).await.is_err());
+        let _ = tokio::fs::remove_dir_all(&dir).await;
     }
 
     #[tokio::test]
     async fn reset_is_idempotent_when_no_file() {
-        let site_name = format!("vm-reset-missing-{}", std::process::id());
+        let dir = std::env::temp_dir().join(format!("vm-reset-missing-{}", std::process::id()));
         // Should not error out.
-        reset(&site_name).await.unwrap();
+        reset_in(&dir, "missing").await.unwrap();
     }
 }
