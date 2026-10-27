@@ -2,7 +2,7 @@ use egui::{Color32, CornerRadius, FontFamily, Frame, Margin, RichText, ScrollAre
 use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
-use crate::database::{self, format_thousands, DbEngine};
+use crate::database::{format_thousands, DbEngine};
 use crate::state::app_state::AppState;
 use crate::ui::components::terminal_output;
 use crate::ui::components::toast::{push_toast, ToastType};
@@ -301,7 +301,6 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             });
         }
     }
-    let _ = database::DbEngine::MySql; // keep import used
 }
 
 fn table_header_row(ui: &mut egui::Ui) {
