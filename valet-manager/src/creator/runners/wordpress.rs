@@ -1,7 +1,7 @@
+use crate::creator::output_streamer::OutputLine;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::sync::mpsc::Sender;
-use crate::creator::output_streamer::OutputLine;
 
 /// All the data collected from the user form for a WordPress project.
 #[derive(Debug, Clone)]

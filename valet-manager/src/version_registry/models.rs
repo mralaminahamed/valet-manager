@@ -6,8 +6,8 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct PhpVersionInfo {
-    pub minor: String,                       // "8.3"
-    pub latest_patch: String,                // "8.3.14"
+    pub minor: String,        // "8.3"
+    pub latest_patch: String, // "8.3.14"
     pub active_support_until: NaiveDate,
     pub security_support_until: NaiveDate,
     pub release_url: String,
@@ -364,10 +364,7 @@ pub fn default_frameworks() -> HashMap<String, FrameworkVersionInfo> {
             Some("https://expressionengine.com/download"),
         ),
     );
-    m.insert(
-        "static_html".into(),
-        fw("Static HTML", "1.0", None, None),
-    );
+    m.insert("static_html".into(), fw("Static HTML", "1.0", None, None));
     m
 }
 

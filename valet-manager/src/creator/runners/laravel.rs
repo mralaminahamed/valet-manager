@@ -1,7 +1,7 @@
+use crate::creator::output_streamer::OutputLine;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::sync::mpsc::Sender;
-use crate::creator::output_streamer::OutputLine;
 
 /// All the data collected from the user form for a Laravel project.
 #[derive(Debug, Clone)]
@@ -35,10 +35,7 @@ impl LaravelConfig {
                 .get("with_pest")
                 .map(|v| v == "true")
                 .unwrap_or(false),
-            with_git: values
-                .get("with_git")
-                .map(|v| v == "true")
-                .unwrap_or(true),
+            with_git: values.get("with_git").map(|v| v == "true").unwrap_or(true),
             variant: variant.to_string(),
         }
     }

@@ -26,7 +26,9 @@ pub struct NotificationPrefs {
     pub update_available: bool,
 }
 
-fn default_true() -> bool { true }
+fn default_true() -> bool {
+    true
+}
 
 impl Default for NotificationPrefs {
     fn default() -> Self {
@@ -43,11 +45,11 @@ impl Default for NotificationPrefs {
 impl NotificationPrefs {
     pub fn enabled(&self, kind: NotificationKind) -> bool {
         match kind {
-            NotificationKind::PhpSwitched      => self.php_switched,
-            NotificationKind::ServiceFailed    => self.service_failed,
+            NotificationKind::PhpSwitched => self.php_switched,
+            NotificationKind::ServiceFailed => self.service_failed,
             NotificationKind::CreationComplete => self.creation_complete,
-            NotificationKind::SslExpiring      => self.ssl_expiring,
-            NotificationKind::UpdateAvailable  => self.update_available,
+            NotificationKind::SslExpiring => self.ssl_expiring,
+            NotificationKind::UpdateAvailable => self.update_available,
         }
     }
 }
@@ -55,7 +57,9 @@ impl NotificationPrefs {
 /// Fire a desktop notification respecting the prefs.
 #[allow(dead_code)]
 pub fn notify(kind: NotificationKind, title: &str, body: &str, prefs: &NotificationPrefs) {
-    if !prefs.enabled(kind) { return; }
+    if !prefs.enabled(kind) {
+        return;
+    }
     let _ = Notification::new()
         .summary(title)
         .body(body)

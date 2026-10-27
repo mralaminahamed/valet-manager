@@ -13,7 +13,12 @@ fn small_badge(ui: &mut egui::Ui, text: &str, fg: Color32) {
     Frame::NONE
         .fill(with_alpha(fg, 30))
         .corner_radius(CornerRadius::same(10))
-        .inner_margin(Margin { left: 7, right: 7, top: 2, bottom: 2 })
+        .inner_margin(Margin {
+            left: 7,
+            right: 7,
+            top: 2,
+            bottom: 2,
+        })
         .show(ui, |ui| {
             ui.label(RichText::new(text).size(10.5).color(fg));
         });
@@ -122,8 +127,7 @@ fn render_php_card(
                     let mut port_str = cfg.port.to_string();
                     let resp = ui.add_sized(
                         egui::vec2(70.0, 24.0),
-                        egui::TextEdit::singleline(&mut port_str)
-                            .font(egui::TextStyle::Monospace),
+                        egui::TextEdit::singleline(&mut port_str).font(egui::TextStyle::Monospace),
                     );
                     if resp.lost_focus() {
                         if let Ok(p) = port_str.parse::<u16>() {
@@ -221,4 +225,3 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         });
     });
 }
-

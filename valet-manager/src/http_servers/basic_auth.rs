@@ -12,7 +12,8 @@ pub fn hash_password(password: &str) -> String {
 /// Path where the per-site htpasswd file lives.
 pub fn htpasswd_path(site_name: &str) -> PathBuf {
     let home = dirs::home_dir().unwrap_or_default();
-    home.join(".config/valet-manager/auth").join(format!("{site_name}.htpasswd"))
+    home.join(".config/valet-manager/auth")
+        .join(format!("{site_name}.htpasswd"))
 }
 
 /// Render the contents of an htpasswd file. Each user becomes `username:hash`.
@@ -71,8 +72,14 @@ mod tests {
     #[test]
     fn generate_htpasswd_joins_users_with_newlines() {
         let users = vec![
-            BasicAuthUser { username: "alice".into(), password_hash: "h1".into() },
-            BasicAuthUser { username: "bob".into(), password_hash: "h2".into() },
+            BasicAuthUser {
+                username: "alice".into(),
+                password_hash: "h1".into(),
+            },
+            BasicAuthUser {
+                username: "bob".into(),
+                password_hash: "h2".into(),
+            },
         ];
         let out = generate_htpasswd(&users);
         assert!(out.contains("alice:h1"));
@@ -88,11 +95,16 @@ mod tests {
     #[tokio::test]
     async fn write_htpasswd_round_trips() {
         // Write to a temp-path-like name; redirect via HOME override would be ideal.
-        let users = vec![BasicAuthUser { username: "u".into(), password_hash: "h".into() }];
+        let users = vec![BasicAuthUser {
+            username: "u".into(),
+            password_hash: "h".into(),
+        }];
         // Use a unique site name so we don't clobber anything real.
         let site_name = format!("vm-htpasswd-test-{}", std::process::id());
         write_htpasswd(&site_name, &users).await.unwrap();
-        let content = tokio::fs::read_to_string(htpasswd_path(&site_name)).await.unwrap();
+        let content = tokio::fs::read_to_string(htpasswd_path(&site_name))
+            .await
+            .unwrap();
         assert!(content.contains("u:h"));
         let _ = tokio::fs::remove_file(htpasswd_path(&site_name)).await;
     }

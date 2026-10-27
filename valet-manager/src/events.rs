@@ -13,28 +13,51 @@ pub enum AppEvent {
     Error(String),
     // Phase 2
     PhpSwitched(String),
-    PhpFpmStatusChanged { version: String, status: ServiceStatus },
-    ExtensionsLoaded { version: String, extensions: Vec<PhpExtension> },
-    IniLoaded { version: String, ini_type: IniType, sections: Vec<IniSection>, raw: String },
+    PhpFpmStatusChanged {
+        version: String,
+        status: ServiceStatus,
+    },
+    ExtensionsLoaded {
+        version: String,
+        extensions: Vec<PhpExtension>,
+    },
+    IniLoaded {
+        version: String,
+        ini_type: IniType,
+        sections: Vec<IniSection>,
+        raw: String,
+    },
     IniSaved,
-    SiteIsolated { site: String, version: String },
+    SiteIsolated {
+        site: String,
+        version: String,
+    },
     SiteUnisolated(String),
     PhpVersionInstalled(String),
     PhpVersionRemoved(String),
     // Phase 3
     SitesRefreshed(Vec<crate::valet::site_scanner::ValetSite>),
-    NginxConfigLoaded { site: String, content: String },
+    NginxConfigLoaded {
+        site: String,
+        content: String,
+    },
     NginxReloaded,
     ParksUpdated(Vec<std::path::PathBuf>),
     // Phase 4 — App Creator
     CreatorOutputLine(crate::creator::output_streamer::OutputLine),
-    CreatorComplete { site_name: String, domain: String },
+    CreatorComplete {
+        site_name: String,
+        domain: String,
+    },
     CreatorFailed(String),
     // Phase 5 — Proxies
     ProxiesRefreshed(Vec<crate::nginx::proxy_manager::ValetProxy>),
     ProxyAdded(String),
     ProxyRemoved(String),
-    ProxyProbed { domain: String, result: crate::nginx::proxy_manager::HttpProbe },
+    ProxyProbed {
+        domain: String,
+        result: crate::nginx::proxy_manager::HttpProbe,
+    },
     // Phase 5 — Dnsmasq
     TldChanged(String),
     DnsOutputLine(crate::creator::output_streamer::OutputLine),
@@ -43,7 +66,10 @@ pub enum AppEvent {
     SharingStopped,
     SharingOutputLine(crate::creator::output_streamer::OutputLine),
     // Phase 5 — Logs
-    LogsLoaded { source: crate::system::log_reader::LogSource, lines: Vec<String> },
+    LogsLoaded {
+        source: crate::system::log_reader::LogSource,
+        lines: Vec<String>,
+    },
     // Phase 5 — Diagnostics
     DiagnosticsOutputLine(crate::creator::output_streamer::OutputLine),
     DiagnosticsComplete,
@@ -104,7 +130,10 @@ pub enum AppEvent {
     },
     SiteConfigSaved(String),
     SiteConfigReset(String),
-    WpMultisiteEnabled { site: String, output: Vec<String> },
+    WpMultisiteEnabled {
+        site: String,
+        output: Vec<String>,
+    },
     WpMultisiteDisabled(String),
     WpNetworkSitesLoaded {
         site: String,

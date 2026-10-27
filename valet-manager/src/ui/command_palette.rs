@@ -1,9 +1,9 @@
-use egui::{Color32, CornerRadius, Frame, Margin, RichText, ScrollArea, Stroke};
-use fuzzy_matcher::FuzzyMatcher;
-use fuzzy_matcher::skim::SkimMatcherV2;
 use crate::commands::AppCommand;
 use crate::state::app_state::{AppState, Panel};
-use crate::ui::theme::{Colors, with_alpha};
+use crate::ui::theme::{with_alpha, Colors};
+use egui::{Color32, CornerRadius, Frame, Margin, RichText, ScrollArea, Stroke};
+use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
@@ -33,7 +33,7 @@ pub struct PaletteState {
     pub query: String,
     pub selected: usize,
     pub results: Vec<PaletteResult>,
-    pub index: Vec<PaletteResult>,  // unfiltered
+    pub index: Vec<PaletteResult>, // unfiltered
 }
 
 #[allow(dead_code)]
@@ -277,10 +277,15 @@ pub fn filter(index: &[PaletteResult], query: &str) -> Vec<PaletteResult> {
         return index.iter().take(8).cloned().collect();
     }
     let matcher = SkimMatcherV2::default();
-    let mut scored: Vec<(i64, &PaletteResult)> = index.iter()
+    let mut scored: Vec<(i64, &PaletteResult)> = index
+        .iter()
         .filter_map(|r| {
             matcher.fuzzy_match(&r.label, query).map(|s| {
-                let category_bonus = if r.category == PaletteCategory::PhpVersion { 100 } else { 0 };
+                let category_bonus = if r.category == PaletteCategory::PhpVersion {
+                    100
+                } else {
+                    0
+                };
                 (s + category_bonus, r)
             })
         })
@@ -292,22 +297,22 @@ pub fn filter(index: &[PaletteResult], query: &str) -> Vec<PaletteResult> {
 fn category_color(cat: PaletteCategory) -> Color32 {
     match cat {
         PaletteCategory::PhpVersion => Colors::WARNING,
-        PaletteCategory::Site       => Colors::ACCENT,
-        PaletteCategory::Service    => Colors::INFO,
-        PaletteCategory::Artisan    => Colors::PURPLE,
-        PaletteCategory::Panel      => Colors::TEXT_SECONDARY,
-        PaletteCategory::Action     => Colors::TEXT_SECONDARY,
+        PaletteCategory::Site => Colors::ACCENT,
+        PaletteCategory::Service => Colors::INFO,
+        PaletteCategory::Artisan => Colors::PURPLE,
+        PaletteCategory::Panel => Colors::TEXT_SECONDARY,
+        PaletteCategory::Action => Colors::TEXT_SECONDARY,
     }
 }
 
 fn category_label(cat: PaletteCategory) -> &'static str {
     match cat {
         PaletteCategory::PhpVersion => "PHP",
-        PaletteCategory::Site       => "site",
-        PaletteCategory::Service    => "svc",
-        PaletteCategory::Artisan    => "art",
-        PaletteCategory::Panel      => "go",
-        PaletteCategory::Action     => "act",
+        PaletteCategory::Site => "site",
+        PaletteCategory::Service => "svc",
+        PaletteCategory::Artisan => "art",
+        PaletteCategory::Panel => "go",
+        PaletteCategory::Action => "act",
     }
 }
 
@@ -315,11 +320,15 @@ fn category_label(cat: PaletteCategory) -> &'static str {
 /// selected a result; closes the palette in that case.
 #[allow(dead_code)]
 pub fn render(ctx: &egui::Context, state: &mut PaletteState) -> Option<AppCommand> {
-    if !state.open { return None; }
+    if !state.open {
+        return None;
+    }
 
     // Re-filter on every frame when query changes; simpler to do it always.
     state.results = filter(&state.index, &state.query);
-    if state.selected >= state.results.len() { state.selected = 0; }
+    if state.selected >= state.results.len() {
+        state.selected = 0;
+    }
 
     // Keyboard handling
     let mut commit: Option<AppCommand> = None;
@@ -341,8 +350,12 @@ pub fn render(ctx: &egui::Context, state: &mut PaletteState) -> Option<AppComman
         }
     });
 
-    if commit.is_some() { return commit; }
-    if !state.open { return None; }
+    if commit.is_some() {
+        return commit;
+    }
+    if !state.open {
+        return None;
+    }
 
     // Dim background
     egui::Area::new(egui::Id::new("palette_dim"))
@@ -350,7 +363,8 @@ pub fn render(ctx: &egui::Context, state: &mut PaletteState) -> Option<AppComman
         .fixed_pos(egui::pos2(0.0, 0.0))
         .show(ctx, |ui| {
             let r = ctx.input(|i| i.viewport().outer_rect.unwrap_or(i.content_rect()));
-            ui.painter().rect_filled(r, CornerRadius::ZERO, with_alpha(Color32::BLACK, 100));
+            ui.painter()
+                .rect_filled(r, CornerRadius::ZERO, with_alpha(Color32::BLACK, 100));
         });
 
     // Card
@@ -362,7 +376,12 @@ pub fn render(ctx: &egui::Context, state: &mut PaletteState) -> Option<AppComman
                 .fill(Colors::DEEP_BG)
                 .corner_radius(CornerRadius::same(10))
                 .stroke(Stroke::new(0.5, Colors::BORDER_MED))
-                .inner_margin(Margin { left: 0, right: 0, top: 0, bottom: 0 })
+                .inner_margin(Margin {
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                })
                 .show(ui, |ui| {
                     ui.set_min_width(520.0);
                     ui.set_max_width(520.0);
@@ -383,56 +402,104 @@ pub fn render(ctx: &egui::Context, state: &mut PaletteState) -> Option<AppComman
                     ui.add_space(6.0);
                     // Divider
                     let avail = ui.available_width();
-                    let (line_rect, _) = ui.allocate_exact_size(egui::vec2(avail, 1.0), egui::Sense::hover());
-                    ui.painter().hline(line_rect.x_range(), line_rect.center().y, Stroke::new(0.5, Colors::BORDER));
+                    let (line_rect, _) =
+                        ui.allocate_exact_size(egui::vec2(avail, 1.0), egui::Sense::hover());
+                    ui.painter().hline(
+                        line_rect.x_range(),
+                        line_rect.center().y,
+                        Stroke::new(0.5, Colors::BORDER),
+                    );
 
                     // Results
-                    ScrollArea::vertical().max_height(360.0).auto_shrink([false, false]).show(ui, |ui| {
-                        for (i, r) in state.results.clone().iter().enumerate() {
-                            let bg = if i == state.selected { Colors::CARD_HOVER } else { Color32::TRANSPARENT };
-                            Frame::NONE
-                                .fill(bg)
-                                .inner_margin(Margin { left: 14, right: 14, top: 0, bottom: 0 })
-                                .show(ui, |ui| {
-                                    let (row_rect, row_resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 36.0), egui::Sense::click());
-                                    if row_resp.clicked() {
-                                        commit = Some(r.action.clone());
-                                        state.open = false;
-                                    }
-                                    let mut child = ui.new_child(
-                                        egui::UiBuilder::new()
-                                            .max_rect(row_rect)
-                                            .layout(egui::Layout::left_to_right(egui::Align::Center)),
-                                    );
-                                    // Category badge
-                                    let cat_color = category_color(r.category);
-                                    Frame::NONE
-                                        .fill(with_alpha(cat_color, 30))
-                                        .corner_radius(CornerRadius::same(10))
-                                        .inner_margin(Margin { left: 6, right: 6, top: 1, bottom: 1 })
-                                        .show(&mut child, |ui| {
-                                            ui.label(RichText::new(category_label(r.category)).size(10.0).color(cat_color));
+                    ScrollArea::vertical()
+                        .max_height(360.0)
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            for (i, r) in state.results.clone().iter().enumerate() {
+                                let bg = if i == state.selected {
+                                    Colors::CARD_HOVER
+                                } else {
+                                    Color32::TRANSPARENT
+                                };
+                                Frame::NONE
+                                    .fill(bg)
+                                    .inner_margin(Margin {
+                                        left: 14,
+                                        right: 14,
+                                        top: 0,
+                                        bottom: 0,
+                                    })
+                                    .show(ui, |ui| {
+                                        let (row_rect, row_resp) = ui.allocate_exact_size(
+                                            egui::vec2(ui.available_width(), 36.0),
+                                            egui::Sense::click(),
+                                        );
+                                        if row_resp.clicked() {
+                                            commit = Some(r.action.clone());
+                                            state.open = false;
+                                        }
+                                        let mut child = ui.new_child(
+                                            egui::UiBuilder::new().max_rect(row_rect).layout(
+                                                egui::Layout::left_to_right(egui::Align::Center),
+                                            ),
+                                        );
+                                        // Category badge
+                                        let cat_color = category_color(r.category);
+                                        Frame::NONE
+                                            .fill(with_alpha(cat_color, 30))
+                                            .corner_radius(CornerRadius::same(10))
+                                            .inner_margin(Margin {
+                                                left: 6,
+                                                right: 6,
+                                                top: 1,
+                                                bottom: 1,
+                                            })
+                                            .show(&mut child, |ui| {
+                                                ui.label(
+                                                    RichText::new(category_label(r.category))
+                                                        .size(10.0)
+                                                        .color(cat_color),
+                                                );
+                                            });
+                                        child.add_space(10.0);
+                                        child.vertical(|ui| {
+                                            ui.label(
+                                                RichText::new(&r.label)
+                                                    .size(13.0)
+                                                    .color(Colors::TEXT_PRIMARY),
+                                            );
+                                            if let Some(sub) = &r.subtitle {
+                                                ui.label(
+                                                    RichText::new(sub)
+                                                        .size(11.0)
+                                                        .color(Colors::TEXT_SECONDARY),
+                                                );
+                                            }
                                         });
-                                    child.add_space(10.0);
-                                    child.vertical(|ui| {
-                                        ui.label(RichText::new(&r.label).size(13.0).color(Colors::TEXT_PRIMARY));
-                                        if let Some(sub) = &r.subtitle {
-                                            ui.label(RichText::new(sub).size(11.0).color(Colors::TEXT_SECONDARY));
+                                        if let Some(sc) = &r.shortcut {
+                                            child.with_layout(
+                                                egui::Layout::right_to_left(egui::Align::Center),
+                                                |ui| {
+                                                    ui.label(
+                                                        RichText::new(sc)
+                                                            .size(11.0)
+                                                            .color(Colors::TEXT_TERTIARY),
+                                                    );
+                                                },
+                                            );
                                         }
                                     });
-                                    if let Some(sc) = &r.shortcut {
-                                        child.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                            ui.label(RichText::new(sc).size(11.0).color(Colors::TEXT_TERTIARY));
-                                        });
-                                    }
-                                });
-                        }
-                    });
+                            }
+                        });
                     ui.add_space(6.0);
                     // Footer
                     ui.horizontal(|ui| {
                         ui.add_space(14.0);
-                        ui.label(RichText::new("↑↓ navigate · ↵ execute · esc dismiss").size(11.0).color(Colors::TEXT_TERTIARY));
+                        ui.label(
+                            RichText::new("↑↓ navigate · ↵ execute · esc dismiss")
+                                .size(11.0)
+                                .color(Colors::TEXT_TERTIARY),
+                        );
                         ui.add_space(14.0);
                     });
                     ui.add_space(6.0);
@@ -447,29 +514,49 @@ mod tests {
     use super::*;
     #[test]
     fn empty_query_returns_first_8() {
-        let idx: Vec<PaletteResult> = (0..20).map(|i| PaletteResult {
-            label: format!("Item {}", i),
-            subtitle: None,
-            category: PaletteCategory::Action,
-            action: AppCommand::RefreshAll,
-            shortcut: None,
-        }).collect();
+        let idx: Vec<PaletteResult> = (0..20)
+            .map(|i| PaletteResult {
+                label: format!("Item {}", i),
+                subtitle: None,
+                category: PaletteCategory::Action,
+                action: AppCommand::RefreshAll,
+                shortcut: None,
+            })
+            .collect();
         let r = filter(&idx, "");
         assert_eq!(r.len(), 8);
     }
     #[test]
     fn fuzzy_filter_matches() {
         let idx = vec![
-            PaletteResult { label: "Open Dashboard".into(), subtitle: None, category: PaletteCategory::Panel, action: AppCommand::OpenPanel(Panel::Dashboard), shortcut: None },
-            PaletteResult { label: "Refresh".into(),       subtitle: None, category: PaletteCategory::Action, action: AppCommand::RefreshAll, shortcut: None },
+            PaletteResult {
+                label: "Open Dashboard".into(),
+                subtitle: None,
+                category: PaletteCategory::Panel,
+                action: AppCommand::OpenPanel(Panel::Dashboard),
+                shortcut: None,
+            },
+            PaletteResult {
+                label: "Refresh".into(),
+                subtitle: None,
+                category: PaletteCategory::Action,
+                action: AppCommand::RefreshAll,
+                shortcut: None,
+            },
         ];
         let r = filter(&idx, "dash");
         assert!(r.iter().any(|x| x.label.contains("Dashboard")));
     }
     #[test]
     fn category_colors_distinct() {
-        assert_ne!(category_color(PaletteCategory::PhpVersion), category_color(PaletteCategory::Site));
-        assert_ne!(category_color(PaletteCategory::Panel), category_color(PaletteCategory::PhpVersion));
+        assert_ne!(
+            category_color(PaletteCategory::PhpVersion),
+            category_color(PaletteCategory::Site)
+        );
+        assert_ne!(
+            category_color(PaletteCategory::Panel),
+            category_color(PaletteCategory::PhpVersion)
+        );
     }
     #[test]
     fn category_labels_short() {
@@ -518,7 +605,10 @@ mod tests {
 
     // ── Phase 13 — framework quick actions ────────────────────────────
 
-    fn make_site(name: &str, fw: crate::ui::DetectedFramework) -> crate::valet::site_scanner::ValetSite {
+    fn make_site(
+        name: &str,
+        fw: crate::ui::DetectedFramework,
+    ) -> crate::valet::site_scanner::ValetSite {
         crate::valet::site_scanner::ValetSite {
             name: name.to_string(),
             domain: format!("{}.test", name),
@@ -539,42 +629,64 @@ mod tests {
     #[test]
     fn build_index_emits_magento_quick_actions() {
         let mut state = AppState::default();
-        state.sites.push(make_site("shop", crate::ui::DetectedFramework::Magento));
+        state
+            .sites
+            .push(make_site("shop", crate::ui::DetectedFramework::Magento));
         let idx = build_index(&state);
-        assert!(idx.iter().any(|r| r.label.starts_with("Flush Magento cache @ shop.test")));
-        assert!(idx.iter().any(|r| r.label.starts_with("Reindex Magento @ shop.test")));
+        assert!(idx
+            .iter()
+            .any(|r| r.label.starts_with("Flush Magento cache @ shop.test")));
+        assert!(idx
+            .iter()
+            .any(|r| r.label.starts_with("Reindex Magento @ shop.test")));
     }
 
     #[test]
     fn build_index_emits_drupal_quick_actions() {
         let mut state = AppState::default();
-        state.sites.push(make_site("intra", crate::ui::DetectedFramework::Drupal));
+        state
+            .sites
+            .push(make_site("intra", crate::ui::DetectedFramework::Drupal));
         let idx = build_index(&state);
-        assert!(idx.iter().any(|r| r.label.starts_with("Drupal cache rebuild @ intra.test")));
-        assert!(idx.iter().any(|r| r.label.starts_with("Drupal update DB @ intra.test")));
+        assert!(idx
+            .iter()
+            .any(|r| r.label.starts_with("Drupal cache rebuild @ intra.test")));
+        assert!(idx
+            .iter()
+            .any(|r| r.label.starts_with("Drupal update DB @ intra.test")));
     }
 
     #[test]
     fn build_index_emits_symfony_cache_clear() {
         let mut state = AppState::default();
-        state.sites.push(make_site("api", crate::ui::DetectedFramework::Symfony));
+        state
+            .sites
+            .push(make_site("api", crate::ui::DetectedFramework::Symfony));
         let idx = build_index(&state);
-        assert!(idx.iter().any(|r| r.label.starts_with("Clear Symfony cache @ api.test")));
+        assert!(idx
+            .iter()
+            .any(|r| r.label.starts_with("Clear Symfony cache @ api.test")));
     }
 
     #[test]
     fn build_index_emits_octobercms_migrate() {
         let mut state = AppState::default();
-        state.sites.push(make_site("blog", crate::ui::DetectedFramework::OctoberCms));
+        state
+            .sites
+            .push(make_site("blog", crate::ui::DetectedFramework::OctoberCms));
         let idx = build_index(&state);
-        assert!(idx.iter().any(|r| r.label.starts_with("OctoberCMS migrate @ blog.test")));
+        assert!(idx
+            .iter()
+            .any(|r| r.label.starts_with("OctoberCMS migrate @ blog.test")));
     }
 
     #[test]
     fn build_index_does_not_emit_for_wordpress_in_phase_13() {
         // WordPress is not in the Phase 13 quick-action list.
         let mut state = AppState::default();
-        state.sites.push(make_site("blog", crate::ui::DetectedFramework::WordPress));
+        state
+            .sites
+            .push(make_site("blog", crate::ui::DetectedFramework::WordPress));
         let idx = build_index(&state);
         assert!(!idx.iter().any(|r| r.label.contains("Magento")));
         assert!(!idx.iter().any(|r| r.label.contains("Symfony cache")));

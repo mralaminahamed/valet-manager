@@ -65,7 +65,10 @@ pub async fn fetch(client: &reqwest::Client) -> Vec<PhpVersionInfo> {
             latest_patch: latest,
             active_support_until: support,
             security_support_until: eol,
-            release_url: format!("https://www.php.net/releases/{}_0.php", cycle.replace('.', "_")),
+            release_url: format!(
+                "https://www.php.net/releases/{}_0.php",
+                cycle.replace('.', "_")
+            ),
         });
     }
     if out.is_empty() {

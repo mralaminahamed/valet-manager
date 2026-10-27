@@ -4,18 +4,16 @@ use tokio::sync::mpsc::Sender;
 use crate::commands::AppCommand;
 use crate::queue::QueueWorker;
 use crate::state::app_state::AppState;
-use crate::ui::theme::{
-    accent_button, divider, ghost_button, with_alpha, Colors,
-};
+use crate::ui::theme::{accent_button, divider, ghost_button, with_alpha, Colors};
 
-const COL_QUEUE:      f32 = 90.0;
+const COL_QUEUE: f32 = 90.0;
 const COL_CONNECTION: f32 = 90.0;
-const COL_STATUS:     f32 = 70.0;
-const COL_JOBS:       f32 = 60.0;
-const COL_FAILED:     f32 = 60.0;
-const COL_ACTION:     f32 = 60.0;
-const ROW_HEIGHT:     f32 = 36.0;
-const HEADER_H:       f32 = 32.0;
+const COL_STATUS: f32 = 70.0;
+const COL_JOBS: f32 = 60.0;
+const COL_FAILED: f32 = 60.0;
+const COL_ACTION: f32 = 60.0;
+const ROW_HEIGHT: f32 = 36.0;
+const HEADER_H: f32 = 32.0;
 
 fn status_color(status: &str) -> Color32 {
     match status {
@@ -30,7 +28,8 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
     let border = Stroke::new(0.5, Colors::BORDER);
     let avail = ui.available_width();
     let (rect, _) = ui.allocate_exact_size(egui::vec2(avail, HEADER_H), egui::Sense::hover());
-    ui.painter().rect_filled(rect, CornerRadius::ZERO, header_bg);
+    ui.painter()
+        .rect_filled(rect, CornerRadius::ZERO, header_bg);
     ui.painter().hline(rect.x_range(), rect.bottom(), border);
 
     let mut child = ui.new_child(
@@ -39,7 +38,10 @@ fn table_header(ui: &mut egui::Ui, flex_width: f32) {
             .layout(egui::Layout::left_to_right(egui::Align::Center)),
     );
     let hdr = |text: &str| {
-        RichText::new(text).size(10.5).strong().color(Colors::TEXT_TERTIARY)
+        RichText::new(text)
+            .size(10.5)
+            .strong()
+            .color(Colors::TEXT_TERTIARY)
     };
 
     child.add_space(10.0);
@@ -87,7 +89,8 @@ fn render_row(
     let avail = ui.available_width();
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(avail, ROW_HEIGHT), egui::Sense::hover());
     if resp.hovered() {
-        ui.painter().rect_filled(rect, CornerRadius::ZERO, Colors::CARD_HOVER);
+        ui.painter()
+            .rect_filled(rect, CornerRadius::ZERO, Colors::CARD_HOVER);
     }
     ui.painter().hline(
         rect.x_range(),
@@ -145,7 +148,12 @@ fn render_row(
             Frame::NONE
                 .fill(with_alpha(sc, 30))
                 .corner_radius(CornerRadius::same(10))
-                .inner_margin(Margin { left: 7, right: 7, top: 2, bottom: 2 })
+                .inner_margin(Margin {
+                    left: 7,
+                    right: 7,
+                    top: 2,
+                    bottom: 2,
+                })
                 .show(ui, |ui| {
                     ui.label(RichText::new(&worker.status).size(10.5).color(sc));
                 });
@@ -185,12 +193,10 @@ fn render_row(
     child.allocate_ui(egui::vec2(COL_ACTION, ROW_HEIGHT), |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             let btn = ui.add(
-                egui::Button::new(
-                    RichText::new("⋮").size(16.0).color(Colors::TEXT_SECONDARY),
-                )
-                .min_size(egui::vec2(24.0, 24.0))
-                .fill(Color32::TRANSPARENT)
-                .stroke(Stroke::NONE),
+                egui::Button::new(RichText::new("⋮").size(16.0).color(Colors::TEXT_SECONDARY))
+                    .min_size(egui::vec2(24.0, 24.0))
+                    .fill(Color32::TRANSPARENT)
+                    .stroke(Stroke::NONE),
             );
             let id = worker.id.clone();
             egui::Popup::menu(&btn).show(|ui| {
@@ -225,11 +231,8 @@ fn render_modal(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComm
         .fixed_pos(egui::pos2(0.0, 0.0))
         .show(&ctx, |ui| {
             let r = ctx.input(|i| i.viewport().outer_rect.unwrap_or(i.content_rect()));
-            ui.painter().rect_filled(
-                r,
-                CornerRadius::ZERO,
-                with_alpha(Color32::BLACK, 140),
-            );
+            ui.painter()
+                .rect_filled(r, CornerRadius::ZERO, with_alpha(Color32::BLACK, 140));
         });
 
     let mut close = false;
@@ -242,7 +245,12 @@ fn render_modal(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComm
                 .fill(Colors::CARD)
                 .corner_radius(CornerRadius::same(10))
                 .stroke(Stroke::new(0.5, Colors::BORDER_MED))
-                .inner_margin(Margin { left: 18, right: 18, top: 16, bottom: 16 })
+                .inner_margin(Margin {
+                    left: 18,
+                    right: 18,
+                    top: 16,
+                    bottom: 16,
+                })
                 .show(ui, |ui| {
                     ui.set_min_width(400.0);
                     ui.set_min_height(260.0);
@@ -257,7 +265,9 @@ fn render_modal(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComm
 
                     // Site picker
                     ui.label(
-                        RichText::new("Site").size(11.0).color(Colors::TEXT_SECONDARY),
+                        RichText::new("Site")
+                            .size(11.0)
+                            .color(Colors::TEXT_SECONDARY),
                     );
                     let mut new_pick: Option<String> = None;
                     let current = state
@@ -271,7 +281,8 @@ fn render_modal(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComm
                             for site in &state.sites {
                                 if ui
                                     .selectable_label(
-                                        state.queue_add_site.as_deref() == Some(site.domain.as_str()),
+                                        state.queue_add_site.as_deref()
+                                            == Some(site.domain.as_str()),
                                         &site.domain,
                                     )
                                     .clicked()
@@ -299,7 +310,9 @@ fn render_modal(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComm
 
                     // Queue
                     ui.label(
-                        RichText::new("Queue").size(11.0).color(Colors::TEXT_SECONDARY),
+                        RichText::new("Queue")
+                            .size(11.0)
+                            .color(Colors::TEXT_SECONDARY),
                     );
                     ui.add_sized(
                         egui::vec2(360.0, 26.0),
@@ -376,7 +389,8 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
     ui.horizontal(|ui| {
         ui.add_space(22.0);
         let table_w = ui.available_width() - 22.0;
-        let fixed = COL_QUEUE + COL_CONNECTION + COL_STATUS + COL_JOBS + COL_FAILED + COL_ACTION + 10.0;
+        let fixed =
+            COL_QUEUE + COL_CONNECTION + COL_STATUS + COL_JOBS + COL_FAILED + COL_ACTION + 10.0;
         let flex_w = (table_w - fixed).max(120.0);
 
         Frame::NONE

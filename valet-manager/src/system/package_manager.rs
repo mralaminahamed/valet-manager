@@ -26,8 +26,8 @@ pub fn pm_for_distro(kind: &DistroKind) -> PackageManager {
 #[allow(dead_code)]
 pub async fn list_installed_php_packages(pm: &PackageManager) -> Vec<String> {
     let (cmd, arg): (&str, &str) = match pm {
-        PackageManager::Apt    => ("bash", "apt list --installed 2>/dev/null | grep php"),
-        PackageManager::Dnf    => ("bash", "dnf list installed 2>/dev/null | grep php"),
+        PackageManager::Apt => ("bash", "apt list --installed 2>/dev/null | grep php"),
+        PackageManager::Dnf => ("bash", "dnf list installed 2>/dev/null | grep php"),
         PackageManager::Pacman => ("bash", "pacman -Q 2>/dev/null | grep php"),
     };
 

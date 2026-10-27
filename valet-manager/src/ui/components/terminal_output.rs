@@ -1,6 +1,6 @@
-use egui::{Align, CornerRadius, FontFamily, Frame, RichText, ScrollArea};
 use crate::creator::output_streamer::{OutputLine, Stream};
 use crate::ui::theme::Colors;
+use egui::{Align, CornerRadius, FontFamily, Frame, RichText, ScrollArea};
 
 /// Render a terminal-style output panel.
 ///
@@ -15,7 +15,12 @@ pub fn render(ui: &mut egui::Ui, lines: &[OutputLine], auto_scroll: bool) {
     Frame::NONE
         .fill(Colors::DEEP_BG)
         .corner_radius(CornerRadius::same(6))
-        .inner_margin(egui::Margin { left: 10, right: 10, top: 8, bottom: 8 })
+        .inner_margin(egui::Margin {
+            left: 10,
+            right: 10,
+            top: 8,
+            bottom: 8,
+        })
         .show(ui, |ui| {
             ui.set_min_height(120.0);
             let available_width = ui.available_width();
@@ -70,7 +75,11 @@ mod tests {
     use chrono::Local;
 
     fn line(text: &str, stream: Stream) -> OutputLine {
-        OutputLine { text: text.to_string(), stream, timestamp: Local::now() }
+        OutputLine {
+            text: text.to_string(),
+            stream,
+            timestamp: Local::now(),
+        }
     }
 
     #[test]

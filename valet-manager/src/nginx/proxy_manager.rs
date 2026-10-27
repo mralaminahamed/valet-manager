@@ -42,7 +42,11 @@ pub async fn list_proxies(paths: &ValetPaths) -> anyhow::Result<Vec<ValetProxy>>
         let body = tokio::fs::read_to_string(&p).await.unwrap_or_default();
         if let Some(target) = parse_proxy_pass(&body) {
             let secured = body.contains("ssl_certificate") || body.contains("listen 443");
-            out.push(ValetProxy { domain: name, target, secured });
+            out.push(ValetProxy {
+                domain: name,
+                target,
+                secured,
+            });
         }
     }
     out.sort_by(|a, b| a.domain.cmp(&b.domain));
@@ -78,10 +82,9 @@ pub async fn add_proxy(
     if secure {
         args.push("--secure");
     }
-    let status = crate::creator::output_streamer::stream_command(
-        "valet", &args, None, tx, cancel_rx,
-    )
-    .await?;
+    let status =
+        crate::creator::output_streamer::stream_command("valet", &args, None, tx, cancel_rx)
+            .await?;
     Ok(status.success())
 }
 
@@ -92,10 +95,9 @@ pub async fn remove_proxy(
     cancel_rx: tokio::sync::watch::Receiver<bool>,
 ) -> anyhow::Result<bool> {
     let args = ["unproxy", domain];
-    let status = crate::creator::output_streamer::stream_command(
-        "valet", &args, None, tx, cancel_rx,
-    )
-    .await?;
+    let status =
+        crate::creator::output_streamer::stream_command("valet", &args, None, tx, cancel_rx)
+            .await?;
     Ok(status.success())
 }
 
@@ -105,7 +107,9 @@ pub async fn probe_http(url: String) -> HttpProbe {
         .danger_accept_invalid_certs(true) // local self-signed
         .timeout(std::time::Duration::from_secs(4))
         .build();
-    let Ok(client) = client else { return HttpProbe::Failed; };
+    let Ok(client) = client else {
+        return HttpProbe::Failed;
+    };
     match client.get(&url).send().await {
         Ok(r) => {
             let s = r.status().as_u16();

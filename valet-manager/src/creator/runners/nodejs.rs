@@ -1,7 +1,7 @@
+use crate::creator::output_streamer::OutputLine;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::sync::mpsc::Sender;
-use crate::creator::output_streamer::OutputLine;
 
 /// Configuration for a Node.js project creation run.
 #[derive(Debug, Clone)]
@@ -84,11 +84,7 @@ impl NodeJsConfig {
             ),
             "sveltekit" => (
                 "npm".into(),
-                vec![
-                    "create".into(),
-                    "svelte@latest".into(),
-                    self.name.clone(),
-                ],
+                vec!["create".into(), "svelte@latest".into(), self.name.clone()],
             ),
             "astro" => (
                 "npm".into(),
@@ -156,10 +152,7 @@ pub async fn run(
 }
 
 #[allow(dead_code)]
-async fn write_systemd_unit(
-    config: &NodeJsConfig,
-    tx: &Sender<OutputLine>,
-) -> anyhow::Result<()> {
+async fn write_systemd_unit(config: &NodeJsConfig, tx: &Sender<OutputLine>) -> anyhow::Result<()> {
     let proj_dir = config.directory.join(&config.name);
     let unit_name = format!("valet-{}.service", config.name);
     let unit_path = std::env::var("HOME")

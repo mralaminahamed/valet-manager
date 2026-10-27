@@ -39,11 +39,7 @@ pub async fn list(version: &str) -> Vec<PhpExtension> {
         })
         .unwrap_or_default();
 
-    extensions.sort_by(|a, b| {
-        b.enabled
-            .cmp(&a.enabled)
-            .then_with(|| a.name.cmp(&b.name))
-    });
+    extensions.sort_by(|a, b| b.enabled.cmp(&a.enabled).then_with(|| a.name.cmp(&b.name)));
 
     extensions
 }
@@ -89,7 +85,9 @@ mod tests {
         assert!(enabled);
 
         let name_disabled = "xdebug";
-        let not_enabled = conf_entries.iter().any(|entry| entry.contains(name_disabled));
+        let not_enabled = conf_entries
+            .iter()
+            .any(|entry| entry.contains(name_disabled));
         assert!(!not_enabled);
     }
 

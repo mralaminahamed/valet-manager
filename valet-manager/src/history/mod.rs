@@ -6,8 +6,8 @@ use rusqlite::{params, Connection};
 pub struct HistoryEntry {
     pub id: i64,
     pub started_at: DateTime<Local>,
-    pub command: String,        // e.g. "php"
-    pub args: String,           // space-joined
+    pub command: String, // e.g. "php"
+    pub args: String,    // space-joined
     pub duration_ms: i64,
     pub exit_code: Option<i32>, // None = killed/no exit
     pub source: String,         // panel name or "creator"
@@ -233,7 +233,17 @@ mod tests {
     #[test]
     fn find_by_id_returns_entry() {
         let conn = fresh_conn();
-        record(&conn, Local::now(), "php", &["-v"], 12, Some(0), "panel:test", "out").unwrap();
+        record(
+            &conn,
+            Local::now(),
+            "php",
+            &["-v"],
+            12,
+            Some(0),
+            "panel:test",
+            "out",
+        )
+        .unwrap();
         let entry = find_by_id(&conn, 1).unwrap();
         assert!(entry.is_some());
         assert_eq!(entry.unwrap().command, "php");

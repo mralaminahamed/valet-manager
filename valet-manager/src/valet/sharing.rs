@@ -38,10 +38,9 @@ pub async fn start(
     };
     let _ = token; // CLIs assumed pre-authenticated
     let args_refs: Vec<&str> = cmd.1.iter().copied().collect();
-    let status = crate::creator::output_streamer::stream_command(
-        cmd.0, &args_refs, None, tx, cancel_rx,
-    )
-    .await?;
+    let status =
+        crate::creator::output_streamer::stream_command(cmd.0, &args_refs, None, tx, cancel_rx)
+            .await?;
     Ok(status.success())
 }
 

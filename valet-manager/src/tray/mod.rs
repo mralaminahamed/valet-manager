@@ -1,5 +1,8 @@
-use tray_icon::{menu::{Menu, MenuItem, PredefinedMenuItem, MenuEvent}, TrayIcon, TrayIconBuilder};
 use tray_icon::Icon;
+use tray_icon::{
+    menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem},
+    TrayIcon, TrayIconBuilder,
+};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -12,19 +15,26 @@ pub enum TrayEvent {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
-pub enum HealthState { Ok, Degraded, Down }
+pub enum HealthState {
+    Ok,
+    Degraded,
+    Down,
+}
 
 #[allow(dead_code)]
 pub fn build_icon_image(state: HealthState) -> Icon {
     // 16×16 RGBA buffer with solid color circle on transparent background.
     let (r, g, b) = match state {
-        HealthState::Ok       => (0x5D, 0xCA, 0xA5),
+        HealthState::Ok => (0x5D, 0xCA, 0xA5),
         HealthState::Degraded => (0xEF, 0x9F, 0x27),
-        HealthState::Down     => (0xE2, 0x4B, 0x4A),
+        HealthState::Down => (0xE2, 0x4B, 0x4A),
     };
-    let w = 16; let h = 16;
+    let w = 16;
+    let h = 16;
     let mut rgba = vec![0u8; w * h * 4];
-    let cx = w as f32 / 2.0; let cy = h as f32 / 2.0; let radius = 6.0;
+    let cx = w as f32 / 2.0;
+    let cy = h as f32 / 2.0;
+    let radius = 6.0;
     for y in 0..h {
         for x in 0..w {
             let dx = x as f32 + 0.5 - cx;
@@ -32,7 +42,10 @@ pub fn build_icon_image(state: HealthState) -> Icon {
             let dist = (dx * dx + dy * dy).sqrt();
             let idx = (y * w + x) * 4;
             if dist <= radius {
-                rgba[idx] = r; rgba[idx+1] = g; rgba[idx+2] = b; rgba[idx+3] = 255;
+                rgba[idx] = r;
+                rgba[idx + 1] = g;
+                rgba[idx + 2] = b;
+                rgba[idx + 3] = 255;
             }
         }
     }
@@ -40,7 +53,11 @@ pub fn build_icon_image(state: HealthState) -> Icon {
 }
 
 #[allow(dead_code)]
-pub fn build_tray(active_php: &str, php_versions: &[String], health: HealthState) -> anyhow::Result<TrayIcon> {
+pub fn build_tray(
+    active_php: &str,
+    php_versions: &[String],
+    health: HealthState,
+) -> anyhow::Result<TrayIcon> {
     let menu = Menu::new();
     let _ = menu.append(&MenuItem::new(format!("PHP: {}", active_php), false, None));
     let _ = menu.append(&PredefinedMenuItem::separator());

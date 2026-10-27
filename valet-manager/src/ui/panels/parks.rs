@@ -3,7 +3,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
 use crate::state::app_state::AppState;
-use crate::ui::theme::{Colors, accent_button, divider};
+use crate::ui::theme::{accent_button, divider, Colors};
 
 #[allow(dead_code)]
 pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) {
@@ -77,16 +77,19 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                     egui::Frame::NONE
                         .fill(Colors::CARD)
                         .corner_radius(egui::CornerRadius::same(6))
-                        .inner_margin(egui::Margin { left: 12, right: 8, top: 0, bottom: 0 })
+                        .inner_margin(egui::Margin {
+                            left: 12,
+                            right: 8,
+                            top: 0,
+                            bottom: 0,
+                        })
                         .show(ui, |ui| {
                             ui.set_min_height(32.0);
                             ui.horizontal(|ui| {
                                 ui.set_min_height(32.0);
                                 // Folder icon
                                 ui.label(
-                                    RichText::new("📁")
-                                        .color(Colors::TEXT_SECONDARY)
-                                        .size(13.0),
+                                    RichText::new("📁").color(Colors::TEXT_SECONDARY).size(13.0),
                                 );
                                 ui.add_space(6.0);
                                 // Path label — takes flex width
@@ -108,16 +111,15 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
                                         ui.add_space(4.0);
                                         let remove_btn = ui.add(
                                             egui::Button::new(
-                                                RichText::new("✕")
-                                                    .color(Colors::DANGER)
-                                                    .size(12.0),
+                                                RichText::new("✕").color(Colors::DANGER).size(12.0),
                                             )
                                             .fill(egui::Color32::TRANSPARENT)
                                             .stroke(egui::Stroke::NONE),
                                         );
                                         if remove_btn.clicked() {
-                                            let _ = cmd_tx
-                                                .try_send(AppCommand::ForgetDirectory(park.clone()));
+                                            let _ = cmd_tx.try_send(AppCommand::ForgetDirectory(
+                                                park.clone(),
+                                            ));
                                         }
                                     },
                                 );

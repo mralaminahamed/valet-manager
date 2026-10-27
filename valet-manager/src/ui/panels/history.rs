@@ -104,15 +104,10 @@ enum RowAction {
 
 fn render_header(ui: &mut egui::Ui, flex_w: f32) {
     let avail_w = ui.available_width();
-    let (rect, _) = ui.allocate_exact_size(
-        egui::vec2(avail_w, HEADER_HEIGHT),
-        egui::Sense::hover(),
-    );
-    ui.painter().rect_filled(
-        rect,
-        CornerRadius::ZERO,
-        with_alpha(Color32::BLACK, 38),
-    );
+    let (rect, _) =
+        ui.allocate_exact_size(egui::vec2(avail_w, HEADER_HEIGHT), egui::Sense::hover());
+    ui.painter()
+        .rect_filled(rect, CornerRadius::ZERO, with_alpha(Color32::BLACK, 38));
     ui.painter().hline(
         rect.x_range(),
         rect.bottom(),
@@ -159,16 +154,17 @@ fn render_row(
     expanded: bool,
 ) -> Option<RowAction> {
     let avail_w = ui.available_width();
-    let (rect, resp) = ui.allocate_exact_size(
-        egui::vec2(avail_w, ROW_HEIGHT),
-        egui::Sense::click(),
-    );
+    let (rect, resp) =
+        ui.allocate_exact_size(egui::vec2(avail_w, ROW_HEIGHT), egui::Sense::click());
     if resp.hovered() {
         ui.painter()
             .rect_filled(rect, CornerRadius::ZERO, Colors::CARD_HOVER);
     }
-    ui.painter()
-        .hline(rect.x_range(), rect.bottom(), Stroke::new(0.5, Colors::BORDER));
+    ui.painter().hline(
+        rect.x_range(),
+        rect.bottom(),
+        Stroke::new(0.5, Colors::BORDER),
+    );
 
     let mut child = ui.new_child(
         egui::UiBuilder::new()
@@ -267,7 +263,11 @@ fn render_row(
 
 fn exit_pill(ui: &mut egui::Ui, exit_code: Option<i32>) {
     let (bg, fg, text) = match exit_code {
-        Some(0) => (with_alpha(Colors::ACCENT, 30), Colors::ACCENT, "0".to_string()),
+        Some(0) => (
+            with_alpha(Colors::ACCENT, 30),
+            Colors::ACCENT,
+            "0".to_string(),
+        ),
         Some(c) => (
             with_alpha(Colors::DANGER, 30),
             Colors::DANGER,

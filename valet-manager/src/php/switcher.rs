@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use std::path::Path;
 use crate::php::privilege::{run_privileged, HelperRequest};
 use crate::valet::variant::ValetPaths;
+use std::path::Path;
 
 pub async fn switch_global(version: &str, _valet_paths: &ValetPaths) -> anyhow::Result<()> {
     let valet_result = tokio::process::Command::new("valet")
@@ -15,10 +15,16 @@ pub async fn switch_global(version: &str, _valet_paths: &ValetPaths) -> anyhow::
         Ok(out) => !out.status.success(),
     };
     if needs_fallback {
-        let _resp = run_privileged(&HelperRequest::SwitchPhp { version: version.to_string() }).await?;
+        let _resp = run_privileged(&HelperRequest::SwitchPhp {
+            version: version.to_string(),
+        })
+        .await?;
     }
 
-    let _resp = run_privileged(&HelperRequest::RestartFpm { version: version.to_string() }).await?;
+    let _resp = run_privileged(&HelperRequest::RestartFpm {
+        version: version.to_string(),
+    })
+    .await?;
 
     Ok(())
 }
@@ -30,7 +36,11 @@ pub async fn isolate_site(site_path: &Path, version: &str) -> anyhow::Result<()>
     if let Some(site_name) = site_path.file_name() {
         let site_name_str = site_name.to_string_lossy();
         let _ = tokio::process::Command::new("valet")
-            .args(["isolate", &format!("php@{}", version), &format!("--site={}", site_name_str)])
+            .args([
+                "isolate",
+                &format!("php@{}", version),
+                &format!("--site={}", site_name_str),
+            ])
             .output()
             .await;
     }

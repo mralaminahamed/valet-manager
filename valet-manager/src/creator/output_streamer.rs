@@ -1,8 +1,8 @@
+use chrono::{DateTime, Local};
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::mpsc::Sender;
-use chrono::{DateTime, Local};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(dead_code)]
@@ -60,12 +60,14 @@ pub async fn stream_command(
             .spawn()?
     };
 
-    let stdout = child.stdout.take().ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::Other, "failed to pipe stdout")
-    })?;
-    let stderr = child.stderr.take().ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::Other, "failed to pipe stderr")
-    })?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "failed to pipe stdout"))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "failed to pipe stderr"))?;
 
     let tx_stdout = tx.clone();
     let stdout_task = tokio::spawn(async move {

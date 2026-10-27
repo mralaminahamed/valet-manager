@@ -3,7 +3,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::commands::AppCommand;
 use crate::state::app_state::AppState;
-use crate::ui::theme::{Colors, accent_button, ghost_button};
+use crate::ui::theme::{accent_button, ghost_button, Colors};
 
 pub fn render(ctx: &egui::Context, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
     if !state.ui.pma_open {

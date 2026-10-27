@@ -139,7 +139,11 @@ pub async fn refresh(
         tools.insert("node_lts".into(), v);
     }
 
-    let php = if php_v.is_empty() { defaults.php } else { php_v };
+    let php = if php_v.is_empty() {
+        defaults.php
+    } else {
+        php_v
+    };
 
     let registry = VersionRegistry {
         last_refreshed: Some(chrono::Utc::now()),

@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppearanceConfig {
@@ -96,21 +96,51 @@ pub struct AppConfig {
     pub composer_binary: String,
 }
 
-fn default_editor() -> String { "code".to_string() }
-fn default_terminal() -> String { "gnome-terminal".to_string() }
-fn default_file_manager() -> String { "nautilus".to_string() }
-fn default_theme() -> String { "dark".to_string() }
-fn default_font_size() -> f32 { 14.0 }
-fn default_poll_interval() -> u64 { 5 }
-fn default_debounce() -> u64 { 500 }
-fn default_parent_dir() -> String { "~/Sites".to_string() }
-fn default_ttl() -> u64 { 24 }
-fn default_true() -> bool { true }
-fn default_php() -> String { "8.3".to_string() }
-fn default_memory() -> String { "512M".to_string() }
-fn default_config_dir() -> String { "~/.config/valet-manager".to_string() }
-fn default_log_dir() -> String { "~/.local/share/valet-manager/logs".to_string() }
-fn default_composer() -> String { "/usr/local/bin/composer".to_string() }
+fn default_editor() -> String {
+    "code".to_string()
+}
+fn default_terminal() -> String {
+    "gnome-terminal".to_string()
+}
+fn default_file_manager() -> String {
+    "nautilus".to_string()
+}
+fn default_theme() -> String {
+    "dark".to_string()
+}
+fn default_font_size() -> f32 {
+    14.0
+}
+fn default_poll_interval() -> u64 {
+    5
+}
+fn default_debounce() -> u64 {
+    500
+}
+fn default_parent_dir() -> String {
+    "~/Sites".to_string()
+}
+fn default_ttl() -> u64 {
+    24
+}
+fn default_true() -> bool {
+    true
+}
+fn default_php() -> String {
+    "8.3".to_string()
+}
+fn default_memory() -> String {
+    "512M".to_string()
+}
+fn default_config_dir() -> String {
+    "~/.config/valet-manager".to_string()
+}
+fn default_log_dir() -> String {
+    "~/.local/share/valet-manager/logs".to_string()
+}
+fn default_composer() -> String {
+    "/usr/local/bin/composer".to_string()
+}
 
 impl Default for AppConfig {
     fn default() -> Self {
@@ -233,7 +263,10 @@ mod tests {
         let restored: AppConfig = toml::from_str(&serialized).unwrap();
         assert_eq!(cfg.editor_command, restored.editor_command);
         assert!((cfg.font_size - restored.font_size).abs() < f32::EPSILON);
-        assert_eq!(cfg.service_poll_interval_secs, restored.service_poll_interval_secs);
+        assert_eq!(
+            cfg.service_poll_interval_secs,
+            restored.service_poll_interval_secs
+        );
     }
 
     #[test]

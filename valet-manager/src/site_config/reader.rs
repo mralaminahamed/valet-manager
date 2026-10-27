@@ -7,7 +7,8 @@ use super::models::SiteConfig;
 
 pub fn centralized_path(site_name: &str) -> PathBuf {
     let base = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-    base.join(".config/valet-manager/sites").join(format!("{site_name}.toml"))
+    base.join(".config/valet-manager/sites")
+        .join(format!("{site_name}.toml"))
 }
 
 pub fn site_root_path(site_path: &Path) -> PathBuf {
@@ -36,7 +37,9 @@ mod tests {
     #[test]
     fn centralized_path_is_under_home() {
         let p = centralized_path("myapp");
-        assert!(p.to_string_lossy().contains("valet-manager/sites/myapp.toml"));
+        assert!(p
+            .to_string_lossy()
+            .contains("valet-manager/sites/myapp.toml"));
     }
 
     #[test]

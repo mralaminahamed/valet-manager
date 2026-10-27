@@ -62,8 +62,7 @@ pub fn render(sections: &[IniSection]) -> String {
 }
 
 pub fn validate_value(key: &str, value: &str) -> Option<String> {
-    let is_memory_key =
-        key.ends_with("_size") || key.ends_with("_limit");
+    let is_memory_key = key.ends_with("_size") || key.ends_with("_limit");
 
     if is_memory_key {
         let memory_re = Regex::new(r"^\d+[KMGBkmgb]?$").unwrap();
@@ -119,7 +118,10 @@ mod tests {
     #[test]
     fn parse_section_header() {
         let sections = parse("[PHP]\nfoo = bar");
-        let php = sections.iter().find(|s| s.name == "PHP").expect("PHP section");
+        let php = sections
+            .iter()
+            .find(|s| s.name == "PHP")
+            .expect("PHP section");
         assert_eq!(php.entries.len(), 1);
         assert_eq!(php.entries[0].key, "foo");
         assert_eq!(php.entries[0].value, "bar");

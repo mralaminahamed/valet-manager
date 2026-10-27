@@ -9,10 +9,18 @@ pub async fn fetch_lts(client: &reqwest::Client) -> anyhow::Result<ToolVersionIn
         .error_for_status()?
         .json()
         .await?;
-    let arr = j.as_array().ok_or_else(|| anyhow::anyhow!("not an array"))?;
+    let arr = j
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("not an array"))?;
     for entry in arr {
-        let lts = entry.get("lts").cloned().unwrap_or(serde_json::Value::Bool(false));
-        if matches!(lts, serde_json::Value::Bool(false) | serde_json::Value::Null) {
+        let lts = entry
+            .get("lts")
+            .cloned()
+            .unwrap_or(serde_json::Value::Bool(false));
+        if matches!(
+            lts,
+            serde_json::Value::Bool(false) | serde_json::Value::Null
+        ) {
             continue;
         }
         let ver = entry.get("version").and_then(|v| v.as_str()).unwrap_or("");
