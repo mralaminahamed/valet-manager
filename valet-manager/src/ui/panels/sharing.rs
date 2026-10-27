@@ -32,11 +32,11 @@ fn render_tool_card(
 ) -> bool {
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(200.0, 80.0), egui::Sense::click());
     let (fill, stroke) = if selected {
-        (Colors::ACCENT_DARK, Stroke::new(1.5, Colors::ACCENT))
+        (Colors::ACCENT_DARK, Stroke::new(1.5_f32, Colors::ACCENT))
     } else if resp.hovered() {
-        (Colors::CARD_HOVER, Stroke::new(0.5, Colors::BORDER_MED))
+        (Colors::CARD_HOVER, Stroke::new(0.5_f32, Colors::BORDER_MED))
     } else {
-        (Colors::CARD, Stroke::new(0.5, Colors::BORDER_MED))
+        (Colors::CARD, Stroke::new(0.5_f32, Colors::BORDER_MED))
     };
 
     if ui.is_rect_visible(rect) {

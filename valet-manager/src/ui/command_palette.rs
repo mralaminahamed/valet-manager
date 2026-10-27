@@ -375,7 +375,7 @@ pub fn render(ctx: &egui::Context, state: &mut PaletteState) -> Option<AppComman
             Frame::NONE
                 .fill(Colors::DEEP_BG)
                 .corner_radius(CornerRadius::same(10))
-                .stroke(Stroke::new(0.5, Colors::BORDER_MED))
+                .stroke(Stroke::new(0.5_f32, Colors::BORDER_MED))
                 .inner_margin(Margin {
                     left: 0,
                     right: 0,
@@ -407,7 +407,7 @@ pub fn render(ctx: &egui::Context, state: &mut PaletteState) -> Option<AppComman
                     ui.painter().hline(
                         line_rect.x_range(),
                         line_rect.center().y,
-                        Stroke::new(0.5, Colors::BORDER),
+                        Stroke::new(0.5_f32, Colors::BORDER),
                     );
 
                     // Results

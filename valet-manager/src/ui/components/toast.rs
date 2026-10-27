@@ -79,7 +79,7 @@ pub fn render_toasts(ctx: &egui::Context, toasts: &mut Vec<Toast>) {
                     Frame::NONE
                         .fill(with_alpha(Colors::CARD, alpha))
                         .corner_radius(CornerRadius::same(6))
-                        .stroke(Stroke::new(0.5, Colors::BORDER_MED))
+                        .stroke(Stroke::new(0.5_f32, Colors::BORDER_MED))
                         .inner_margin(Margin {
                             left: 0,
                             right: 12,

@@ -258,7 +258,7 @@ fn code_hint(ui: &mut egui::Ui, code: &str) {
     Frame::NONE
         .fill(Colors::DEEP_BG)
         .corner_radius(CornerRadius::same(4))
-        .stroke(Stroke::new(0.5, Colors::BORDER_MED))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER_MED))
         .inner_margin(Margin {
             left: 8,
             right: 8,

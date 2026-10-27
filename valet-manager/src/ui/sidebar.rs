@@ -42,7 +42,7 @@ pub fn render(
                 painter.rect_stroke(
                     icon_rect,
                     egui::CornerRadius::same(7),
-                    egui::Stroke::new(0.5, with_alpha(Colors::ACCENT, 38)),
+                    egui::Stroke::new(0.5_f32, with_alpha(Colors::ACCENT, 38)),
                     egui::StrokeKind::Inside,
                 );
                 paint_v_mark(painter, icon_rect);
@@ -227,7 +227,7 @@ fn screen_nav_item(
             ui.painter().rect_stroke(
                 rect,
                 egui::CornerRadius::same(4),
-                Stroke::new(1.0, with_alpha(Colors::ACCENT, 51)),
+                Stroke::new(1.0_f32, with_alpha(Colors::ACCENT, 51)),
                 egui::StrokeKind::Inside,
             );
         } else if resp.hovered() {

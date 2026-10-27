@@ -89,7 +89,7 @@ fn env_preview(ui: &mut egui::Ui, body: &str) {
     Frame::NONE
         .fill(Colors::DEEP_BG)
         .corner_radius(CornerRadius::same(6))
-        .stroke(Stroke::new(0.5, Colors::BORDER))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER))
         .inner_margin(Margin {
             left: 10,
             right: 10,

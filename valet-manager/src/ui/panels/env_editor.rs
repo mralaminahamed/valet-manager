@@ -105,7 +105,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 } else {
                     Colors::CARD
                 })
-                .stroke(Stroke::new(0.5, Colors::BORDER_MED))
+                .stroke(Stroke::new(0.5_f32, Colors::BORDER_MED))
                 .corner_radius(4.0)
                 .min_size(egui::vec2(0.0, 26.0)),
             );
@@ -128,7 +128,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
             Frame::NONE
                 .fill(Colors::CARD)
                 .corner_radius(CornerRadius::same(8))
-                .stroke(Stroke::new(0.5, Colors::BORDER))
+                .stroke(Stroke::new(0.5_f32, Colors::BORDER))
                 .inner_margin(Margin { left: 12, right: 12, top: 10, bottom: 10 })
                 .show(ui, |ui| {
                     let any_matching = state.env_entries.iter().any(|e| matches!(e, EnvEntry::Kv { key, .. } if env_file::group_key(key) == active_group));

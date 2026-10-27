@@ -91,7 +91,7 @@ pub fn render(ui: &mut egui::Ui, state: &AppState, cmd_tx: &Sender<AppCommand>) 
         Frame::NONE
             .fill(Colors::CARD)
             .corner_radius(CornerRadius::same(6))
-            .stroke(Stroke::new(0.5, Colors::BORDER))
+            .stroke(Stroke::new(0.5_f32, Colors::BORDER))
             .show(ui, |ui| {
                 ui.set_width(table_w);
                 let fixed = COL_REQUIRES + COL_IN_USE + COL_STATUS + COL_ACTIONS;
@@ -121,7 +121,7 @@ fn render_header(ui: &mut egui::Ui, flex_w: f32) {
     ui.painter().hline(
         rect.x_range(),
         rect.bottom(),
-        Stroke::new(0.5, Colors::BORDER),
+        Stroke::new(0.5_f32, Colors::BORDER),
     );
 
     let mut child = ui.new_child(
@@ -174,7 +174,7 @@ fn render_row(ui: &mut egui::Ui, c: &SiteCompat, flex_w: f32, cmd_tx: &Sender<Ap
     ui.painter().hline(
         rect.x_range(),
         rect.bottom(),
-        Stroke::new(0.5, Colors::BORDER),
+        Stroke::new(0.5_f32, Colors::BORDER),
     );
 
     let mut child = ui.new_child(

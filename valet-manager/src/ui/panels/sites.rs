@@ -79,7 +79,7 @@ fn stat_card(ui: &mut egui::Ui, icon: &str, value: &str, label: &str) {
             top: 10,
             bottom: 10,
         })
-        .stroke(Stroke::new(0.5, Colors::BORDER))
+        .stroke(Stroke::new(0.5_f32, Colors::BORDER))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 // Icon box
@@ -142,7 +142,7 @@ const ROW_PAD: f32 = 14.0;
 // ── Table header ─────────────────────────────────────────────────────────────
 fn table_header(ui: &mut egui::Ui) {
     let header_bg = with_alpha(Color32::BLACK, 38);
-    let border = Stroke::new(0.5, Colors::BORDER);
+    let border = Stroke::new(0.5_f32, Colors::BORDER);
 
     let avail_w = ui.available_width();
     let inner_w = avail_w - 2.0 * ROW_PAD;
@@ -238,7 +238,7 @@ fn render_site_row(
     ui.painter().hline(
         row_rect.x_range(),
         row_rect.bottom(),
-        Stroke::new(0.5, Colors::BORDER),
+        Stroke::new(0.5_f32, Colors::BORDER),
     );
 
     let inner_rect = row_rect.shrink2(egui::vec2(ROW_PAD, 0.0));
@@ -739,7 +739,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                     ui.painter().rect_stroke(
                         rect,
                         CornerRadius::same(5),
-                        Stroke::new(0.5, Colors::ACCENT),
+                        Stroke::new(0.5_f32, Colors::ACCENT),
                         egui::StrokeKind::Inside,
                     );
                 }
@@ -798,7 +798,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
         Frame::NONE
             .fill(Colors::CARD)
             .corner_radius(CornerRadius::same(6))
-            .stroke(Stroke::new(0.5, Colors::BORDER))
+            .stroke(Stroke::new(0.5_f32, Colors::BORDER))
             .show(ui, |ui| {
                 ui.set_clip_rect(ui.max_rect());
                 ui.set_width(table_width);
