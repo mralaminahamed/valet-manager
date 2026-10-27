@@ -29,7 +29,7 @@ App Creator: 30+ frameworks with one-click scaffolding
 PHPMon is macOS-only. Valet Manager is Linux-native.
 Beyond platform, Valet Manager adds an App Creator wizard, database manager,
 Artisan runner, per-site phpMyAdmin, multi-server support, and a command palette.
-See [COMPARISON.md](COMPARISON.md) for the full feature-by-feature breakdown.
+See [COMPARISON.md](../source/phpmon-comparison.md) for the full feature-by-feature breakdown.
 
 ---
 
@@ -96,7 +96,7 @@ and development environment settings.
 | Layer | Choice |
 |---|---|
 | Language | Rust 2021 edition (stable) |
-| GUI | egui 0.31 + eframe (wgpu backend) |
+| GUI | egui 0.34.2 + eframe (wgpu backend) |
 | Async | tokio (full features) |
 | Database (history) | SQLite via rusqlite |
 | File watching | notify (inotify) |
@@ -129,7 +129,7 @@ Implement: Valet Manager.html
 | [ROADMAP.md](ROADMAP.md) | 12-phase development timeline |
 | [FEATURES.md](FEATURES.md) | Complete feature inventory (45 features) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Full technical architecture |
-| [COMPARISON.md](COMPARISON.md) | PHPMon vs Valet Manager |
+| [COMPARISON.md](../source/phpmon-comparison.md) | PHPMon vs Valet Manager |
 | [design/DESIGN-SYSTEM.md](design/DESIGN-SYSTEM.md) | Colour tokens, typography, egui components |
 | [specs/SITE-CONFIG.md](specs/SITE-CONFIG.md) | Per-site config data models and I/O |
 | [specs/PHPMYADMIN.md](specs/PHPMYADMIN.md) | phpMyAdmin per-site service spec |
