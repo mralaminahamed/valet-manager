@@ -1,3 +1,7 @@
+// Tests and a few builders assign fields after `Default::default()`; rewriting each as
+// struct-update syntax would add churn without changing behaviour.
+#![allow(clippy::field_reassign_with_default)]
+
 mod app;
 mod artisan;
 mod cli_tools;

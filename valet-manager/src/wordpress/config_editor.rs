@@ -40,9 +40,7 @@ pub(crate) fn parse_constants(content: &str) -> HashMap<String, String> {
 /// Render a `define('NAME', value);` line. Booleans/integers are unquoted; everything else is single-quoted.
 pub fn format_constant(name: &str, value: &str) -> String {
     let trimmed = value.trim();
-    if trimmed == "true" || trimmed == "false" {
-        format!("define('{name}', {trimmed});")
-    } else if trimmed.parse::<i64>().is_ok() {
+    if trimmed == "true" || trimmed == "false" || trimmed.parse::<i64>().is_ok() {
         format!("define('{name}', {trimmed});")
     } else {
         // Escape single quotes inside.

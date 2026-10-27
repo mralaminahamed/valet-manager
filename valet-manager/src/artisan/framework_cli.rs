@@ -71,7 +71,7 @@ mod tests {
     use super::*;
     use crate::ui::DetectedFramework;
     use crate::valet::site_scanner::{SiteType, ValetSite};
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     fn make_site_dir() -> PathBuf {
         use rand::Rng;
@@ -81,7 +81,7 @@ mod tests {
         dir
     }
 
-    fn touch(dir: &PathBuf, rel: &str) {
+    fn touch(dir: &Path, rel: &str) {
         let p = dir.join(rel);
         if let Some(parent) = p.parent() {
             std::fs::create_dir_all(parent).unwrap();

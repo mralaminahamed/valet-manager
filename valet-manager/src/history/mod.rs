@@ -46,7 +46,8 @@ pub fn open() -> rusqlite::Result<Connection> {
     Ok(conn)
 }
 
-#[allow(dead_code)]
+// The columns of one history row are passed individually.
+#[allow(dead_code, clippy::too_many_arguments)]
 pub fn record(
     conn: &Connection,
     started: DateTime<Local>,

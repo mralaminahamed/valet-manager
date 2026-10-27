@@ -280,7 +280,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(dir);
     }
 
-    fn create_file(dir: &PathBuf, rel: &str) {
+    fn create_file(dir: &Path, rel: &str) {
         let path = dir.join(rel);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).unwrap();
@@ -288,7 +288,7 @@ mod tests {
         std::fs::write(&path, "").unwrap();
     }
 
-    fn create_dir(dir: &PathBuf, rel: &str) {
+    fn create_dir(dir: &Path, rel: &str) {
         std::fs::create_dir_all(dir.join(rel)).unwrap();
     }
 
