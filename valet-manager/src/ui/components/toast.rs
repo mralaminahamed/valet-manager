@@ -167,6 +167,6 @@ mod tests {
         // Just verify that opacity stays in [0,1] for any reasonable elapsed
         let t = Toast::new("x", ToastType::Info);
         let o = t.opacity();
-        assert!(o >= 0.0 && o <= 1.0);
+        assert!((0.0..=1.0).contains(&o));
     }
 }

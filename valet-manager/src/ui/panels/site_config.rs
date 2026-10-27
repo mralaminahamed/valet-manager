@@ -678,14 +678,14 @@ fn render_server_tab(
         ui.horizontal_wrapped(|ui| {
             for t in &available {
                 let mut cur = draft.server.server_type;
-                if ui.radio_value(&mut cur, *t, t.display_name()).clicked() {
-                    if draft.server.server_type != cur {
-                        draft.server.server_type = cur;
-                        to_send.push(AppCommand::SetSiteHttpServer {
-                            site: selected.to_string(),
-                            server_type: cur,
-                        });
-                    }
+                if ui.radio_value(&mut cur, *t, t.display_name()).clicked()
+                    && draft.server.server_type != cur
+                {
+                    draft.server.server_type = cur;
+                    to_send.push(AppCommand::SetSiteHttpServer {
+                        site: selected.to_string(),
+                        server_type: cur,
+                    });
                 }
             }
         });
@@ -979,7 +979,7 @@ fn render_pma_tab(
                     ghost_button(ui, label)
                 };
                 if resp.clicked() && !active {
-                    draft.phpmyadmin.access_mode = mode.clone();
+                    draft.phpmyadmin.access_mode = mode;
                     to_send.push(AppCommand::SetPmaAccessMode {
                         site: site.to_string(),
                         mode,
@@ -1007,7 +1007,7 @@ fn render_pma_tab(
                     ghost_button(ui, label)
                 };
                 if resp.clicked() && !active {
-                    draft.phpmyadmin.db_scope = scope.clone();
+                    draft.phpmyadmin.db_scope = scope;
                     to_send.push(AppCommand::SetPmaDbScope {
                         site: site.to_string(),
                         scope,

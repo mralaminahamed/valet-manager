@@ -416,7 +416,7 @@ fn render_create_tab(ui: &mut egui::Ui, state: &mut AppState, _cmd_tx: &Sender<A
                     ui.painter().text(
                         egui::pos2(rect.left() + 10.0, rect.center().y - 7.0),
                         egui::Align2::LEFT_CENTER,
-                        &format!("{} {}", name, ver),
+                        format!("{} {}", name, ver),
                         egui::FontId::proportional(11.5),
                         if is_active {
                             Colors::ACCENT

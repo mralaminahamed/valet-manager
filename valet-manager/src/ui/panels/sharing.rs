@@ -114,10 +114,7 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
     // ── Auth token ──────────────────────────────────────────────────────
     section_label(ui, "Auth token (optional)");
     let tool_label = state.share_tool.label().to_string();
-    let token_entry = state
-        .share_tokens
-        .entry(tool_label.clone())
-        .or_insert_with(String::new);
+    let token_entry = state.share_tokens.entry(tool_label.clone()).or_default();
     ui.horizontal(|ui| {
         ui.add_space(22.0);
         let avail = ui.available_width() - 22.0;

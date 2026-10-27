@@ -26,12 +26,12 @@ pub fn render_path_alias_block(
     let mut s = String::new();
     s.push_str(&format!("location {} {{\n", trimmed));
     s.push_str(&format!("    alias {};\n", pma_install_path.display()));
-    s.push_str(&format!("    index index.php;\n"));
+    s.push_str("    index index.php;\n");
     s.push_str(&format!(
         "    try_files $uri $uri/ {}/index.php?$args;\n",
         trimmed
     ));
-    s.push_str("\n");
+    s.push('\n');
     s.push_str(&format!("    location ~ ^{}/(.+\\.php)$ {{\n", trimmed));
     s.push_str(&format!(
         "        alias {}/$1;\n",

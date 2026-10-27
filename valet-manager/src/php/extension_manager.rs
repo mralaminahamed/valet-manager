@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn ext_enabled_check_logic() {
-        let conf_entries = vec![
+        let conf_entries = [
             "20-curl.ini".to_string(),
             "10-opcache.ini".to_string(),
             "20-mbstring.ini".to_string(),

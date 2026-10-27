@@ -437,217 +437,6 @@ fn render_site_row(
     action
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn docs_url_for_laravel() {
-        assert_eq!(
-            framework_docs_url(&DetectedFramework::Laravel),
-            "https://laravel.com/docs"
-        );
-    }
-
-    #[test]
-    fn docs_url_for_wordpress_and_bedrock_share() {
-        assert_eq!(
-            framework_docs_url(&DetectedFramework::WordPress),
-            framework_docs_url(&DetectedFramework::Bedrock),
-        );
-    }
-
-    #[test]
-    fn docs_url_covers_all_22_variants() {
-        for fw in DetectedFramework::all_variants() {
-            let u = framework_docs_url(&fw);
-            assert!(u.starts_with("http"), "{:?} = {:?}", fw, u);
-        }
-    }
-
-    fn make_site(
-        name: &str,
-        status: crate::valet::site_scanner::SiteStatus,
-        secured: bool,
-    ) -> crate::valet::site_scanner::ValetSite {
-        use crate::valet::site_scanner::SiteType;
-        ValetSite {
-            name: name.to_string(),
-            domain: format!("{}.test", name),
-            path: std::path::PathBuf::from(format!("/tmp/{}", name)),
-            site_type: SiteType::Parked,
-            framework: DetectedFramework::Unknown,
-            php_version: None,
-            is_secured: secured,
-            ssl_expiry: None,
-            tls_expiry_days: None,
-            is_favorite: false,
-            status,
-            last_hit: None,
-            proxy_target: None,
-        }
-    }
-
-    #[test]
-    fn filter_running_only() {
-        use crate::state::app_state::SiteStatusFilter;
-        use crate::valet::site_scanner::SiteStatus;
-        let sites = vec![
-            make_site("a", SiteStatus::Running, true),
-            make_site("b", SiteStatus::Stopped, false),
-            make_site("c", SiteStatus::Failed, false),
-        ];
-        let filter = SiteStatusFilter::Running;
-        let filtered: Vec<_> = sites
-            .iter()
-            .filter(|s| match filter {
-                SiteStatusFilter::All => true,
-                SiteStatusFilter::Running => s.status == SiteStatus::Running,
-                SiteStatusFilter::Stopped => s.status == SiteStatus::Stopped,
-                SiteStatusFilter::Failed => s.status == SiteStatus::Failed,
-            })
-            .collect();
-        assert_eq!(filtered.len(), 1);
-        assert_eq!(filtered[0].name, "a");
-    }
-
-    #[test]
-    fn stat_counts() {
-        use crate::valet::site_scanner::SiteStatus;
-        let sites = vec![
-            make_site("a", SiteStatus::Running, true),
-            make_site("b", SiteStatus::Running, false),
-            make_site("c", SiteStatus::Failed, false),
-            make_site("d", SiteStatus::Stopped, false),
-        ];
-        let running = sites
-            .iter()
-            .filter(|s| s.status == SiteStatus::Running)
-            .count();
-        let failed = sites
-            .iter()
-            .filter(|s| s.status == SiteStatus::Failed)
-            .count();
-        let secured = sites.iter().filter(|s| s.is_secured).count();
-        assert_eq!(running, 2);
-        assert_eq!(failed, 1);
-        assert_eq!(secured, 1);
-    }
-
-    #[test]
-    fn last_hit_some_shows_value() {
-        let mut site = make_site("x", crate::valet::site_scanner::SiteStatus::Running, false);
-        site.last_hit = Some("2m ago".into());
-        let text = site.last_hit.as_deref().unwrap_or("—");
-        assert_eq!(text, "2m ago");
-    }
-
-    #[test]
-    fn last_hit_none_shows_dash() {
-        let site = make_site("x", crate::valet::site_scanner::SiteStatus::Running, false);
-        let text = site.last_hit.as_deref().unwrap_or("—");
-        assert_eq!(text, "—");
-    }
-
-    #[test]
-    fn favorites_sort_before_non_favorites() {
-        use crate::valet::site_scanner::SiteStatus;
-        let mut sites = vec![
-            make_site("alpha", SiteStatus::Running, false),
-            make_site("beta", SiteStatus::Running, false),
-            make_site("charlie", SiteStatus::Running, false),
-        ];
-        sites[2].is_favorite = true; // charlie is favorite
-        sites.sort_by(|a, b| b.is_favorite.cmp(&a.is_favorite).then(a.name.cmp(&b.name)));
-        assert_eq!(sites[0].name, "charlie"); // favorite first
-        assert_eq!(sites[1].name, "alpha"); // then alphabetical
-        assert_eq!(sites[2].name, "beta");
-    }
-
-    #[test]
-    fn toggle_favorite_flips_flag() {
-        use crate::valet::site_scanner::SiteStatus;
-        let mut sites = vec![make_site("mysite", SiteStatus::Running, false)];
-        assert!(!sites[0].is_favorite);
-        if let Some(s) = sites.iter_mut().find(|s| s.name == "mysite") {
-            s.is_favorite = !s.is_favorite;
-        }
-        assert!(sites[0].is_favorite);
-        // toggle back
-        if let Some(s) = sites.iter_mut().find(|s| s.name == "mysite") {
-            s.is_favorite = !s.is_favorite;
-        }
-        assert!(!sites[0].is_favorite);
-    }
-
-    #[test]
-    fn filter_chips_all_variants_covered() {
-        use crate::state::app_state::SiteStatusFilter;
-        use crate::valet::site_scanner::SiteStatus;
-        let sites = vec![
-            make_site("a", SiteStatus::Running, false),
-            make_site("b", SiteStatus::Stopped, false),
-            make_site("c", SiteStatus::Failed, false),
-        ];
-        let apply = |f: SiteStatusFilter| -> Vec<&str> {
-            sites
-                .iter()
-                .filter(|s| match f {
-                    SiteStatusFilter::All => true,
-                    SiteStatusFilter::Running => s.status == SiteStatus::Running,
-                    SiteStatusFilter::Stopped => s.status == SiteStatus::Stopped,
-                    SiteStatusFilter::Failed => s.status == SiteStatus::Failed,
-                })
-                .map(|s| s.name.as_str())
-                .collect()
-        };
-        assert_eq!(apply(SiteStatusFilter::All), vec!["a", "b", "c"]);
-        assert_eq!(apply(SiteStatusFilter::Running), vec!["a"]);
-        assert_eq!(apply(SiteStatusFilter::Stopped), vec!["b"]);
-        assert_eq!(apply(SiteStatusFilter::Failed), vec!["c"]);
-    }
-
-    #[test]
-    fn search_filters_by_name_and_domain() {
-        use crate::valet::site_scanner::SiteStatus;
-        let sites = vec![
-            make_site("easycommerce", SiteStatus::Running, false),
-            make_site("laravel-app", SiteStatus::Running, false),
-        ];
-        let query = "easy";
-        let matched: Vec<&str> = sites
-            .iter()
-            .filter(|s| s.name.contains(query) || s.domain.contains(query))
-            .map(|s| s.name.as_str())
-            .collect();
-        assert_eq!(matched, vec!["easycommerce"]);
-    }
-
-    #[test]
-    fn status_color_varies_by_status() {
-        use crate::valet::site_scanner::SiteStatus;
-        assert_ne!(
-            status_color(&SiteStatus::Running),
-            status_color(&SiteStatus::Failed)
-        );
-        assert_ne!(
-            status_color(&SiteStatus::Running),
-            status_color(&SiteStatus::Stopped)
-        );
-    }
-
-    #[test]
-    fn tls_color_danger_under_7_days() {
-        use crate::ui::theme::Colors;
-        let color = match Some(3u32) {
-            Some(d) if d < 7 => Colors::DANGER,
-            Some(d) if d < 30 => Colors::WARNING,
-            _ => Colors::ACCENT,
-        };
-        assert_eq!(color, Colors::DANGER);
-    }
-}
-
 // ── Public entry point ───────────────────────────────────────────────────────
 #[allow(dead_code)]
 pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppCommand>) {
@@ -889,5 +678,216 @@ pub fn render(ui: &mut egui::Ui, state: &mut AppState, cmd_tx: &Sender<AppComman
                 state.ui.shell_open = true;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn docs_url_for_laravel() {
+        assert_eq!(
+            framework_docs_url(&DetectedFramework::Laravel),
+            "https://laravel.com/docs"
+        );
+    }
+
+    #[test]
+    fn docs_url_for_wordpress_and_bedrock_share() {
+        assert_eq!(
+            framework_docs_url(&DetectedFramework::WordPress),
+            framework_docs_url(&DetectedFramework::Bedrock),
+        );
+    }
+
+    #[test]
+    fn docs_url_covers_all_22_variants() {
+        for fw in DetectedFramework::all_variants() {
+            let u = framework_docs_url(&fw);
+            assert!(u.starts_with("http"), "{:?} = {:?}", fw, u);
+        }
+    }
+
+    fn make_site(
+        name: &str,
+        status: crate::valet::site_scanner::SiteStatus,
+        secured: bool,
+    ) -> crate::valet::site_scanner::ValetSite {
+        use crate::valet::site_scanner::SiteType;
+        ValetSite {
+            name: name.to_string(),
+            domain: format!("{}.test", name),
+            path: std::path::PathBuf::from(format!("/tmp/{}", name)),
+            site_type: SiteType::Parked,
+            framework: DetectedFramework::Unknown,
+            php_version: None,
+            is_secured: secured,
+            ssl_expiry: None,
+            tls_expiry_days: None,
+            is_favorite: false,
+            status,
+            last_hit: None,
+            proxy_target: None,
+        }
+    }
+
+    #[test]
+    fn filter_running_only() {
+        use crate::state::app_state::SiteStatusFilter;
+        use crate::valet::site_scanner::SiteStatus;
+        let sites = [
+            make_site("a", SiteStatus::Running, true),
+            make_site("b", SiteStatus::Stopped, false),
+            make_site("c", SiteStatus::Failed, false),
+        ];
+        let filter = SiteStatusFilter::Running;
+        let filtered: Vec<_> = sites
+            .iter()
+            .filter(|s| match filter {
+                SiteStatusFilter::All => true,
+                SiteStatusFilter::Running => s.status == SiteStatus::Running,
+                SiteStatusFilter::Stopped => s.status == SiteStatus::Stopped,
+                SiteStatusFilter::Failed => s.status == SiteStatus::Failed,
+            })
+            .collect();
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].name, "a");
+    }
+
+    #[test]
+    fn stat_counts() {
+        use crate::valet::site_scanner::SiteStatus;
+        let sites = [
+            make_site("a", SiteStatus::Running, true),
+            make_site("b", SiteStatus::Running, false),
+            make_site("c", SiteStatus::Failed, false),
+            make_site("d", SiteStatus::Stopped, false),
+        ];
+        let running = sites
+            .iter()
+            .filter(|s| s.status == SiteStatus::Running)
+            .count();
+        let failed = sites
+            .iter()
+            .filter(|s| s.status == SiteStatus::Failed)
+            .count();
+        let secured = sites.iter().filter(|s| s.is_secured).count();
+        assert_eq!(running, 2);
+        assert_eq!(failed, 1);
+        assert_eq!(secured, 1);
+    }
+
+    #[test]
+    fn last_hit_some_shows_value() {
+        let mut site = make_site("x", crate::valet::site_scanner::SiteStatus::Running, false);
+        site.last_hit = Some("2m ago".into());
+        let text = site.last_hit.as_deref().unwrap_or("—");
+        assert_eq!(text, "2m ago");
+    }
+
+    #[test]
+    fn last_hit_none_shows_dash() {
+        let site = make_site("x", crate::valet::site_scanner::SiteStatus::Running, false);
+        let text = site.last_hit.as_deref().unwrap_or("—");
+        assert_eq!(text, "—");
+    }
+
+    #[test]
+    fn favorites_sort_before_non_favorites() {
+        use crate::valet::site_scanner::SiteStatus;
+        let mut sites = [
+            make_site("alpha", SiteStatus::Running, false),
+            make_site("beta", SiteStatus::Running, false),
+            make_site("charlie", SiteStatus::Running, false),
+        ];
+        sites[2].is_favorite = true; // charlie is favorite
+        sites.sort_by(|a, b| b.is_favorite.cmp(&a.is_favorite).then(a.name.cmp(&b.name)));
+        assert_eq!(sites[0].name, "charlie"); // favorite first
+        assert_eq!(sites[1].name, "alpha"); // then alphabetical
+        assert_eq!(sites[2].name, "beta");
+    }
+
+    #[test]
+    fn toggle_favorite_flips_flag() {
+        use crate::valet::site_scanner::SiteStatus;
+        let mut sites = [make_site("mysite", SiteStatus::Running, false)];
+        assert!(!sites[0].is_favorite);
+        if let Some(s) = sites.iter_mut().find(|s| s.name == "mysite") {
+            s.is_favorite = !s.is_favorite;
+        }
+        assert!(sites[0].is_favorite);
+        // toggle back
+        if let Some(s) = sites.iter_mut().find(|s| s.name == "mysite") {
+            s.is_favorite = !s.is_favorite;
+        }
+        assert!(!sites[0].is_favorite);
+    }
+
+    #[test]
+    fn filter_chips_all_variants_covered() {
+        use crate::state::app_state::SiteStatusFilter;
+        use crate::valet::site_scanner::SiteStatus;
+        let sites = [
+            make_site("a", SiteStatus::Running, false),
+            make_site("b", SiteStatus::Stopped, false),
+            make_site("c", SiteStatus::Failed, false),
+        ];
+        let apply = |f: SiteStatusFilter| -> Vec<&str> {
+            sites
+                .iter()
+                .filter(|s| match f {
+                    SiteStatusFilter::All => true,
+                    SiteStatusFilter::Running => s.status == SiteStatus::Running,
+                    SiteStatusFilter::Stopped => s.status == SiteStatus::Stopped,
+                    SiteStatusFilter::Failed => s.status == SiteStatus::Failed,
+                })
+                .map(|s| s.name.as_str())
+                .collect()
+        };
+        assert_eq!(apply(SiteStatusFilter::All), vec!["a", "b", "c"]);
+        assert_eq!(apply(SiteStatusFilter::Running), vec!["a"]);
+        assert_eq!(apply(SiteStatusFilter::Stopped), vec!["b"]);
+        assert_eq!(apply(SiteStatusFilter::Failed), vec!["c"]);
+    }
+
+    #[test]
+    fn search_filters_by_name_and_domain() {
+        use crate::valet::site_scanner::SiteStatus;
+        let sites = [
+            make_site("easycommerce", SiteStatus::Running, false),
+            make_site("laravel-app", SiteStatus::Running, false),
+        ];
+        let query = "easy";
+        let matched: Vec<&str> = sites
+            .iter()
+            .filter(|s| s.name.contains(query) || s.domain.contains(query))
+            .map(|s| s.name.as_str())
+            .collect();
+        assert_eq!(matched, vec!["easycommerce"]);
+    }
+
+    #[test]
+    fn status_color_varies_by_status() {
+        use crate::valet::site_scanner::SiteStatus;
+        assert_ne!(
+            status_color(&SiteStatus::Running),
+            status_color(&SiteStatus::Failed)
+        );
+        assert_ne!(
+            status_color(&SiteStatus::Running),
+            status_color(&SiteStatus::Stopped)
+        );
+    }
+
+    #[test]
+    fn tls_color_danger_under_7_days() {
+        use crate::ui::theme::Colors;
+        let color = match Some(3u32) {
+            Some(d) if d < 7 => Colors::DANGER,
+            Some(d) if d < 30 => Colors::WARNING,
+            _ => Colors::ACCENT,
+        };
+        assert_eq!(color, Colors::DANGER);
     }
 }

@@ -2798,7 +2798,7 @@ pub async fn run_dispatcher(
                         Ok(out) if out.status.success() => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("{} started", name_clone),
+                                format!("{} started", name_clone),
                                 crate::ui::components::toast::ToastType::Success,
                             );
                             let new_status = crate::services::monitor::ServiceStatus::Running;
@@ -2811,7 +2811,7 @@ pub async fn run_dispatcher(
                         _ => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("Failed to start {}", name_clone),
+                                format!("Failed to start {}", name_clone),
                                 crate::ui::components::toast::ToastType::Error,
                             );
                         }
@@ -2831,7 +2831,7 @@ pub async fn run_dispatcher(
                         Ok(out) if out.status.success() => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("{} stopped", name_clone),
+                                format!("{} stopped", name_clone),
                                 crate::ui::components::toast::ToastType::Warning,
                             );
                             if let Some(svc) =
@@ -2843,7 +2843,7 @@ pub async fn run_dispatcher(
                         _ => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("Failed to stop {}", name_clone),
+                                format!("Failed to stop {}", name_clone),
                                 crate::ui::components::toast::ToastType::Error,
                             );
                         }
@@ -2863,7 +2863,7 @@ pub async fn run_dispatcher(
                         Ok(out) if out.status.success() => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("{} restarted", name_clone),
+                                format!("{} restarted", name_clone),
                                 crate::ui::components::toast::ToastType::Success,
                             );
                             if let Some(svc) =
@@ -2875,7 +2875,7 @@ pub async fn run_dispatcher(
                         _ => {
                             crate::ui::components::toast::push_toast(
                                 &mut s.toasts,
-                                &format!("Failed to restart {}", name_clone),
+                                format!("Failed to restart {}", name_clone),
                                 crate::ui::components::toast::ToastType::Error,
                             );
                         }

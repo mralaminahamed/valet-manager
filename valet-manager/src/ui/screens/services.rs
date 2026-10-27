@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn service_running_count() {
-        let svcs = vec![
+        let svcs = [
             make_svc("nginx", ServiceStatus::Running),
             make_svc("mysql", ServiceStatus::Running),
             make_svc("php-fpm", ServiceStatus::Stopped),
