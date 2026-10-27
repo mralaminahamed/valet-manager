@@ -63,6 +63,6 @@ These commands were not run on Linux while preparing this README. The formatting
 
 ## License
 
-See `LICENSE`.
+MIT. See `LICENSE`.
 
 Author: Al Amin Ahamed.
